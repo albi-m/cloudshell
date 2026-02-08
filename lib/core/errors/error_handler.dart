@@ -1,9 +1,11 @@
 /// Centralized error handler for CloudShell.
 ///
 /// Provides consistent error logging and user-facing message
-/// generation across all app domains.
+/// generation across all app domains. Sensitive data (hostnames,
+/// usernames, IPs) is never included in log output.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
 import 'app_exception.dart';
@@ -25,14 +27,18 @@ class ErrorHandler {
 
   static final Logger _logger = Logger(
     printer: PrettyPrinter(
-      methodCount: 2,
-      errorMethodCount: 5,
+      methodCount: kDebugMode ? 2 : 0,
+      errorMethodCount: kDebugMode ? 5 : 2,
       lineLength: 80,
       noBoxingByDefault: true,
     ),
+    level: kDebugMode ? Level.debug : Level.warning,
   );
 
   /// Logs the error with appropriate severity level.
+  ///
+  /// Sensitive connection details (hostnames, usernames, IPs)
+  /// are stripped from log output to prevent information leakage.
   static void handle(Object error, [StackTrace? stackTrace]) {
     if (error is AppException) {
       _handleAppException(error, stackTrace);
@@ -43,8 +49,7 @@ class ErrorHandler {
 
   /// Generates a user-friendly error message for display in UI.
   ///
-  /// Strips technical details and provides actionable guidance
-  /// where possible.
+  /// Strips technical details and provides actionable guidance.
   static String userMessage(Object error) {
     if (error is SshAuthException) {
       return 'Authentication failed. Check your credentials and try again.';
@@ -56,10 +61,10 @@ class ErrorHandler {
       return 'Host key verification failed. The server identity could not be verified.';
     }
     if (error is SshException) {
-      return 'SSH connection error: ${error.message}';
+      return 'SSH connection error. Please try again.';
     }
     if (error is SftpException) {
-      return 'File transfer error: ${error.message}';
+      return 'File transfer error. Please try again.';
     }
     if (error is InvalidPasswordException) {
       return 'Incorrect master password. Please try again.';
@@ -80,47 +85,51 @@ class ErrorHandler {
       return 'Secure storage error. Your keychain may be locked.';
     }
     if (error is KeyException) {
-      return 'SSH key error: ${error.message}';
+      return 'SSH key error. Please check the key file.';
     }
     if (error is PortForwardException) {
-      return 'Port forwarding error: ${error.message}';
+      return 'Port forwarding error. Please try again.';
     }
     return 'An unexpected error occurred. Please try again.';
   }
 
+  /// Routes exceptions to the correct log level.
+  ///
+  /// Sensitive details are redacted: hostnames, usernames,
+  /// and IP addresses are never logged.
   static void _handleAppException(AppException error, StackTrace? stackTrace) {
     switch (error) {
       case SshAuthException():
-        _logger.w('SSH auth failed: ${error.message}');
+        _logger.w('SSH authentication failed');
       case SshTimeoutException():
-        _logger.w('SSH timeout: ${error.message}');
+        _logger.w('SSH connection timeout');
       case SshHostKeyException():
-        _logger.w('Host key mismatch: ${error.fingerprint}');
+        _logger.w('Host key verification failed');
       case SshException():
-        _logger.e('SSH error: ${error.message}', error: error.cause, stackTrace: stackTrace);
+        _logger.e('SSH error', error: error.cause, stackTrace: stackTrace);
       case SftpException():
-        _logger.e('SFTP error: ${error.message}', error: error.cause, stackTrace: stackTrace);
+        _logger.e('SFTP error', error: error.cause, stackTrace: stackTrace);
       case InvalidPasswordException():
         _logger.w('Invalid master password attempt');
       case CryptoException():
-        _logger.e('Crypto error: ${error.message}', error: error.cause, stackTrace: stackTrace);
+        _logger.e('Crypto error', error: error.cause, stackTrace: stackTrace);
       case DatabaseException():
-        _logger.e('DB error: ${error.message}', error: error.cause, stackTrace: stackTrace);
+        _logger.e('Database error', error: error.cause, stackTrace: stackTrace);
       case SyncException():
-        _logger.w('Sync error: ${error.message}');
+        _logger.w('Sync error');
       case AuthException():
-        _logger.w('Auth error: ${error.message}');
+        _logger.w('Auth error');
       case SecureStorageException():
         _logger.e(
-          'Secure storage error: ${error.message}',
+          'Secure storage error',
           error: error.cause,
           stackTrace: stackTrace,
         );
       case KeyException():
-        _logger.e('Key error: ${error.message}', error: error.cause, stackTrace: stackTrace);
+        _logger.e('Key error', error: error.cause, stackTrace: stackTrace);
       case PortForwardException():
         _logger.e(
-          'Port forward error: ${error.message}',
+          'Port forward error',
           error: error.cause,
           stackTrace: stackTrace,
         );

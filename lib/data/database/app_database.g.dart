@@ -4875,6 +4875,26 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PortForwardsTable portForwards = $PortForwardsTable(this);
   late final $KnownHostsTable knownHosts = $KnownHostsTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
+  late final Index idxHostsIsDeleted = Index(
+    'idx_hosts_is_deleted',
+    'CREATE INDEX idx_hosts_is_deleted ON hosts (is_deleted)',
+  );
+  late final Index idxHostsGroup = Index(
+    'idx_hosts_group',
+    'CREATE INDEX idx_hosts_group ON hosts (is_deleted, group_id)',
+  );
+  late final Index idxHostsLastConnected = Index(
+    'idx_hosts_last_connected',
+    'CREATE INDEX idx_hosts_last_connected ON hosts (last_connected_at)',
+  );
+  late final Index idxHostsFavorite = Index(
+    'idx_hosts_favorite',
+    'CREATE INDEX idx_hosts_favorite ON hosts (is_favorite)',
+  );
+  late final Index idxKnownHostsLookup = Index(
+    'idx_known_hosts_lookup',
+    'CREATE INDEX idx_known_hosts_lookup ON known_hosts (hostname, port, is_trusted)',
+  );
   late final HostDao hostDao = HostDao(this as AppDatabase);
   late final KeyDao keyDao = KeyDao(this as AppDatabase);
   late final SnippetDao snippetDao = SnippetDao(this as AppDatabase);
@@ -4891,6 +4911,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     portForwards,
     knownHosts,
     settings,
+    idxHostsIsDeleted,
+    idxHostsGroup,
+    idxHostsLastConnected,
+    idxHostsFavorite,
+    idxKnownHostsLookup,
   ];
 }
 

@@ -16,6 +16,7 @@ A cross-platform SSH/SFTP client with E2E encrypted sync across macOS, Windows, 
 | 4 | **Development Plan** | `docs/04-DEVELOPMENT-PLAN.md` | 5-phase development plan with sprint-level task breakdowns, release milestones, testing strategy, risk mitigation |
 | 5 | **Security Plan** | `docs/05-SECURITY-PLAN.md` | Full threat model, encryption spec (Argon2id + AES-256-GCM + HKDF), OWASP Mobile Top 10 mitigations, incident response plan, backend hardening, compliance (GDPR/CCPA), security audit schedule, SDL |
 | 6 | **Documentation Plan** | `docs/06-DOCUMENTATION-PLAN.md` | 4-layer doc strategy (user/developer/ops/internal), per-phase doc deliverables, in-app help standards, code documentation rules (dartdoc), writing style guide, doc tooling (Docusaurus), quality gates, documentation website plan |
+| 7 | **Security Hardening** | `docs/07-SECURITY-HARDENING.md` | Implemented security measures, encryption at rest (SQLCipher + keychain), TOFU host key verification, clipboard auto-clear, error sanitization, secure logging, performance optimizations, database indexes, resource limits |
 
 ---
 

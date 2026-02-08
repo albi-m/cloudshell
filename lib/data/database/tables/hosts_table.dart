@@ -13,6 +13,10 @@ enum AuthMethodType { key, password, keyAndPassword, interactive }
 ///
 /// Each row represents a saved SSH server with all its
 /// connection parameters and metadata.
+@TableIndex(name: 'idx_hosts_is_deleted', columns: {#isDeleted})
+@TableIndex(name: 'idx_hosts_group', columns: {#isDeleted, #groupId})
+@TableIndex(name: 'idx_hosts_last_connected', columns: {#lastConnectedAt})
+@TableIndex(name: 'idx_hosts_favorite', columns: {#isFavorite})
 class Hosts extends Table {
   /// Unique identifier (UUID v4).
   TextColumn get id => text()();

@@ -11,6 +11,7 @@ import 'package:drift/drift.dart';
 /// When connecting to a server for the first time, the host's
 /// public key fingerprint is recorded. On subsequent connections,
 /// the fingerprint is compared to detect MITM attacks.
+@TableIndex(name: 'idx_known_hosts_lookup', columns: {#hostname, #port, #isTrusted})
 class KnownHosts extends Table {
   /// Unique identifier (UUID v4).
   TextColumn get id => text()();
