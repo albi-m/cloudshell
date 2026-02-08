@@ -80,6 +80,14 @@ class HostDao extends DatabaseAccessor<AppDatabase> with _$HostDaoMixin {
     );
   }
 
+  /// Watches hosts that use a specific SSH key for authentication.
+  Stream<List<Host>> watchHostsByKeyId(String keyId) {
+    return (select(hosts)
+          ..where((h) => h.isDeleted.equals(false) & h.keyId.equals(keyId))
+          ..orderBy([(h) => OrderingTerm.asc(h.label)]))
+        .watch();
+  }
+
   /// Searches hosts by label, hostname, or tags.
   Future<List<Host>> searchHosts(String query) {
     final pattern = '%$query%';

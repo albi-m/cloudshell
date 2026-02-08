@@ -7,9 +7,12 @@ library;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/constants/route_names.dart';
 import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -53,10 +56,35 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
       appBar: AppBar(
         title: Text('SSH Keys', style: AppTypography.h1),
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(LucideIcons.upload),
             tooltip: 'Import key',
-            onPressed: () => _showImportDialog(context, ref),
+            onSelected: (value) {
+              if (value == 'file') _showImportFromFile(context, ref);
+              if (value == 'clipboard') _importFromClipboard(context, ref);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'file',
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.file, size: 16),
+                    SizedBox(width: 8),
+                    Text('Import from file'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'clipboard',
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.clipboard, size: 16),
+                    SizedBox(width: 8),
+                    Text('Import from clipboard'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -68,7 +96,7 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
               title: 'No SSH keys',
               subtitle: 'Import an SSH key for authentication.',
               actionLabel: 'Import Key',
-              onAction: () => _showImportDialog(context, ref),
+              onAction: () => _showImportFromFile(context, ref),
             );
           }
 
@@ -126,12 +154,17 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
                         itemCount: filteredKeys.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 4),
                         itemBuilder: (context, index) {
+                          final key = filteredKeys[index];
                           return _KeyListItem(
-                            sshKey: filteredKeys[index],
+                            sshKey: key,
+                            onTap: () => context
+                                .push(RouteNames.keyDetail(key.id)),
                             onCopyPublicKey: () =>
-                                _copyPublicKey(context, filteredKeys[index]),
+                                _copyPublicKey(context, key),
+                            onViewDetails: () => context
+                                .push(RouteNames.keyDetail(key.id)),
                             onDelete: () =>
-                                _deleteKey(context, ref, filteredKeys[index]),
+                                _deleteKey(context, ref, key),
                           );
                         },
                       ),
@@ -150,7 +183,7 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
     );
   }
 
-  Future<void> _showImportDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showImportFromFile(BuildContext context, WidgetRef ref) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: false,
@@ -231,6 +264,63 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
     );
   }
 
+  Future<void> _importFromClipboard(
+      BuildContext context, WidgetRef ref) async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final pemContent = data?.text?.trim();
+
+    if (pemContent == null || pemContent.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Clipboard is empty')),
+        );
+      }
+      return;
+    }
+
+    if (!pemContent.contains('PRIVATE KEY')) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Clipboard does not contain a private key'),
+            backgroundColor: AppColors.accentOrange,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    final label = await _showLabelDialog(context, 'Imported Key');
+    if (label == null) return;
+
+    try {
+      final keyService = ref.read(sshKeyServiceProvider);
+      final importResult = await keyService.importKey(
+        label: label,
+        privateKeyPem: pemContent,
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Key imported: ${importResult.fingerprint}')),
+        );
+      }
+    } catch (e) {
+      ErrorHandler.handle(e);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorHandler.userMessage(e)),
+            backgroundColor: AppColors.accentRed,
+          ),
+        );
+      }
+    }
+  }
+
   void _copyPublicKey(BuildContext context, SshKey key) {
     copyWithAutoClear(key.publicKey);
     if (context.mounted) {
@@ -263,12 +353,16 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
 class _KeyListItem extends StatelessWidget {
   const _KeyListItem({
     required this.sshKey,
+    required this.onTap,
     required this.onCopyPublicKey,
+    required this.onViewDetails,
     required this.onDelete,
   });
 
   final SshKey sshKey;
+  final VoidCallback onTap;
   final VoidCallback onCopyPublicKey;
+  final VoidCallback onViewDetails;
   final VoidCallback onDelete;
 
   String get _keyTypeLabel => switch (sshKey.keyType) {
@@ -280,7 +374,10 @@ class _KeyListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
@@ -355,9 +452,20 @@ class _KeyListItem extends StatelessWidget {
                 color: AppColors.textTertiary,
               ),
               onSelected: (value) {
+                if (value == 'details') onViewDetails();
                 if (value == 'delete') onDelete();
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'details',
+                  child: Row(
+                    children: [
+                      Icon(LucideIcons.eye, size: 16),
+                      SizedBox(width: 8),
+                      Text('View details'),
+                    ],
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
@@ -373,6 +481,7 @@ class _KeyListItem extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

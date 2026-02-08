@@ -19,3 +19,9 @@ final keyByIdProvider = FutureProvider.family<SshKey?, String>((ref, id) {
   final db = ref.watch(databaseProvider);
   return db.keyDao.getKeyById(id);
 });
+
+/// Provides a reactive stream of hosts that use a specific SSH key.
+final hostsByKeyIdProvider = StreamProvider.family<List<Host>, String>((ref, keyId) {
+  final db = ref.watch(databaseProvider);
+  return db.hostDao.watchHostsByKeyId(keyId);
+});

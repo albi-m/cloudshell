@@ -12,6 +12,7 @@ import '../core/constants/route_names.dart';
 import '../ui/hosts/host_detail_screen.dart';
 import '../ui/hosts/host_form_screen.dart';
 import '../ui/hosts/hosts_screen.dart';
+import '../ui/keys/key_detail_screen.dart';
 import '../ui/keys/keys_screen.dart';
 import '../ui/settings/settings_screen.dart';
 import '../ui/shared/adaptive_scaffold.dart';
@@ -37,6 +38,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return MaterialPage(
             child: HostDetailScreen(hostId: id),
+          );
+        },
+      ),
+
+      // Key detail (full-screen, outside shell)
+      GoRoute(
+        path: '/keys/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return MaterialPage(
+            child: KeyDetailScreen(keyId: id),
           );
         },
       ),
