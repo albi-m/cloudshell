@@ -1,45 +1,83 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# ----- OS -----
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+Thumbs.db
+*.swp
+*.swo
+*~
 
-# IntelliJ related
+# ----- IDE -----
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.vscode/
+*.code-workspace
+.atom/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# ----- Flutter / Dart -----
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.packages
+build/
 /coverage/
 
-# Symbolication related
-app.*.symbols
+# ----- Generated Code -----
+# Uncomment the line below if you want to check in generated code.
+# Keeping them checked in for now so builds work without running build_runner.
+# *.g.dart
+# *.freezed.dart
 
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# ----- Build Artifacts -----
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/local.properties
+/android/.gradle/
+/android/captures/
+/android/gradlew
+/android/gradlew.bat
+
+# ----- iOS / macOS -----
+**/ios/Pods/
+**/macos/Pods/
+**/ios/.symlinks/
+**/macos/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# ----- Symbolication & Obfuscation -----
+app.*.symbols
+app.*.map.json
+
+# ----- Logs -----
+*.log
+.buildlog/
+.history
+
+# ----- Security Sensitive -----
+# Never commit secrets, keys, or credentials
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+.env
+.env.*
+!.env.example
+credentials.json
+secrets.yaml
+google-services.json
+GoogleService-Info.plist
+
+# ----- Misc -----
+*.class
+*.pyc
+.svn/
+.swiftpm/
+migrate_working_dir/
