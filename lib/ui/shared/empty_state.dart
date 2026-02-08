@@ -49,48 +49,53 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.bgSurface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderSubtle),
+    return Semantics(
+      label: '$title. $subtitle',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.bgSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.borderSubtle),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 32,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
               ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: AppColors.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              title,
-              style: AppTypography.h2,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: AppTypography.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (actionLabel != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
+              Text(
+                title,
+                style: AppTypography.h2,
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (actionLabel != null) ...[
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: onAction,
+                  child: Text(actionLabel!),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

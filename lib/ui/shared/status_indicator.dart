@@ -38,23 +38,33 @@ class StatusIndicator extends StatelessWidget {
     ConnectionStatus.idle => AppColors.statusIdle,
   };
 
+  String get _semanticLabel => switch (status) {
+    ConnectionStatus.online => 'Online',
+    ConnectionStatus.offline => 'Offline',
+    ConnectionStatus.warning => 'Warning',
+    ConnectionStatus.idle => 'Idle',
+  };
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: _color,
-        shape: BoxShape.circle,
-        boxShadow: status == ConnectionStatus.online
-            ? [
-                BoxShadow(
-                  color: _color.withValues(alpha: 0.4),
-                  blurRadius: size,
-                  spreadRadius: size * 0.25,
-                ),
-              ]
-            : null,
+    return Semantics(
+      label: _semanticLabel,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: _color,
+          shape: BoxShape.circle,
+          boxShadow: status == ConnectionStatus.online
+              ? [
+                  BoxShadow(
+                    color: _color.withValues(alpha: 0.4),
+                    blurRadius: size,
+                    spreadRadius: size * 0.25,
+                  ),
+                ]
+              : null,
+        ),
       ),
     );
   }

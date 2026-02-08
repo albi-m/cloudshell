@@ -247,6 +247,7 @@ abstract final class AppTheme {
     canvasColor: AppColorsLight.bgDeep,
     cardColor: AppColorsLight.bgSurface,
     dividerColor: AppColorsLight.borderSubtle,
+    textTheme: AppTypography.textThemeLight,
     fontFamily: 'Inter',
 
     colorScheme: const ColorScheme.light(
@@ -262,6 +263,7 @@ abstract final class AppTheme {
       outlineVariant: AppColorsLight.borderSubtle,
     ),
 
+    // AppBar
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColorsLight.bgDeep,
       foregroundColor: AppColorsLight.textPrimary,
@@ -270,6 +272,24 @@ abstract final class AppTheme {
       systemOverlayStyle: SystemUiOverlayStyle.dark,
     ),
 
+    // Bottom Navigation
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: AppColorsLight.bgDeep,
+      selectedItemColor: AppColorsLight.accentPrimary,
+      unselectedItemColor: AppColorsLight.textTertiary,
+      type: BottomNavigationBarType.fixed,
+      elevation: 0,
+    ),
+
+    // Navigation Rail (desktop sidebar items)
+    navigationRailTheme: const NavigationRailThemeData(
+      backgroundColor: AppColorsLight.bgDeep,
+      selectedIconTheme: IconThemeData(color: AppColorsLight.accentPrimary),
+      unselectedIconTheme: IconThemeData(color: AppColorsLight.textTertiary),
+      indicatorColor: AppColorsLight.bgActive,
+    ),
+
+    // Cards
     cardTheme: const CardThemeData(
       color: AppColorsLight.bgSurface,
       elevation: 0,
@@ -279,6 +299,43 @@ abstract final class AppTheme {
       ),
     ),
 
+    // Elevated Buttons
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColorsLight.accentPrimary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        textStyle: AppTypography.button,
+        elevation: 0,
+      ),
+    ),
+
+    // Outlined Buttons
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColorsLight.textPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        side: const BorderSide(color: AppColorsLight.borderDefault),
+        textStyle: AppTypography.button,
+      ),
+    ),
+
+    // Text Buttons
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: AppColorsLight.accentPrimary,
+        textStyle: AppTypography.button,
+      ),
+    ),
+
+    // Icon Buttons
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(foregroundColor: AppColorsLight.textSecondary),
+    ),
+
+    // Input Fields
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColorsLight.bgRaised,
@@ -295,6 +352,109 @@ abstract final class AppTheme {
         borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: AppColorsLight.accentPrimary, width: 2),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColorsLight.accentRed),
+      ),
+      hintStyle: AppTypography.body.copyWith(color: AppColorsLight.textTertiary),
+      labelStyle: AppTypography.body.copyWith(color: AppColorsLight.textSecondary),
+    ),
+
+    // Dialogs
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColorsLight.bgRaised,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      titleTextStyle: AppTypography.h2.copyWith(color: AppColorsLight.textPrimary),
+    ),
+
+    // Bottom Sheets
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColorsLight.bgRaised,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+    ),
+
+    // Snack Bars
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: AppColorsLight.textPrimary,
+      contentTextStyle: AppTypography.body.copyWith(color: Colors.white),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      behavior: SnackBarBehavior.floating,
+    ),
+
+    // Dividers
+    dividerTheme: const DividerThemeData(
+      color: AppColorsLight.borderSubtle,
+      thickness: 1,
+      space: 1,
+    ),
+
+    // List Tiles
+    listTileTheme: const ListTileThemeData(
+      iconColor: AppColorsLight.textSecondary,
+      textColor: AppColorsLight.textPrimary,
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    ),
+
+    // Tooltips
+    tooltipTheme: TooltipThemeData(
+      decoration: BoxDecoration(
+        color: AppColorsLight.textPrimary,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      textStyle: AppTypography.bodySmall.copyWith(color: Colors.white),
+    ),
+
+    // Popup Menus
+    popupMenuTheme: PopupMenuThemeData(
+      color: AppColorsLight.bgRaised,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: AppColorsLight.borderDefault),
+      ),
+    ),
+
+    // Switches and Toggles
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColorsLight.accentPrimary;
+        }
+        return AppColorsLight.textTertiary;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColorsLight.accentPrimary.withValues(alpha: 0.3);
+        }
+        return AppColorsLight.bgActive;
+      }),
+    ),
+
+    // Checkbox
+    checkboxTheme: CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColorsLight.accentPrimary;
+        }
+        return Colors.transparent;
+      }),
+      checkColor: WidgetStateProperty.all(Colors.white),
+      side: const BorderSide(color: AppColorsLight.borderStrong),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+    ),
+
+    // Progress Indicators
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppColorsLight.accentPrimary,
+      linearTrackColor: AppColorsLight.bgActive,
+    ),
+
+    // Tab Bar
+    tabBarTheme: const TabBarThemeData(
+      labelColor: AppColorsLight.accentPrimary,
+      unselectedLabelColor: AppColorsLight.textTertiary,
+      indicatorColor: AppColorsLight.accentPrimary,
     ),
   );
 }

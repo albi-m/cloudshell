@@ -9,11 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/constants/route_names.dart';
+import '../providers/settings_provider.dart';
 import '../ui/hosts/host_detail_screen.dart';
 import '../ui/hosts/host_form_screen.dart';
 import '../ui/hosts/hosts_screen.dart';
 import '../ui/keys/key_detail_screen.dart';
 import '../ui/keys/keys_screen.dart';
+import '../ui/onboarding/onboarding_screen.dart';
 import '../ui/settings/settings_screen.dart';
 import '../ui/shared/adaptive_scaffold.dart';
 import '../ui/snippets/snippets_screen.dart';
@@ -26,10 +28,23 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Riverpod provider for the GoRouter instance.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final onboardingComplete = ref.watch(onboardingCompleteProvider);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: RouteNames.hosts,
+    initialLocation: onboardingComplete
+        ? RouteNames.hosts
+        : RouteNames.onboarding,
     routes: [
+      // Onboarding (full-screen, outside shell)
+      GoRoute(
+        path: RouteNames.onboarding,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => const MaterialPage(
+          child: OnboardingScreen(),
+        ),
+      ),
+
       // Host detail (full-screen, outside shell)
       GoRoute(
         path: '/hosts/:id',

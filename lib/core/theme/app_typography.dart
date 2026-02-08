@@ -102,7 +102,7 @@ abstract final class AppTypography {
   // Flutter TextTheme
   // ---------------------------------------------------------------------------
 
-  /// Constructs the complete [TextTheme] for use in [ThemeData].
+  /// Constructs the complete [TextTheme] for use in dark [ThemeData].
   static TextTheme get textTheme => TextTheme(
     displayLarge: display,
     headlineLarge: h1,
@@ -115,4 +115,21 @@ abstract final class AppTypography {
     labelMedium: tab,
     labelSmall: overline,
   );
+
+  /// Constructs the complete [TextTheme] for use in light [ThemeData].
+  static TextTheme get textThemeLight {
+    final light = GoogleFonts.inter(color: AppColorsLight.textPrimary);
+    return TextTheme(
+      displayLarge: light.copyWith(fontSize: 28, fontWeight: FontWeight.w700),
+      headlineLarge: light.copyWith(fontSize: 24, fontWeight: FontWeight.w700),
+      headlineMedium: light.copyWith(fontSize: 20, fontWeight: FontWeight.w600),
+      headlineSmall: light.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
+      bodyLarge: light.copyWith(fontSize: 16, fontWeight: FontWeight.w400),
+      bodyMedium: light.copyWith(fontSize: 14, fontWeight: FontWeight.w400),
+      bodySmall: light.copyWith(fontSize: 13, fontWeight: FontWeight.w400),
+      labelLarge: light.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+      labelMedium: light.copyWith(fontSize: 13, fontWeight: FontWeight.w500),
+      labelSmall: light.copyWith(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+    );
+  }
 }

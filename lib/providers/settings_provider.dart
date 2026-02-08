@@ -4,6 +4,7 @@
 /// the settings key-value table.
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database/app_database.dart';
@@ -52,3 +53,33 @@ class SettingsNotifier extends AsyncNotifier<void> {
     await db.settingsDao.deleteValue(key);
   }
 }
+
+/// Settings key constants.
+abstract final class SettingsKeys {
+  static const String themeMode = 'theme_mode';
+  static const String onboardingComplete = 'onboarding_complete';
+}
+
+/// Provides the current theme mode, persisted via the settings table.
+final themeModeProvider = Provider<ThemeMode>((ref) {
+  final setting = ref.watch(settingProvider(SettingsKeys.themeMode));
+  return setting.when(
+    data: (value) => switch (value) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.dark, // default to dark
+    },
+    loading: () => ThemeMode.dark,
+    error: (_, _) => ThemeMode.dark,
+  );
+});
+
+/// Provides whether onboarding has been completed.
+final onboardingCompleteProvider = Provider<bool>((ref) {
+  final setting = ref.watch(settingProvider(SettingsKeys.onboardingComplete));
+  return setting.when(
+    data: (value) => value == 'true',
+    loading: () => true, // assume complete while loading to avoid flash
+    error: (_, _) => true,
+  );
+});

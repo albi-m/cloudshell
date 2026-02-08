@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
+import 'providers/settings_provider.dart';
 import 'router/app_router.dart';
 
 /// Root widget that configures the MaterialApp with theme
@@ -20,6 +21,7 @@ class CloudShellApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
@@ -28,7 +30,7 @@ class CloudShellApp extends ConsumerWidget {
       // Theme configuration from design system
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark, // Default to dark mode
+      themeMode: themeMode,
 
       // GoRouter configuration
       routerConfig: router,
