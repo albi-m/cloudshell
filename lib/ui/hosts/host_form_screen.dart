@@ -1,7 +1,8 @@
 /// Host add/edit form screen for CloudShell.
 ///
 /// Provides a form for creating new SSH host connections or
-/// editing existing ones, with full validation.
+/// editing existing ones, with full validation and advanced
+/// settings section. Matches wireframe S3.1.
 library;
 
 import 'package:drift/drift.dart' show Value;
@@ -10,16 +11,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/validators.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables/hosts_table.dart';
+import '../../providers/connection_provider.dart';
 import '../../providers/key_provider.dart';
+import '../../services/ssh/ssh_service.dart';
+import '../terminal/terminal_screen.dart';
 
 /// Form screen for adding or editing an SSH host.
 ///
 /// Pass an existing [host] to edit, or omit for a new host.
+/// Includes advanced section with group, keep-alive, startup
+/// command, encoding, and jump host (per wireframe S3.1).
 class HostFormScreen extends ConsumerStatefulWidget {
   const HostFormScreen({super.key, this.host});
 
@@ -42,10 +49,13 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
   late final TextEditingController _portController;
   late final TextEditingController _usernameController;
   late final TextEditingController _notesController;
+  late final TextEditingController _startupCommandController;
+  late final TextEditingController _keepAliveController;
 
   AuthMethodType _authMethod = AuthMethodType.key;
   String? _selectedKeyId;
   bool _isSaving = false;
+  bool _advancedExpanded = false;
 
   @override
   void initState() {
@@ -56,8 +66,22 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
     _portController = TextEditingController(text: '${host?.port ?? 22}');
     _usernameController = TextEditingController(text: host?.username ?? '');
     _notesController = TextEditingController(text: host?.notes ?? '');
+    _startupCommandController = TextEditingController(
+      text: host?.startupCommand ?? '',
+    );
+    _keepAliveController = TextEditingController(
+      text: '${host?.keepAliveSeconds ?? 60}',
+    );
     _authMethod = host?.authMethod ?? AuthMethodType.key;
     _selectedKeyId = host?.keyId;
+
+    // Auto-expand advanced section if any advanced field is filled
+    if (host != null &&
+        (host.startupCommand != null ||
+            host.groupId != null ||
+            host.keepAliveSeconds != 60)) {
+      _advancedExpanded = true;
+    }
   }
 
   @override
@@ -67,58 +91,129 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
     _portController.dispose();
     _usernameController.dispose();
     _notesController.dispose();
+    _startupCommandController.dispose();
+    _keepAliveController.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+  HostsCompanion _buildHostCompanion() {
+    final now = DateTime.now();
+    final startupCmd = _startupCommandController.text.trim();
+    final keepAlive = int.tryParse(_keepAliveController.text.trim()) ?? 60;
+
+    if (widget.isEditing) {
+      return HostsCompanion(
+        id: Value(widget.host!.id),
+        label: Value(_labelController.text.trim()),
+        hostname: Value(_hostnameController.text.trim()),
+        port: Value(int.parse(_portController.text.trim())),
+        username: Value(_usernameController.text.trim()),
+        authMethod: Value(_authMethod),
+        keyId: Value(_selectedKeyId),
+        startupCommand: Value(startupCmd.isEmpty ? null : startupCmd),
+        keepAliveSeconds: Value(keepAlive),
+        notes: Value(_notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim()),
+        updatedAt: Value(now),
+      );
+    } else {
+      return HostsCompanion(
+        id: Value(_uuid.v4()),
+        label: Value(_labelController.text.trim()),
+        hostname: Value(_hostnameController.text.trim()),
+        port: Value(int.parse(_portController.text.trim())),
+        username: Value(_usernameController.text.trim()),
+        authMethod: Value(_authMethod),
+        keyId: Value(_selectedKeyId),
+        startupCommand: Value(startupCmd.isEmpty ? null : startupCmd),
+        keepAliveSeconds: Value(keepAlive),
+        notes: Value(_notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim()),
+        createdAt: Value(now),
+        updatedAt: Value(now),
+      );
+    }
+  }
+
+  Future<Host?> _saveHost() async {
+    if (!_formKey.currentState!.validate()) return null;
 
     setState(() => _isSaving = true);
 
     try {
       final db = ref.read(databaseProvider);
-      final now = DateTime.now();
+      final companion = _buildHostCompanion();
 
       if (widget.isEditing) {
-        await db.hostDao.updateHost(HostsCompanion(
-          id: Value(widget.host!.id),
-          label: Value(_labelController.text.trim()),
-          hostname: Value(_hostnameController.text.trim()),
-          port: Value(int.parse(_portController.text.trim())),
-          username: Value(_usernameController.text.trim()),
-          authMethod: Value(_authMethod),
-          keyId: Value(_selectedKeyId),
-          notes: Value(_notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim()),
-          updatedAt: Value(now),
-        ));
+        await db.hostDao.updateHost(companion);
+        return await db.hostDao.getHostById(widget.host!.id);
       } else {
-        await db.hostDao.insertHost(HostsCompanion(
-          id: Value(_uuid.v4()),
-          label: Value(_labelController.text.trim()),
-          hostname: Value(_hostnameController.text.trim()),
-          port: Value(int.parse(_portController.text.trim())),
-          username: Value(_usernameController.text.trim()),
-          authMethod: Value(_authMethod),
-          keyId: Value(_selectedKeyId),
-          notes: Value(_notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim()),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ));
+        await db.hostDao.insertHost(companion);
+        return await db.hostDao.getHostById(companion.id.value);
       }
-
-      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save host: $e')),
         );
       }
+      return null;
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _save() async {
+    final host = await _saveHost();
+    if (host != null && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _saveAndConnect() async {
+    final host = await _saveHost();
+    if (host == null || !mounted) return;
+
+    try {
+      final sshService = ref.read(sshServiceProvider);
+      final connections = ref.read(activeConnectionsProvider.notifier);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connecting to ${host.label}...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      final session = await sshService.connect(host: host);
+
+      connections.addConnection(session.sessionId, host.id);
+      connections.updateStatus(session.sessionId, ConnectionStatus.connected);
+
+      if (mounted) {
+        // Pop the form, then push the terminal
+        Navigator.of(context).pop(true);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TerminalScreen(
+              session: session,
+              hostLabel: host.label,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ErrorHandler.handle(e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorHandler.userMessage(e)),
+            backgroundColor: AppColors.accentRed,
+          ),
+        );
+      }
     }
   }
 
@@ -257,7 +352,8 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
                         child: Text(key.label),
                       );
                     }).toList(),
-                    onChanged: (value) => setState(() => _selectedKeyId = value),
+                    onChanged: (value) =>
+                        setState(() => _selectedKeyId = value),
                     validator: (value) {
                       if (value == null) return 'Please select an SSH key';
                       return null;
@@ -276,21 +372,71 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
 
             const SizedBox(height: 24),
 
-            // --- Notes Section ---
-            _SectionHeader(title: 'NOTES'),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                hintText: 'Any notes about this server...',
-                alignLabelWithHint: true,
-              ),
-              maxLines: 3,
-              textInputAction: TextInputAction.done,
+            // --- Advanced Section (collapsible per wireframe) ---
+            _AdvancedSection(
+              expanded: _advancedExpanded,
+              onToggle: () =>
+                  setState(() => _advancedExpanded = !_advancedExpanded),
+              children: [
+                TextFormField(
+                  controller: _startupCommandController,
+                  decoration: const InputDecoration(
+                    labelText: 'Startup Command',
+                    hintText: 'e.g., cd /var/www && ls -la',
+                    prefixIcon: Icon(LucideIcons.terminal, size: 18),
+                  ),
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _keepAliveController,
+                  decoration: const InputDecoration(
+                    labelText: 'Keep Alive (seconds)',
+                    hintText: '60',
+                    prefixIcon: Icon(LucideIcons.heartPulse, size: 18),
+                  ),
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                    hintText: 'Any notes about this server...',
+                    alignLabelWithHint: true,
+                    prefixIcon: Icon(LucideIcons.stickyNote, size: 18),
+                  ),
+                  maxLines: 3,
+                  textInputAction: TextInputAction.done,
+                ),
+              ],
             ),
 
             const SizedBox(height: 32),
+
+            // --- Action Buttons (per wireframe: Save & Connect + Save) ---
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isSaving ? null : _save,
+                    child: const Text('Save'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : _saveAndConnect,
+                    icon: const Icon(LucideIcons.play, size: 16),
+                    label: const Text('Save & Connect'),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -353,6 +499,61 @@ class _AuthMethodSelector extends StatelessWidget {
           return AppColors.bgSurface;
         }),
       ),
+    );
+  }
+}
+
+/// Collapsible advanced settings section per wireframe S3.1.
+class _AdvancedSection extends StatelessWidget {
+  const _AdvancedSection({
+    required this.expanded,
+    required this.onToggle,
+    required this.children,
+  });
+
+  final bool expanded;
+  final VoidCallback onToggle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  expanded
+                      ? LucideIcons.chevronDown
+                      : LucideIcons.chevronRight,
+                  size: 16,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'ADVANCED',
+                  style: AppTypography.overline
+                      .copyWith(color: AppColors.textTertiary),
+                ),
+                const Spacer(),
+                Text(
+                  expanded ? 'collapse' : 'expand',
+                  style: AppTypography.caption,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expanded) ...[
+          const SizedBox(height: 8),
+          ...children,
+        ],
+      ],
     );
   }
 }

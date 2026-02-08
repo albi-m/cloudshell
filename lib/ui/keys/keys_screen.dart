@@ -1,7 +1,8 @@
 /// SSH keys management screen.
 ///
 /// Lists all stored SSH keys with options to import,
-/// export, and delete keys.
+/// export, and delete keys. Includes search bar and
+/// passphrase indicator per wireframe S5.1.
 library;
 
 import 'package:file_picker/file_picker.dart';
@@ -13,9 +14,9 @@ import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/clipboard_helper.dart';
-import '../../data/database/tables/keys_table.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/database/app_database.dart';
+import '../../data/database/tables/keys_table.dart';
 import '../../providers/key_provider.dart';
 import '../../services/ssh/ssh_key_service.dart';
 import '../shared/confirmation_dialog.dart';
@@ -23,11 +24,28 @@ import '../shared/empty_state.dart';
 import '../shared/loading_indicator.dart';
 
 /// SSH keys list screen for managing authentication keys.
-class KeysScreen extends ConsumerWidget {
+///
+/// Matches wireframe S5.1 with search, key type, fingerprint,
+/// passphrase indicator, and copy/delete actions.
+class KeysScreen extends ConsumerStatefulWidget {
   const KeysScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<KeysScreen> createState() => _KeysScreenState();
+}
+
+class _KeysScreenState extends ConsumerState<KeysScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final keysAsync = ref.watch(allKeysProvider);
 
     return Scaffold(
@@ -36,7 +54,7 @@ class KeysScreen extends ConsumerWidget {
         title: Text('SSH Keys', style: AppTypography.h1),
         actions: [
           IconButton(
-            icon: const Icon(LucideIcons.plus),
+            icon: const Icon(LucideIcons.upload),
             tooltip: 'Import key',
             onPressed: () => _showImportDialog(context, ref),
           ),
@@ -53,23 +71,78 @@ class KeysScreen extends ConsumerWidget {
               onAction: () => _showImportDialog(context, ref),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: keys.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 4),
-            itemBuilder: (context, index) {
-              return _KeyListItem(
-                sshKey: keys[index],
-                onCopyPublicKey: () => _copyPublicKey(context, ref, keys[index]),
-                onDelete: () => _deleteKey(context, ref, keys[index]),
-              );
-            },
+
+          // Filter keys by search query
+          final filteredKeys = _searchQuery.isEmpty
+              ? keys
+              : keys.where((k) {
+                  final q = _searchQuery.toLowerCase();
+                  return k.label.toLowerCase().contains(q) ||
+                      k.fingerprint.toLowerCase().contains(q);
+                }).toList();
+
+          return Column(
+            children: [
+              // Search bar (per wireframe S5.1)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search keys...',
+                    prefixIcon: const Icon(LucideIcons.search, size: 18),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(LucideIcons.x, size: 16),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+              ),
+
+              // Keys list
+              Expanded(
+                child: filteredKeys.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No keys match "$_searchQuery"',
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: filteredKeys.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 4),
+                        itemBuilder: (context, index) {
+                          return _KeyListItem(
+                            sshKey: filteredKeys[index],
+                            onCopyPublicKey: () =>
+                                _copyPublicKey(context, filteredKeys[index]),
+                            onDelete: () =>
+                                _deleteKey(context, ref, filteredKeys[index]),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
         loading: () => const LoadingIndicator(message: 'Loading keys...'),
         error: (error, _) => Center(
           child: Text(
-            'Failed to load keys: $error',
+            'Failed to load keys',
             style: AppTypography.body.copyWith(color: AppColors.accentRed),
           ),
         ),
@@ -88,7 +161,6 @@ class KeysScreen extends ConsumerWidget {
     final file = result.files.first;
     if (file.path == null) return;
 
-    // Read file content
     final bytes = await file.readStream?.fold<List<int>>(
       [],
       (prev, data) => prev..addAll(data),
@@ -99,20 +171,19 @@ class KeysScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    // Show label input dialog
     final label = await _showLabelDialog(context, file.name);
     if (label == null) return;
 
     try {
       final keyService = ref.read(sshKeyServiceProvider);
-      final result = await keyService.importKey(
+      final importResult = await keyService.importKey(
         label: label,
         privateKeyPem: pemContent,
       );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Key imported: ${result.fingerprint}')),
+          SnackBar(content: Text('Key imported: ${importResult.fingerprint}')),
         );
       }
     } catch (e) {
@@ -128,7 +199,8 @@ class KeysScreen extends ConsumerWidget {
     }
   }
 
-  Future<String?> _showLabelDialog(BuildContext context, String defaultName) async {
+  Future<String?> _showLabelDialog(
+      BuildContext context, String defaultName) async {
     final controller = TextEditingController(text: defaultName);
     return showDialog<String>(
       context: context,
@@ -159,16 +231,18 @@ class KeysScreen extends ConsumerWidget {
     );
   }
 
-  void _copyPublicKey(BuildContext context, WidgetRef ref, SshKey key) {
+  void _copyPublicKey(BuildContext context, SshKey key) {
     copyWithAutoClear(key.publicKey);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Public key copied (auto-clears in 30s)')),
+        const SnackBar(
+            content: Text('Public key copied (auto-clears in 30s)')),
       );
     }
   }
 
-  Future<void> _deleteKey(BuildContext context, WidgetRef ref, SshKey key) async {
+  Future<void> _deleteKey(
+      BuildContext context, WidgetRef ref, SshKey key) async {
     final confirmed = await showConfirmationDialog(
       context: context,
       title: 'Delete Key',
@@ -185,7 +259,7 @@ class KeysScreen extends ConsumerWidget {
   }
 }
 
-/// Individual SSH key list item.
+/// Individual SSH key list item per wireframe S5.1.
 class _KeyListItem extends StatelessWidget {
   const _KeyListItem({
     required this.sshKey,
@@ -198,10 +272,10 @@ class _KeyListItem extends StatelessWidget {
   final VoidCallback onDelete;
 
   String get _keyTypeLabel => switch (sshKey.keyType) {
-    KeyTypeEnum.ed25519 => 'Ed25519',
-    KeyTypeEnum.rsa => 'RSA',
-    KeyTypeEnum.ecdsa => 'ECDSA',
-  };
+        KeyTypeEnum.ed25519 => 'Ed25519',
+        KeyTypeEnum.rsa => 'RSA',
+        KeyTypeEnum.ecdsa => 'ECDSA',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +304,8 @@ class _KeyListItem extends StatelessWidget {
                 children: [
                   Text(
                     sshKey.label,
-                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                    style: AppTypography.body
+                        .copyWith(fontWeight: FontWeight.w600),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
@@ -245,6 +320,26 @@ class _KeyListItem extends StatelessWidget {
                     Formatters.fingerprint(sshKey.fingerprint),
                     style: AppTypography.code(fontSize: 11),
                   ),
+                  if (sshKey.hasPassphrase) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          LucideIcons.lock,
+                          size: 12,
+                          color: AppColors.accentOrange,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Passphrase protected',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.accentOrange,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -253,10 +348,28 @@ class _KeyListItem extends StatelessWidget {
               tooltip: 'Copy public key',
               onPressed: onCopyPublicKey,
             ),
-            IconButton(
-              icon: const Icon(LucideIcons.trash2, size: 18, color: AppColors.accentRed),
-              tooltip: 'Delete key',
-              onPressed: onDelete,
+            PopupMenuButton<String>(
+              icon: const Icon(
+                LucideIcons.moreVertical,
+                size: 18,
+                color: AppColors.textTertiary,
+              ),
+              onSelected: (value) {
+                if (value == 'delete') onDelete();
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(LucideIcons.trash2,
+                          size: 16, color: AppColors.accentRed),
+                      SizedBox(width: 8),
+                      Text('Delete'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),

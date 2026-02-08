@@ -3,6 +3,7 @@
 ///
 /// This is the primary layout wrapper for all main screens,
 /// providing consistent navigation across platforms.
+/// Matches wireframe Master Layout Structure.
 library;
 
 import 'package:flutter/material.dart';
@@ -29,8 +30,36 @@ class _NavDestination {
   final IconData selectedIcon;
 }
 
-/// The four primary navigation destinations.
-const _destinations = [
+/// Desktop sidebar navigation destinations (per wireframe).
+const _sidebarDestinations = [
+  _NavDestination(
+    path: RouteNames.hosts,
+    label: 'Hosts',
+    icon: LucideIcons.server,
+    selectedIcon: LucideIcons.server,
+  ),
+  _NavDestination(
+    path: RouteNames.keys,
+    label: 'Keys',
+    icon: LucideIcons.keyRound,
+    selectedIcon: LucideIcons.keyRound,
+  ),
+  _NavDestination(
+    path: RouteNames.snippets,
+    label: 'Snippets',
+    icon: LucideIcons.code2,
+    selectedIcon: LucideIcons.code2,
+  ),
+  _NavDestination(
+    path: RouteNames.settings,
+    label: 'Settings',
+    icon: LucideIcons.settings,
+    selectedIcon: LucideIcons.settings,
+  ),
+];
+
+/// Mobile bottom nav destinations (5 items per wireframe).
+const _mobileDestinations = [
   _NavDestination(
     path: RouteNames.hosts,
     label: 'Hosts',
@@ -68,11 +97,12 @@ class AdaptiveScaffold extends StatelessWidget {
   /// The current route's page content.
   final Widget child;
 
-  /// Returns the index of the currently active navigation destination.
-  int _currentIndex(BuildContext context) {
+  /// Returns the index of the currently active navigation destination
+  /// for the given destination list.
+  int _currentIndex(BuildContext context, List<_NavDestination> destinations) {
     final location = GoRouterState.of(context).uri.path;
-    for (var i = 0; i < _destinations.length; i++) {
-      if (location.startsWith(_destinations[i].path)) return i;
+    for (var i = 0; i < destinations.length; i++) {
+      if (location.startsWith(destinations[i].path)) return i;
     }
     return 0;
   }
@@ -81,23 +111,29 @@ class AdaptiveScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isDesktop = width >= AppConstants.desktopBreakpoint;
-    final selectedIndex = _currentIndex(context);
 
     if (isDesktop) {
       return _DesktopLayout(
-        selectedIndex: selectedIndex,
+        selectedIndex: _currentIndex(context, _sidebarDestinations),
         child: child,
       );
     }
 
     return _MobileLayout(
-      selectedIndex: selectedIndex,
+      selectedIndex: _currentIndex(context, _mobileDestinations),
       child: child,
     );
   }
 }
 
-/// Desktop layout with a fixed sidebar and content area.
+/// Desktop layout with a full sidebar and content area.
+///
+/// Sidebar includes per wireframe:
+/// - App header with logo
+/// - Search box
+/// - Main nav items (Hosts, Keys, Snippets)
+/// - Tools section (SFTP, Port Fwd)
+/// - Settings at bottom
 class _DesktopLayout extends StatelessWidget {
   const _DesktopLayout({
     required this.selectedIndex,
@@ -129,7 +165,7 @@ class _DesktopLayout extends StatelessWidget {
   }
 }
 
-/// Desktop sidebar navigation panel.
+/// Desktop sidebar navigation panel per wireframe Master Layout.
 class _Sidebar extends StatelessWidget {
   const _Sidebar({required this.selectedIndex});
 
@@ -144,7 +180,7 @@ class _Sidebar extends StatelessWidget {
         children: [
           // App header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
             child: Row(
               children: [
                 Container(
@@ -169,27 +205,102 @@ class _Sidebar extends StatelessWidget {
             ),
           ),
 
+          // Search box (per wireframe)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                prefixIcon: const Icon(LucideIcons.search, size: 16),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                filled: true,
+                fillColor: AppColors.bgSurface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              style: AppTypography.bodySmall,
+            ),
+          ),
+
           const Divider(height: 1),
 
-          // Navigation items
+          // Main navigation items
           Expanded(
-            child: ListView.builder(
+            child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _destinations.length,
-              itemBuilder: (context, index) {
-                final dest = _destinations[index];
-                final isSelected = index == selectedIndex;
+              children: [
+                // --- MAIN ---
+                _SidebarSectionLabel(label: 'MAIN'),
+                for (var i = 0; i < _sidebarDestinations.length - 1; i++)
+                  _SidebarItem(
+                    icon: _sidebarDestinations[i].icon,
+                    label: _sidebarDestinations[i].label,
+                    isSelected: i == selectedIndex,
+                    onTap: () => context.go(_sidebarDestinations[i].path),
+                  ),
 
-                return _SidebarItem(
-                  icon: isSelected ? dest.selectedIcon : dest.icon,
-                  label: dest.label,
-                  isSelected: isSelected,
-                  onTap: () => context.go(dest.path),
-                );
-              },
+                const SizedBox(height: 8),
+                const Divider(height: 1, indent: 12, endIndent: 12),
+                const SizedBox(height: 8),
+
+                // --- TOOLS (per wireframe: SFTP, Port Fwd) ---
+                _SidebarSectionLabel(label: 'TOOLS'),
+                _SidebarItem(
+                  icon: LucideIcons.folderOpen,
+                  label: 'SFTP',
+                  isSelected: false,
+                  onTap: () {}, // Sprint 3
+                ),
+                _SidebarItem(
+                  icon: LucideIcons.arrowLeftRight,
+                  label: 'Port Forwarding',
+                  isSelected: false,
+                  onTap: () {}, // Sprint 3
+                ),
+
+                const SizedBox(height: 8),
+                const Divider(height: 1, indent: 12, endIndent: 12),
+                const SizedBox(height: 8),
+
+                // Settings
+                _SidebarItem(
+                  icon: _sidebarDestinations.last.icon,
+                  label: _sidebarDestinations.last.label,
+                  isSelected: selectedIndex == _sidebarDestinations.length - 1,
+                  onTap: () => context.go(_sidebarDestinations.last.path),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Section label in the sidebar (e.g., "MAIN", "TOOLS").
+class _SidebarSectionLabel extends StatelessWidget {
+  const _SidebarSectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+      child: Text(
+        label,
+        style: AppTypography.overline.copyWith(
+          color: AppColors.textTertiary,
+          fontSize: 10,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
@@ -273,8 +384,8 @@ class _MobileLayout extends StatelessWidget {
         ),
         child: BottomNavigationBar(
           currentIndex: selectedIndex,
-          onTap: (index) => context.go(_destinations[index].path),
-          items: _destinations
+          onTap: (index) => context.go(_mobileDestinations[index].path),
+          items: _mobileDestinations
               .map(
                 (dest) => BottomNavigationBarItem(
                   icon: Icon(dest.icon),

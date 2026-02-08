@@ -2,7 +2,8 @@
 ///
 /// Renders a full terminal emulator using xterm.dart, connected
 /// to an SSH session via SshSessionWrapper. Handles I/O binding,
-/// resize events, and session lifecycle.
+/// resize events, session lifecycle, and status bar display.
+/// Matches wireframe S4.1.
 library;
 
 import 'dart:async';
@@ -10,6 +11,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:xterm/xterm.dart' as xterm;
 
 import '../../core/constants/app_constants.dart';
@@ -17,6 +19,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/terminal_themes.dart';
 import '../../core/theme/xterm_theme_adapter.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/utils/platform_utils.dart';
 import '../../providers/connection_provider.dart';
 import '../../services/ssh/ssh_session.dart';
@@ -24,18 +27,23 @@ import '../../services/ssh/ssh_session.dart';
 /// Full-screen terminal emulator view for an active SSH session.
 ///
 /// Binds an xterm.dart [Terminal] to an [SshSessionWrapper]:
-/// - Remote output → Terminal display
-/// - Keyboard input → SSH stdin
-/// - Terminal resize → SSH PTY resize
+/// - Remote output -> Terminal display
+/// - Keyboard input -> SSH stdin
+/// - Terminal resize -> SSH PTY resize
+/// - Status bar: connection status, session duration, encoding
 class TerminalScreen extends ConsumerStatefulWidget {
   const TerminalScreen({
     super.key,
     required this.session,
+    this.hostLabel,
     this.themeId = 'cloudshell_default',
   });
 
   /// The active SSH session to bind to.
   final SshSessionWrapper session;
+
+  /// Display name of the connected host (shown in title bar).
+  final String? hostLabel;
 
   /// Terminal color theme ID.
   final String themeId;
@@ -51,6 +59,12 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
 
   /// Stored subscription to cancel on dispose (prevents memory leak).
   StreamSubscription<dynamic>? _outputSubscription;
+
+  /// Tracks session start time for the duration timer.
+  DateTime? _connectedAt;
+
+  /// Timer for updating the status bar duration display.
+  Timer? _durationTimer;
 
   @override
   void initState() {
@@ -74,8 +88,16 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         termHeight: 24,
       );
 
+      _connectedAt = DateTime.now();
+      // Update duration display every second
+      _durationTimer = Timer.periodic(
+        const Duration(seconds: 1),
+        (_) {
+          if (mounted) setState(() {});
+        },
+      );
+
       // Forward SSH output to xterm terminal.
-      // Store subscription so we can cancel it in dispose().
       _outputSubscription = widget.session.output.listen(
         (data) {
           _terminal.write(utf8.decode(data, allowMalformed: true));
@@ -124,8 +146,16 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     }
   }
 
+  /// Returns the session duration as a formatted string.
+  String get _durationText {
+    if (_connectedAt == null) return '0:00';
+    final elapsed = DateTime.now().difference(_connectedAt!);
+    return Formatters.duration(elapsed);
+  }
+
   @override
   void dispose() {
+    _durationTimer?.cancel();
     _outputSubscription?.cancel();
     _controller.dispose();
     widget.session.close();
@@ -136,13 +166,14 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
   Widget build(BuildContext context) {
     final theme = TerminalThemes.byId(widget.themeId);
     final xtermTheme = toXtermTheme(theme);
+    final titleText = widget.hostLabel ?? 'Terminal';
 
     return Scaffold(
       backgroundColor: theme.background,
       appBar: AppBar(
         backgroundColor: AppColors.bgDeep,
         title: Text(
-          _isConnected ? 'Terminal' : 'Disconnected',
+          _isConnected ? titleText : '$titleText (Disconnected)',
           style: AppTypography.h3,
         ),
         leading: IconButton(
@@ -150,6 +181,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          // Connection status dot
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(
@@ -168,18 +200,77 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         ],
       ),
       body: SafeArea(
-        child: xterm.TerminalView(
-          _terminal,
-          controller: _controller,
-          theme: xtermTheme,
-          textStyle: xterm.TerminalStyle(
-            fontFamily: 'JetBrainsMono',
-            fontSize: PlatformUtils.isDesktop
-                ? AppConstants.defaultTerminalFontSizeDesktop
-                : AppConstants.defaultTerminalFontSizeMobile,
-          ),
-          autofocus: true,
-          keyboardAppearance: Brightness.dark,
+        child: Column(
+          children: [
+            // Terminal view
+            Expanded(
+              child: xterm.TerminalView(
+                _terminal,
+                controller: _controller,
+                theme: xtermTheme,
+                textStyle: xterm.TerminalStyle(
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: PlatformUtils.isDesktop
+                      ? AppConstants.defaultTerminalFontSizeDesktop
+                      : AppConstants.defaultTerminalFontSizeMobile,
+                ),
+                autofocus: true,
+                keyboardAppearance: Brightness.dark,
+              ),
+            ),
+
+            // Status bar (per wireframe S4.1)
+            Container(
+              height: 28,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: const BoxDecoration(
+                color: AppColors.bgDeep,
+                border: Border(
+                  top: BorderSide(color: AppColors.borderSubtle),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Connection status
+                  Icon(
+                    _isConnected
+                        ? LucideIcons.wifi
+                        : LucideIcons.wifiOff,
+                    size: 12,
+                    color: _isConnected
+                        ? AppColors.statusOnline
+                        : AppColors.statusOffline,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _isConnected ? 'Connected' : 'Disconnected',
+                    style: AppTypography.caption.copyWith(fontSize: 11),
+                  ),
+                  const SizedBox(width: 4),
+                  if (_isConnected) ...[
+                    Text(
+                      '\u2022',
+                      style: AppTypography.caption.copyWith(fontSize: 11),
+                    ),
+                    const SizedBox(width: 4),
+                    // Session duration
+                    Text(
+                      _durationText,
+                      style: AppTypography.code(fontSize: 11),
+                    ),
+                  ],
+
+                  const Spacer(),
+
+                  // Encoding
+                  Text(
+                    AppConstants.defaultEncoding,
+                    style: AppTypography.caption.copyWith(fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

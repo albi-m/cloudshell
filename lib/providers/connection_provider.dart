@@ -7,8 +7,8 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Represents the state of an active SSH connection.
-class ConnectionState {
-  const ConnectionState({
+class SshConnectionState {
+  const SshConnectionState({
     required this.hostId,
     required this.sessionId,
     required this.status,
@@ -54,15 +54,15 @@ enum ConnectionStatus {
 ///
 /// Provides state for the connection status indicators
 /// and terminal tab management.
-class ActiveConnectionsNotifier extends Notifier<Map<String, ConnectionState>> {
+class ActiveConnectionsNotifier extends Notifier<Map<String, SshConnectionState>> {
   @override
-  Map<String, ConnectionState> build() => {};
+  Map<String, SshConnectionState> build() => {};
 
   /// Registers a new connection attempt.
   void addConnection(String sessionId, String hostId) {
     state = {
       ...state,
-      sessionId: ConnectionState(
+      sessionId: SshConnectionState(
         hostId: hostId,
         sessionId: sessionId,
         status: ConnectionStatus.connecting,
@@ -77,7 +77,7 @@ class ActiveConnectionsNotifier extends Notifier<Map<String, ConnectionState>> {
 
     state = {
       ...state,
-      sessionId: ConnectionState(
+      sessionId: SshConnectionState(
         hostId: existing.hostId,
         sessionId: sessionId,
         status: status,
@@ -95,12 +95,12 @@ class ActiveConnectionsNotifier extends Notifier<Map<String, ConnectionState>> {
 
 /// Provider for the active SSH connections state.
 final activeConnectionsProvider =
-    NotifierProvider<ActiveConnectionsNotifier, Map<String, ConnectionState>>(
+    NotifierProvider<ActiveConnectionsNotifier, Map<String, SshConnectionState>>(
   ActiveConnectionsNotifier.new,
 );
 
 /// Provides the connection state for a specific session ID.
-final connectionStateProvider = Provider.family<ConnectionState?, String>((ref, sessionId) {
+final connectionStateProvider = Provider.family<SshConnectionState?, String>((ref, sessionId) {
   final connections = ref.watch(activeConnectionsProvider);
   return connections[sessionId];
 });
