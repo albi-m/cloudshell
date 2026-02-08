@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/constants/route_names.dart';
+import '../ui/hosts/host_detail_screen.dart';
+import '../ui/hosts/host_form_screen.dart';
 import '../ui/hosts/hosts_screen.dart';
 import '../ui/keys/keys_screen.dart';
 import '../ui/settings/settings_screen.dart';
@@ -27,6 +29,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: RouteNames.hosts,
     routes: [
+      // Host detail (full-screen, outside shell)
+      GoRoute(
+        path: '/hosts/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return MaterialPage(
+            child: HostDetailScreen(hostId: id),
+          );
+        },
+      ),
+
+      // Host form for new hosts (full-screen, outside shell)
+      GoRoute(
+        path: RouteNames.hostForm,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => const MaterialPage(
+          child: HostFormScreen(),
+        ),
+      ),
+
       // Shell route wraps all main screens in the adaptive scaffold
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

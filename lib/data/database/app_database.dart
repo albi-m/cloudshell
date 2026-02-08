@@ -18,6 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 import '../../core/constants/storage_keys.dart';
+import 'daos/group_dao.dart';
 import 'daos/host_dao.dart';
 import 'daos/key_dao.dart';
 import 'daos/settings_dao.dart';
@@ -51,6 +52,7 @@ part 'app_database.g.dart';
     Settings,
   ],
   daos: [
+    GroupDao,
     HostDao,
     KeyDao,
     SnippetDao,

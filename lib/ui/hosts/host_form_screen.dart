@@ -18,6 +18,7 @@ import '../../core/utils/validators.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables/hosts_table.dart';
 import '../../providers/connection_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/key_provider.dart';
 import '../../services/ssh/ssh_service.dart';
 import '../terminal/terminal_screen.dart';
@@ -54,6 +55,7 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
 
   AuthMethodType _authMethod = AuthMethodType.key;
   String? _selectedKeyId;
+  String? _selectedGroupId;
   bool _isSaving = false;
   bool _advancedExpanded = false;
 
@@ -74,6 +76,7 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
     );
     _authMethod = host?.authMethod ?? AuthMethodType.key;
     _selectedKeyId = host?.keyId;
+    _selectedGroupId = host?.groupId;
 
     // Auto-expand advanced section if any advanced field is filled
     if (host != null &&
@@ -110,6 +113,7 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
         username: Value(_usernameController.text.trim()),
         authMethod: Value(_authMethod),
         keyId: Value(_selectedKeyId),
+        groupId: Value(_selectedGroupId),
         startupCommand: Value(startupCmd.isEmpty ? null : startupCmd),
         keepAliveSeconds: Value(keepAlive),
         notes: Value(_notesController.text.trim().isEmpty
@@ -126,6 +130,7 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
         username: Value(_usernameController.text.trim()),
         authMethod: Value(_authMethod),
         keyId: Value(_selectedKeyId),
+        groupId: Value(_selectedGroupId),
         startupCommand: Value(startupCmd.isEmpty ? null : startupCmd),
         keepAliveSeconds: Value(keepAlive),
         notes: Value(_notesController.text.trim().isEmpty
@@ -220,6 +225,7 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
   @override
   Widget build(BuildContext context) {
     final keysAsync = ref.watch(allKeysProvider);
+    final groupsAsync = ref.watch(allGroupsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgDeepest,
@@ -378,6 +384,33 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
               onToggle: () =>
                   setState(() => _advancedExpanded = !_advancedExpanded),
               children: [
+                // Group selector
+                groupsAsync.when(
+                  data: (groups) {
+                    return DropdownButtonFormField<String?>(
+                      initialValue: _selectedGroupId,
+                      decoration: const InputDecoration(
+                        labelText: 'Group',
+                        prefixIcon: Icon(LucideIcons.folder, size: 18),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('No group'),
+                        ),
+                        ...groups.map((g) => DropdownMenuItem<String?>(
+                              value: g.id,
+                              child: Text(g.name),
+                            )),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _selectedGroupId = value),
+                    );
+                  },
+                  loading: () => const LinearProgressIndicator(),
+                  error: (_, _) => const SizedBox.shrink(),
+                ),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _startupCommandController,
                   decoration: const InputDecoration(

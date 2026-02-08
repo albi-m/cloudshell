@@ -4895,6 +4895,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_known_hosts_lookup',
     'CREATE INDEX idx_known_hosts_lookup ON known_hosts (hostname, port, is_trusted)',
   );
+  late final GroupDao groupDao = GroupDao(this as AppDatabase);
   late final HostDao hostDao = HostDao(this as AppDatabase);
   late final KeyDao keyDao = KeyDao(this as AppDatabase);
   late final SnippetDao snippetDao = SnippetDao(this as AppDatabase);

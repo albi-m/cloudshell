@@ -7,6 +7,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -14,6 +15,11 @@ import '../../core/constants/app_constants.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/database/app_database.dart';
+import '../../providers/host_provider.dart';
+import '../hosts/host_detail_screen.dart';
+import '../hosts/quick_connect_dialog.dart';
 
 /// Navigation destination definition.
 class _NavDestination {
@@ -166,13 +172,28 @@ class _DesktopLayout extends StatelessWidget {
 }
 
 /// Desktop sidebar navigation panel per wireframe Master Layout.
-class _Sidebar extends StatelessWidget {
+class _Sidebar extends ConsumerWidget {
   const _Sidebar({required this.selectedIndex});
 
   final int selectedIndex;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hostsAsync = ref.watch(allHostsProvider);
+
+    // Get recently connected hosts (up to 5)
+    final recentHosts = hostsAsync.whenOrNull(
+          data: (hosts) {
+            final withConnection = hosts
+                .where((h) => h.lastConnectedAt != null)
+                .toList()
+              ..sort((a, b) =>
+                  b.lastConnectedAt!.compareTo(a.lastConnectedAt!));
+            return withConnection.take(5).toList();
+          },
+        ) ??
+        <Host>[];
+
     return Container(
       color: AppColors.bgDeep,
       child: Column(
@@ -202,6 +223,22 @@ class _Sidebar extends StatelessWidget {
                   style: AppTypography.h3,
                 ),
               ],
+            ),
+          ),
+
+          // Quick connect button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => showQuickConnectDialog(context),
+                icon: const Icon(LucideIcons.zap, size: 14),
+                label: const Text('Quick Connect'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
             ),
           ),
 
@@ -255,14 +292,32 @@ class _Sidebar extends StatelessWidget {
                   icon: LucideIcons.folderOpen,
                   label: 'SFTP',
                   isSelected: false,
-                  onTap: () {}, // Sprint 3
+                  onTap: () {}, // Future sprint
                 ),
                 _SidebarItem(
                   icon: LucideIcons.arrowLeftRight,
                   label: 'Port Forwarding',
                   isSelected: false,
-                  onTap: () {}, // Sprint 3
+                  onTap: () {}, // Future sprint
                 ),
+
+                // --- RECENT CONNECTIONS ---
+                if (recentHosts.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, indent: 12, endIndent: 12),
+                  const SizedBox(height: 8),
+                  _SidebarSectionLabel(label: 'RECENT'),
+                  for (final host in recentHosts)
+                    _SidebarRecentItem(
+                      host: host,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              HostDetailScreen(hostId: host.id),
+                        ),
+                      ),
+                    ),
+                ],
 
                 const SizedBox(height: 8),
                 const Divider(height: 1, indent: 12, endIndent: 12),
@@ -351,6 +406,70 @@ class _SidebarItem extends StatelessWidget {
                         : AppColors.textSecondary,
                     fontWeight:
                         isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Recent connection item in the sidebar showing host name
+/// and last connected time.
+class _SidebarRecentItem extends StatelessWidget {
+  const _SidebarRecentItem({
+    required this.host,
+    required this.onTap,
+  });
+
+  final Host host;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          hoverColor: AppColors.bgHover,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        host.label,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        host.lastConnectedAt != null
+                            ? Formatters.relativeTime(host.lastConnectedAt!)
+                            : '',
+                        style: AppTypography.caption.copyWith(fontSize: 10),
+                      ),
+                    ],
                   ),
                 ),
               ],
