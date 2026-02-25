@@ -8,6 +8,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
@@ -80,6 +81,12 @@ class AppLockNotifier extends Notifier<AppLockState> {
   /// Timer for the grace period before locking.
   Timer? _lockTimer;
 
+  /// Consecutive failed biometric attempts.
+  int _failedAttempts = 0;
+
+  /// Deadline until which authentication attempts are blocked.
+  DateTime? _lockoutUntil;
+
   @override
   AppLockState build() {
     final biometricEnabled = ref.watch(biometricLockEnabledProvider);
@@ -87,9 +94,67 @@ class AppLockNotifier extends Notifier<AppLockState> {
     return AppLockState.locked;
   }
 
+  // ---------------------------------------------------------------------------
+  // Rate limiting — exponential backoff on failed biometric attempts
+  // ---------------------------------------------------------------------------
+
+  /// Number of consecutive failed biometric attempts.
+  int get failedAttempts => _failedAttempts;
+
+  /// Whether authentication is currently blocked by rate limiting.
+  bool get isLockedOut {
+    if (_lockoutUntil == null) return false;
+    return DateTime.now().isBefore(_lockoutUntil!);
+  }
+
+  /// Time remaining until the lockout expires. [Duration.zero] if not locked.
+  Duration get lockoutRemaining {
+    if (_lockoutUntil == null) return Duration.zero;
+    final remaining = _lockoutUntil!.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  /// Records a failed authentication attempt and applies lockout if threshold
+  /// is reached. Thresholds: 3 fails → 30s, 5 → 2min, 10+ → 15min.
+  void recordFailedAttempt() {
+    _failedAttempts++;
+    if (_failedAttempts >= 10) {
+      _lockoutUntil = DateTime.now().add(const Duration(minutes: 15));
+    } else if (_failedAttempts >= 5) {
+      _lockoutUntil = DateTime.now().add(const Duration(minutes: 2));
+    } else if (_failedAttempts >= 3) {
+      _lockoutUntil = DateTime.now().add(const Duration(seconds: 30));
+    }
+  }
+
+  /// Resets the failed attempt counter and clears any lockout.
+  void resetFailedAttempts() {
+    _failedAttempts = 0;
+    _lockoutUntil = null;
+  }
+
+  /// Sets lockout state directly for testing purposes.
+  @visibleForTesting
+  void setLockoutForTest({
+    required int failedAttempts,
+    required DateTime? lockoutUntil,
+  }) {
+    _failedAttempts = failedAttempts;
+    _lockoutUntil = lockoutUntil;
+  }
+
   /// Attempts biometric authentication. Returns true if successful.
+  ///
+  /// Returns false immediately if rate-limited. Tracks failed attempts
+  /// and applies exponential backoff lockout.
   Future<bool> authenticate() async {
     if (state == AppLockState.unlocked) return true;
+
+    // Check rate limiting
+    if (isLockedOut) {
+      state = AppLockState.locked;
+      return false;
+    }
 
     state = AppLockState.authenticating;
 
@@ -99,6 +164,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
 
       if (!canAuthenticate) {
         // Device doesn't support biometrics — unlock anyway
+        resetFailedAttempts();
         state = AppLockState.unlocked;
         return true;
       }
@@ -112,14 +178,17 @@ class AppLockNotifier extends Notifier<AppLockState> {
       );
 
       if (authenticated) {
+        resetFailedAttempts();
         state = AppLockState.unlocked;
         return true;
       } else {
+        recordFailedAttempt();
         state = AppLockState.locked;
         return false;
       }
     } on PlatformException {
       // Auth not available — unlock to avoid locking user out
+      resetFailedAttempts();
       state = AppLockState.unlocked;
       return true;
     }
