@@ -42,7 +42,7 @@ jobs:
         run: |
           cd build/macos/Build/Products/Release
           zip -r ../../../../../cloudshell-macos.zip CloudShell.app
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: macos-release
           path: cloudshell-macos.zip
@@ -68,7 +68,7 @@ jobs:
         run: |
           cd build/linux/x64/release
           tar -czf ../../../../cloudshell-linux-x64.tar.gz bundle/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: linux-release
           path: cloudshell-linux-x64.tar.gz
@@ -89,7 +89,7 @@ jobs:
       - run: flutter build windows --release
       - name: Archive Windows build
         run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath cloudshell-windows-x64.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: windows-release
           path: cloudshell-windows-x64.zip
@@ -112,7 +112,7 @@ jobs:
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter gen-l10n
       - run: flutter build apk --release
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: android-release
           path: build/app/outputs/flutter-apk/app-release.apk
@@ -135,7 +135,7 @@ jobs:
         run: |
           cd build/ios/iphoneos
           zip -r ../../../cloudshell-ios.zip Runner.app
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ios-release
           path: cloudshell-ios.zip
