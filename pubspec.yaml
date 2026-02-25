@@ -47,7 +47,7 @@ dependencies:
 
   # --- UI ---
   lucide_icons: ^0.257.0
-  google_fonts: ^6.2.1
+  google_fonts: ^8.0.2
   flutter_animate: ^4.5.2
 
   # --- Biometrics ---
