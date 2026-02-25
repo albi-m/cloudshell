@@ -236,10 +236,10 @@ class _AuthInterceptor extends Interceptor {
 
 /// Retries network errors with exponential backoff.
 class _RetryInterceptor extends Interceptor {
-  _RetryInterceptor({required this.dio, this.maxRetries = 3});
+  _RetryInterceptor({required this.dio});
 
   final Dio dio;
-  final int maxRetries;
+  final int maxRetries = 3;
 
   @override
   Future<void> onError(
