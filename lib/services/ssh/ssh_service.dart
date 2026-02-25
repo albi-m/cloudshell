@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:pointycastle/digests/sha256.dart';
 import 'package:uuid/uuid.dart';
 
@@ -86,6 +87,9 @@ class SshService {
   /// [host] — the host record from the database.
   /// [onVerifyHostKey] — callback for host key verification UI.
   /// [onPasswordRequest] — callback when server requests a password.
+  ///
+  /// If the host has a [jumpHostId], the connection is routed
+  /// through the jump host using SSH port forwarding (proxy jump).
   Future<SshSessionWrapper> connect({
     required Host host,
     HostKeyVerifyCallback? onVerifyHostKey,
@@ -102,11 +106,11 @@ class SshService {
     try {
       _activeConnections++;
 
-      // Establish TCP socket
-      final socket = await SSHSocket.connect(
-        host.hostname,
-        host.port,
-        timeout: Duration(seconds: AppConstants.defaultConnectionTimeout),
+      // Resolve the socket (direct or through jump host chain)
+      final socketResult = await _resolveSocket(
+        host: host,
+        onVerifyHostKey: onVerifyHostKey,
+        visitedIds: {},
       );
 
       // Resolve authentication identities (SSH key pairs)
@@ -124,7 +128,7 @@ class SshService {
 
       // Create SSH client with auth configuration
       final client = SSHClient(
-        socket,
+        socketResult.socket,
         username: host.username,
         identities: identities,
         keepAliveInterval: Duration(seconds: host.keepAliveSeconds),
@@ -145,7 +149,7 @@ class SshService {
 
       // TOFU host key verification against known_hosts database
       if (capturedKeyType != null && capturedFingerprint != null) {
-        final accepted = await _verifyHostKey(
+        final accepted = await verifyHostKey(
           hostname: host.hostname,
           port: host.port,
           keyType: capturedKeyType!,
@@ -154,6 +158,7 @@ class SshService {
         );
         if (!accepted) {
           client.close();
+          await socketResult.jumpSession?.close();
           _activeConnections--;
           throw SshHostKeyException(
             'Host key verification rejected by user',
@@ -169,6 +174,7 @@ class SshService {
         sessionId: sessionId,
         hostId: host.id,
         client: client,
+        jumpSession: socketResult.jumpSession,
         onClose: () => _activeConnections--,
       );
     } on SocketException {
@@ -186,6 +192,57 @@ class SshService {
       if (e is AppException) rethrow;
       throw const SshException('SSH connection failed. Please try again.');
     }
+  }
+
+  /// Resolves the socket for connecting to [host].
+  ///
+  /// If the host has a [jumpHostId], recursively connects through
+  /// the jump host chain and returns a forwarded channel as the socket.
+  /// Detects circular jump chains via [visitedIds].
+  Future<_SocketResult> _resolveSocket({
+    required Host host,
+    HostKeyVerifyCallback? onVerifyHostKey,
+    required Set<String> visitedIds,
+  }) async {
+    if (host.jumpHostId == null) {
+      // Direct connection — no proxy jump
+      final socket = await SSHSocket.connect(
+        host.hostname,
+        host.port,
+        timeout: Duration(seconds: AppConstants.defaultConnectionTimeout),
+      );
+      return _SocketResult(socket: socket);
+    }
+
+    // Circular chain detection
+    if (visitedIds.contains(host.id)) {
+      throw const SshException(
+        'Circular jump host chain detected. Check your proxy jump configuration.',
+      );
+    }
+    visitedIds.add(host.id);
+
+    // Resolve the jump host from the database
+    final jumpHost = await db.hostDao.getHostById(host.jumpHostId!);
+    if (jumpHost == null) {
+      throw const SshException(
+        'Jump host not found. It may have been deleted.',
+      );
+    }
+
+    // Recursively connect to the jump host
+    final jumpSession = await connect(
+      host: jumpHost,
+      onVerifyHostKey: onVerifyHostKey,
+    );
+
+    // Forward through the jump host to the target
+    final channel = await jumpSession.client.forwardLocal(
+      host.hostname,
+      host.port,
+    );
+
+    return _SocketResult(socket: channel, jumpSession: jumpSession);
   }
 
   /// Performs a quick connect to a host by hostname/IP without
@@ -215,15 +272,42 @@ class SshService {
         timeout: const Duration(seconds: AppConstants.defaultConnectionTimeout),
       );
 
+      // Capture host key material during handshake for TOFU verification
+      String? capturedKeyType;
+      Uint8List? capturedFingerprint;
+
       final client = SSHClient(
         socket,
         username: username,
         identities: identities,
         onPasswordRequest: () => password ?? '',
-        onVerifyHostKey: (_, _) => true,
+        onVerifyHostKey: (type, fingerprint) {
+          capturedKeyType = type;
+          capturedFingerprint = Uint8List.fromList(fingerprint);
+          return true;
+        },
       );
 
       await client.authenticated;
+
+      // TOFU host key verification against known_hosts database
+      if (capturedKeyType != null && capturedFingerprint != null) {
+        final accepted = await verifyHostKey(
+          hostname: hostname,
+          port: port,
+          keyType: capturedKeyType!,
+          fingerprintBytes: capturedFingerprint!,
+          onVerify: onVerifyHostKey,
+        );
+        if (!accepted) {
+          client.close();
+          _activeConnections--;
+          throw SshHostKeyException(
+            'Host key verification rejected by user',
+            fingerprint: computeFingerprint(capturedFingerprint!),
+          );
+        }
+      }
 
       return SshSessionWrapper(
         sessionId: sessionId,
@@ -252,7 +336,8 @@ class SshService {
   ///
   /// Returns true if the host key is trusted (either already known
   /// or user approved), false if rejected.
-  Future<bool> _verifyHostKey({
+  @visibleForTesting
+  Future<bool> verifyHostKey({
     required String hostname,
     required int port,
     required String keyType,
@@ -365,6 +450,19 @@ class SshService {
     final digest = SHA256Digest().process(hostKeyBytes);
     return 'SHA256:${base64Encode(digest).replaceAll('=', '')}';
   }
+}
+
+/// Result of socket resolution, containing the socket and optional
+/// jump session for proxy jump connections.
+class _SocketResult {
+  const _SocketResult({required this.socket, this.jumpSession});
+
+  /// The socket to use for the SSH client connection.
+  /// Either a direct [SSHSocket] or an [SSHForwardChannel] from a jump host.
+  final SSHSocket socket;
+
+  /// The jump host session, if this is a proxied connection.
+  final SshSessionWrapper? jumpSession;
 }
 
 /// Riverpod provider for the SSH service.
