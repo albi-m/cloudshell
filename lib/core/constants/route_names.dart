@@ -37,6 +37,15 @@ abstract final class RouteNames {
   /// Login screen.
   static const String login = '/login';
 
+  /// Forgot password screen.
+  static const String forgotPassword = '/forgot-password';
+
+  /// TOTP 2FA setup screen.
+  static const String totpSetup = '/totp-setup';
+
+  /// TOTP 2FA verification screen (during login).
+  static const String totpVerify = '/totp-verify';
+
   /// Master password setup screen.
   static const String masterPasswordSetup = '/master-password-setup';
 
@@ -59,7 +68,10 @@ abstract final class RouteNames {
 
   // --- Terminal ---
 
-  /// Active terminal session.
+  /// Terminal workspace view (shows active sessions).
+  static const String terminalRoute = '/terminal';
+
+  /// Active terminal session (deep link).
   static String terminal(String sessionId) => '/terminal/$sessionId';
 
   // --- Keys ---

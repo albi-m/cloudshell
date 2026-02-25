@@ -2,18 +2,25 @@
 ///
 /// Bridges between our [TerminalTheme] model (defined in
 /// terminal_themes.dart) and xterm.dart's [TerminalTheme] widget class.
+/// Caches converted themes to avoid rebuilding on every terminal frame.
 library;
 
 import 'package:xterm/xterm.dart' as xterm;
 
 import 'terminal_themes.dart' as cs;
 
+/// Cache of converted xterm themes, keyed by CloudShell theme name.
+final Map<String, xterm.TerminalTheme> _cache = {};
+
 /// Converts a CloudShell [TerminalTheme] to an xterm.dart [TerminalTheme].
 ///
-/// Adds search highlight colors that xterm requires but our
-/// theme model doesn't define.
+/// Results are cached by theme name so repeated calls (e.g. from
+/// widget rebuilds) return the same object without re-allocating colors.
 xterm.TerminalTheme toXtermTheme(cs.TerminalTheme theme) {
-  return xterm.TerminalTheme(
+  final cached = _cache[theme.name];
+  if (cached != null) return cached;
+
+  final xtermTheme = xterm.TerminalTheme(
     cursor: theme.cursor,
     selection: theme.selection.withValues(alpha: 0.5),
     foreground: theme.foreground,
@@ -39,4 +46,7 @@ xterm.TerminalTheme toXtermTheme(cs.TerminalTheme theme) {
     searchHitBackgroundCurrent: theme.yellow.withValues(alpha: 0.6),
     searchHitForeground: theme.foreground,
   );
+
+  _cache[theme.name] = xtermTheme;
+  return xtermTheme;
 }

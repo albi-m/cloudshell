@@ -71,4 +71,10 @@ abstract final class StorageKeys {
 
   /// Timestamp of last successful vault unlock (for auto-lock timeout).
   static const String lastUnlockTimestamp = 'cloudshell_last_unlock';
+
+  // --- Biometric Vault Cache ---
+
+  /// Master key cached behind biometric gate (base64, stored in
+  /// flutter_secure_storage with biometric access control).
+  static const String biometricMasterKey = 'cloudshell_biometric_vault_key';
 }

@@ -1,13 +1,18 @@
 name: cloudshell
 description: "CloudShell - Cross-platform SSH client with E2E encrypted sync"
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.1.0+2
+homepage: https://github.com/cloudshell-app/cloudshell
+repository: https://github.com/cloudshell-app/cloudshell
+issue_tracker: https://github.com/cloudshell-app/cloudshell/issues
 
 environment:
   sdk: ^3.10.8
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   # --- SSH & Terminal ---
@@ -22,12 +27,10 @@ dependencies:
   drift: ^2.22.1
   sqlite3_flutter_libs: ^0.5.28
 
-  # --- Secure Storage ---
-  flutter_secure_storage: ^9.2.4
-
   # --- Crypto ---
   pointycastle: ^3.9.1
   cryptography: ^2.7.0
+  crypto: ^3.0.6
   uuid: ^4.5.1
 
   # --- Data Models ---
@@ -36,6 +39,8 @@ dependencies:
 
   # --- Networking ---
   dio: ^5.7.0
+  supabase_flutter: ^2.8.0
+  xml: ^6.5.0
 
   # --- Navigation ---
   go_router: ^14.8.1
@@ -47,6 +52,7 @@ dependencies:
 
   # --- Biometrics ---
   local_auth: ^2.3.0
+  flutter_secure_storage: ^9.2.4
 
   # --- File Handling ---
   file_picker: ^8.1.7
@@ -54,15 +60,23 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.9.1
 
+  # --- Serial Port ---
+  flutter_libserialport: ^0.4.0
+
   # --- Utilities ---
   intl: ^0.20.2
   logger: ^2.5.0
   connectivity_plus: ^6.1.4
   collection: ^1.19.1
   equatable: ^2.0.7
+  url_launcher: ^6.3.2
+  desktop_drop: ^0.7.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   # --- Code Generation ---
@@ -80,11 +94,13 @@ dev_dependencies:
   mocktail: ^1.0.4
 
 flutter:
+  generate: true
   uses-material-design: true
 
   assets:
     - assets/images/
     - assets/terminal_themes/
+    - assets/legal/
 
   fonts:
     - family: JetBrainsMono
@@ -98,3 +114,12 @@ flutter:
           weight: 300
         - asset: assets/fonts/JetBrainsMono/JetBrainsMono-Italic.ttf
           style: italic
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Bold.ttf
+          weight: 700

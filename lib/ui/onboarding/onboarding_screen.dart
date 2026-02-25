@@ -12,6 +12,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/settings_provider.dart';
 
 /// Data model for a single onboarding slide.
@@ -29,38 +30,30 @@ class _OnboardingSlide {
   final String subtitle;
 }
 
-const _slides = [
+List<_OnboardingSlide> _buildSlides(AppLocalizations l10n) => [
   _OnboardingSlide(
     icon: LucideIcons.terminal,
     iconColor: AppColors.accentPrimary,
-    title: 'Secure SSH Terminal',
-    subtitle:
-        'Connect to your servers with a fast, modern terminal. '
-        'Multi-tab sessions, copy/paste, and customizable themes.',
+    title: l10n.onboardingTerminalTitle,
+    subtitle: l10n.onboardingTerminalSubtitle,
   ),
   _OnboardingSlide(
     icon: LucideIcons.keyRound,
     iconColor: AppColors.accentPurple,
-    title: 'SSH Key Management',
-    subtitle:
-        'Import and manage your SSH keys securely. '
-        'Private keys are stored in your device keychain, never in the database.',
+    title: l10n.onboardingSecureTitle,
+    subtitle: l10n.onboardingSecureSubtitle,
   ),
   _OnboardingSlide(
     icon: LucideIcons.folderOpen,
     iconColor: AppColors.accentCyan,
-    title: 'SFTP File Browser',
-    subtitle:
-        'Browse, upload, and download files from your remote servers. '
-        'Full directory navigation with transfer progress.',
+    title: l10n.onboardingSyncTitle,
+    subtitle: l10n.onboardingSyncSubtitle,
   ),
   _OnboardingSlide(
     icon: LucideIcons.shieldCheck,
     iconColor: AppColors.accentGreen,
-    title: 'Privacy First',
-    subtitle:
-        'Your data stays yours. End-to-end encryption, '
-        'zero-knowledge architecture, and optional self-hosted sync.',
+    title: l10n.onboardingWelcomeTitle,
+    subtitle: l10n.onboardingWelcomeSubtitle,
   ),
 ];
 
@@ -82,8 +75,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
+  static const _slideCount = 4;
+
   void _onNext() {
-    if (_currentPage < _slides.length - 1) {
+    if (_currentPage < _slideCount - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -102,7 +97,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLastPage = _currentPage == _slides.length - 1;
+    final l10n = AppLocalizations.of(context);
+    final slides = _buildSlides(l10n);
+    final isLastPage = _currentPage == slides.length - 1;
 
     return Scaffold(
       backgroundColor: AppColors.bgDeepest,
@@ -117,7 +114,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: TextButton(
                   onPressed: _completeOnboarding,
                   child: Text(
-                    'Skip',
+                    l10n.onboardingSkip,
                     style: AppTypography.body.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -130,11 +127,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                itemCount: _slides.length,
+                itemCount: slides.length,
                 onPageChanged: (index) =>
                     setState(() => _currentPage = index),
                 itemBuilder: (context, index) =>
-                    _SlideContent(slide: _slides[index]),
+                    _SlideContent(slide: slides[index]),
               ),
             ),
 
@@ -146,7 +143,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   // Page dots
                   Row(
                     children: List.generate(
-                      _slides.length,
+                      slides.length,
                       (index) => AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(right: 8),
@@ -165,16 +162,42 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   const Spacer(),
 
                   // Next / Get Started button
-                  ElevatedButton(
-                    onPressed: _onNext,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 14,
-                      ),
-                    ),
-                    child: Text(isLastPage ? 'Get Started' : 'Next'),
-                  ),
+                  isLastPage
+                      ? Container(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.gradientBrandFor(context),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _onNext,
+                              borderRadius: BorderRadius.circular(6),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                  vertical: 14,
+                                ),
+                                child: Text(
+                                  l10n.onboardingGetStarted,
+                                  style: AppTypography.button.copyWith(
+                                    color: AppColors.textInverse,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : ElevatedButton(
+                          onPressed: _onNext,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 14,
+                            ),
+                          ),
+                          child: Text(l10n.onboardingNext),
+                        ),
                 ],
               ),
             ),

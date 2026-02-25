@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>CloudShell uses Face ID to unlock the app and protect your SSH keys.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>CloudShell needs local network access to connect to SSH servers on your network.</string>
 </dict>
 </plist>

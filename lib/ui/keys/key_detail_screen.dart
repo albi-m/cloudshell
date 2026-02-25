@@ -14,9 +14,11 @@ import '../../core/utils/clipboard_helper.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables/keys_table.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/key_provider.dart';
 import '../../services/ssh/ssh_key_service.dart';
 import '../shared/confirmation_dialog.dart';
+import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
 
 /// Detail view for a single SSH key.
@@ -29,6 +31,7 @@ class KeyDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final keyAsync = ref.watch(keyByIdProvider(keyId));
 
     return keyAsync.when(
@@ -36,22 +39,20 @@ class KeyDetailScreen extends ConsumerWidget {
         if (key == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('Key not found')),
+            body: Center(child: Text(l10n.keyDetailNotFound)),
           );
         }
         return _KeyDetailView(sshKey: key);
       },
       loading: () => Scaffold(
         appBar: AppBar(),
-        body: const LoadingIndicator(message: 'Loading key...'),
+        body: LoadingIndicator(message: l10n.keyDetailLoading),
       ),
       error: (error, _) => Scaffold(
         appBar: AppBar(),
-        body: Center(
-          child: Text(
-            'Failed to load key',
-            style: AppTypography.body.copyWith(color: AppColors.accentRed),
-          ),
+        body: ErrorDisplay(
+          error: error,
+          onRetry: () => ref.invalidate(keyByIdProvider(keyId)),
         ),
       ),
     );
@@ -71,6 +72,7 @@ class _KeyDetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final hostsAsync = ref.watch(hostsByKeyIdProvider(sshKey.id));
 
     return Scaffold(
@@ -87,14 +89,14 @@ class _KeyDetailView extends ConsumerWidget {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
                     Icon(LucideIcons.trash2,
                         size: 16, color: AppColors.accentRed),
                     SizedBox(width: 8),
-                    Text('Delete'),
+                    Text(l10n.delete),
                   ],
                 ),
               ),
@@ -116,7 +118,7 @@ class _KeyDetailView extends ConsumerWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => _copyPublicKey(context),
                   icon: const Icon(LucideIcons.copy, size: 16),
-                  label: const Text('Copy Public Key'),
+                  label: Text(l10n.keyDetailCopyPublicKey),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -128,27 +130,27 @@ class _KeyDetailView extends ConsumerWidget {
 
           // Key info section
           _SectionCard(
-            title: 'KEY INFO',
+            title: l10n.keyDetailSectionDetails,
             children: [
               _DetailRow(
                 icon: LucideIcons.keyRound,
-                label: 'Type',
+                label: l10n.keyDetailLabelType,
                 value: '$_keyTypeLabel${sshKey.keyBits != null ? ' ${sshKey.keyBits}-bit' : ''}',
               ),
               _DetailRow(
                 icon: LucideIcons.fingerprint,
-                label: 'Fingerprint',
+                label: l10n.keyDetailSectionFingerprint,
                 value: sshKey.fingerprint,
               ),
               if (sshKey.hasPassphrase)
-                const _DetailRow(
+                _DetailRow(
                   icon: LucideIcons.lock,
                   label: 'Passphrase',
                   value: 'Protected',
                 ),
               _DetailRow(
                 icon: LucideIcons.calendar,
-                label: 'Created',
+                label: l10n.keyDetailLabelCreated,
                 value: Formatters.relativeTime(sshKey.createdAt),
               ),
             ],
@@ -157,7 +159,7 @@ class _KeyDetailView extends ConsumerWidget {
 
           // Public key section
           _SectionCard(
-            title: 'PUBLIC KEY',
+            title: l10n.keyDetailSectionPublicKey,
             children: [
               Container(
                 width: double.infinity,
@@ -179,7 +181,7 @@ class _KeyDetailView extends ConsumerWidget {
 
           // Associated hosts section
           _SectionCard(
-            title: 'USED BY',
+            title: l10n.keyDetailSectionAssociatedHosts,
             children: [
               hostsAsync.when(
                 data: (hosts) {
@@ -187,7 +189,7 @@ class _KeyDetailView extends ConsumerWidget {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
-                        'No hosts use this key',
+                        l10n.keyDetailNoAssociatedHosts,
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -228,7 +230,7 @@ class _KeyDetailView extends ConsumerWidget {
                 error: (_, _) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'Failed to load associated hosts',
+                    l10n.error,
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.accentRed,
                     ),
@@ -243,22 +245,22 @@ class _KeyDetailView extends ConsumerWidget {
   }
 
   void _copyPublicKey(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     copyWithAutoClear(sshKey.publicKey);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Public key copied (auto-clears in 30s)')),
+        SnackBar(content: Text(l10n.keyDetailPublicKeyCopied)),
       );
     }
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showConfirmationDialog(
       context: context,
-      title: 'Delete Key',
-      message: 'Are you sure you want to delete "${sshKey.label}"? '
-          'This will remove the private key from your keychain.',
-      confirmLabel: 'Delete',
+      title: l10n.keysDeleteDialogTitle,
+      message: l10n.keysDeleteDialogMessage(sshKey.label),
+      confirmLabel: l10n.delete,
       isDestructive: true,
     );
 

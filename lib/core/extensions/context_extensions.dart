@@ -33,10 +33,17 @@ extension ContextExtensions on BuildContext {
   bool get isWideDesktop => screenWidth >= 1200;
 
   /// Whether the current screen width qualifies as mobile layout.
-  bool get isMobile => screenWidth < 768;
+  bool get isMobile => screenWidth < 600;
 
-  /// Whether the current screen width qualifies as tablet layout.
-  bool get isTablet => screenWidth >= 600 && screenWidth < 768;
+  /// Whether the current screen width qualifies as tablet / compact desktop.
+  ///
+  /// In this range, the sidebar is forced to icon-only collapsed mode.
+  bool get isTablet => screenWidth >= 600 && screenWidth < 900;
+
+  /// Whether the sidebar should be forced to collapsed (icon-only) mode.
+  ///
+  /// True for iPad Split View and narrow desktop windows (600-900px).
+  bool get isCompactDesktop => screenWidth >= 600 && screenWidth < 900;
 
   /// Safe area padding (notches, status bars, home indicators).
   EdgeInsets get viewPadding => mediaQuery.viewPadding;

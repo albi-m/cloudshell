@@ -10,6 +10,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/clipboard_helper.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/ssh/ssh_service.dart';
 
 /// Shows a host key verification dialog and returns the user's decision.
@@ -36,6 +37,7 @@ class _HostKeyVerifyDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
       title: Row(
         children: [
@@ -47,7 +49,7 @@ class _HostKeyVerifyDialog extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _isChanged ? 'Host Key Changed' : 'Unknown Host',
+              _isChanged ? l10n.hostKeyVerifyChangedTitle : l10n.hostKeyVerifyUnknownTitle,
               style: AppTypography.h2,
             ),
           ),
@@ -68,16 +70,14 @@ class _HostKeyVerifyDialog extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'WARNING: The host key for this server has changed. '
-                'This could indicate a man-in-the-middle attack.',
+                l10n.hostKeyVerifyChangedWarning,
                 style: AppTypography.body.copyWith(color: AppColors.accentRed),
               ),
             ),
             const SizedBox(height: 16),
           ] else ...[
             Text(
-              'The authenticity of this host cannot be verified. '
-              'Are you sure you want to continue connecting?',
+              l10n.hostKeyVerifyUnknownMessage,
               style: AppTypography.body.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -86,14 +86,14 @@ class _HostKeyVerifyDialog extends StatelessWidget {
           ],
 
           // Host info
-          _InfoRow(label: 'Host', value: '${keyInfo.hostname}:${keyInfo.port}'),
+          _InfoRow(label: l10n.hostKeyVerifyLabelHost, value: '${keyInfo.hostname}:${keyInfo.port}'),
           const SizedBox(height: 8),
-          _InfoRow(label: 'Key Type', value: keyInfo.keyType),
+          _InfoRow(label: l10n.hostKeyVerifyLabelKeyType, value: keyInfo.keyType),
           const SizedBox(height: 8),
 
           // Fingerprint (tappable to copy)
           Text(
-            'Fingerprint:',
+            l10n.hostKeyVerifyLabelFingerprint,
             style: AppTypography.bodySmall.copyWith(
               color: AppColors.textTertiary,
             ),
@@ -103,9 +103,9 @@ class _HostKeyVerifyDialog extends StatelessWidget {
             onTap: () {
               copyWithAutoClear(keyInfo.fingerprint);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fingerprint copied (auto-clears in 30s)'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text(l10n.hostKeyVerifyFingerprintCopied),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },
@@ -137,14 +137,14 @@ class _HostKeyVerifyDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: _isChanged
               ? ElevatedButton.styleFrom(backgroundColor: AppColors.accentRed)
               : null,
-          child: Text(_isChanged ? 'Trust Anyway' : 'Trust & Connect'),
+          child: Text(_isChanged ? l10n.hostKeyVerifyTrustAnyway : l10n.hostKeyVerifyTrustAndConnect),
         ),
       ],
     );

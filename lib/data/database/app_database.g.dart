@@ -155,6 +155,18 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _isFavoriteMeta = const VerificationMeta(
     'isFavorite',
   );
@@ -232,6 +244,83 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
     defaultValue: const Constant(false),
   );
   @override
+  late final GeneratedColumnWithTypeConverter<ProtocolType, int> protocol =
+      GeneratedColumn<int>(
+        'protocol',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<ProtocolType>($HostsTable.$converterprotocol);
+  static const VerificationMeta _serialPortMeta = const VerificationMeta(
+    'serialPort',
+  );
+  @override
+  late final GeneratedColumn<String> serialPort = GeneratedColumn<String>(
+    'serial_port',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serialBaudRateMeta = const VerificationMeta(
+    'serialBaudRate',
+  );
+  @override
+  late final GeneratedColumn<int> serialBaudRate = GeneratedColumn<int>(
+    'serial_baud_rate',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serialDataBitsMeta = const VerificationMeta(
+    'serialDataBits',
+  );
+  @override
+  late final GeneratedColumn<int> serialDataBits = GeneratedColumn<int>(
+    'serial_data_bits',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serialStopBitsMeta = const VerificationMeta(
+    'serialStopBits',
+  );
+  @override
+  late final GeneratedColumn<int> serialStopBits = GeneratedColumn<int>(
+    'serial_stop_bits',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serialParityMeta = const VerificationMeta(
+    'serialParity',
+  );
+  @override
+  late final GeneratedColumn<String> serialParity = GeneratedColumn<String>(
+    'serial_parity',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serialFlowControlMeta = const VerificationMeta(
+    'serialFlowControl',
+  );
+  @override
+  late final GeneratedColumn<String> serialFlowControl =
+      GeneratedColumn<String>(
+        'serial_flow_control',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     label,
@@ -247,12 +336,20 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
     jumpHostId,
     encoding,
     notes,
+    sortOrder,
     isFavorite,
     lastConnectedAt,
     createdAt,
     updatedAt,
     syncVersion,
     isDeleted,
+    protocol,
+    serialPort,
+    serialBaudRate,
+    serialDataBits,
+    serialStopBits,
+    serialParity,
+    serialFlowControl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -358,6 +455,12 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
     if (data.containsKey('is_favorite')) {
       context.handle(
         _isFavoriteMeta,
@@ -402,6 +505,57 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
       context.handle(
         _isDeletedMeta,
         isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('serial_port')) {
+      context.handle(
+        _serialPortMeta,
+        serialPort.isAcceptableOrUnknown(data['serial_port']!, _serialPortMeta),
+      );
+    }
+    if (data.containsKey('serial_baud_rate')) {
+      context.handle(
+        _serialBaudRateMeta,
+        serialBaudRate.isAcceptableOrUnknown(
+          data['serial_baud_rate']!,
+          _serialBaudRateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serial_data_bits')) {
+      context.handle(
+        _serialDataBitsMeta,
+        serialDataBits.isAcceptableOrUnknown(
+          data['serial_data_bits']!,
+          _serialDataBitsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serial_stop_bits')) {
+      context.handle(
+        _serialStopBitsMeta,
+        serialStopBits.isAcceptableOrUnknown(
+          data['serial_stop_bits']!,
+          _serialStopBitsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serial_parity')) {
+      context.handle(
+        _serialParityMeta,
+        serialParity.isAcceptableOrUnknown(
+          data['serial_parity']!,
+          _serialParityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serial_flow_control')) {
+      context.handle(
+        _serialFlowControlMeta,
+        serialFlowControl.isAcceptableOrUnknown(
+          data['serial_flow_control']!,
+          _serialFlowControlMeta,
+        ),
       );
     }
     return context;
@@ -471,6 +625,10 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
       isFavorite: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_favorite'],
@@ -495,6 +653,36 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_deleted'],
       )!,
+      protocol: $HostsTable.$converterprotocol.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}protocol'],
+        )!,
+      ),
+      serialPort: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serial_port'],
+      ),
+      serialBaudRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}serial_baud_rate'],
+      ),
+      serialDataBits: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}serial_data_bits'],
+      ),
+      serialStopBits: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}serial_stop_bits'],
+      ),
+      serialParity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serial_parity'],
+      ),
+      serialFlowControl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serial_flow_control'],
+      ),
     );
   }
 
@@ -505,6 +693,8 @@ class $HostsTable extends Hosts with TableInfo<$HostsTable, Host> {
 
   static JsonTypeConverter2<AuthMethodType, int, int> $converterauthMethod =
       const EnumIndexConverter<AuthMethodType>(AuthMethodType.values);
+  static JsonTypeConverter2<ProtocolType, int, int> $converterprotocol =
+      const EnumIndexConverter<ProtocolType>(ProtocolType.values);
 }
 
 class Host extends DataClass implements Insertable<Host> {
@@ -550,6 +740,9 @@ class Host extends DataClass implements Insertable<Host> {
   /// User notes about this host.
   final String? notes;
 
+  /// Manual sort order for drag-and-drop reordering.
+  final int sortOrder;
+
   /// Whether this host is marked as favorite.
   final bool isFavorite;
 
@@ -567,6 +760,27 @@ class Host extends DataClass implements Insertable<Host> {
 
   /// Soft-delete tombstone flag.
   final bool isDeleted;
+
+  /// Connection protocol (SSH, Telnet, Serial). Defaults to SSH.
+  final ProtocolType protocol;
+
+  /// Serial port device path (e.g. /dev/ttyUSB0, COM3).
+  final String? serialPort;
+
+  /// Serial baud rate (e.g. 9600, 115200).
+  final int? serialBaudRate;
+
+  /// Serial data bits (5, 6, 7, or 8).
+  final int? serialDataBits;
+
+  /// Serial stop bits (1 or 2).
+  final int? serialStopBits;
+
+  /// Serial parity mode (none, odd, even, mark, space).
+  final String? serialParity;
+
+  /// Serial flow control (none, hardware, software).
+  final String? serialFlowControl;
   const Host({
     required this.id,
     required this.label,
@@ -582,12 +796,20 @@ class Host extends DataClass implements Insertable<Host> {
     this.jumpHostId,
     this.encoding,
     this.notes,
+    required this.sortOrder,
     required this.isFavorite,
     this.lastConnectedAt,
     required this.createdAt,
     required this.updatedAt,
     required this.syncVersion,
     required this.isDeleted,
+    required this.protocol,
+    this.serialPort,
+    this.serialBaudRate,
+    this.serialDataBits,
+    this.serialStopBits,
+    this.serialParity,
+    this.serialFlowControl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -622,6 +844,7 @@ class Host extends DataClass implements Insertable<Host> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['sort_order'] = Variable<int>(sortOrder);
     map['is_favorite'] = Variable<bool>(isFavorite);
     if (!nullToAbsent || lastConnectedAt != null) {
       map['last_connected_at'] = Variable<DateTime>(lastConnectedAt);
@@ -630,6 +853,29 @@ class Host extends DataClass implements Insertable<Host> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['sync_version'] = Variable<int>(syncVersion);
     map['is_deleted'] = Variable<bool>(isDeleted);
+    {
+      map['protocol'] = Variable<int>(
+        $HostsTable.$converterprotocol.toSql(protocol),
+      );
+    }
+    if (!nullToAbsent || serialPort != null) {
+      map['serial_port'] = Variable<String>(serialPort);
+    }
+    if (!nullToAbsent || serialBaudRate != null) {
+      map['serial_baud_rate'] = Variable<int>(serialBaudRate);
+    }
+    if (!nullToAbsent || serialDataBits != null) {
+      map['serial_data_bits'] = Variable<int>(serialDataBits);
+    }
+    if (!nullToAbsent || serialStopBits != null) {
+      map['serial_stop_bits'] = Variable<int>(serialStopBits);
+    }
+    if (!nullToAbsent || serialParity != null) {
+      map['serial_parity'] = Variable<String>(serialParity);
+    }
+    if (!nullToAbsent || serialFlowControl != null) {
+      map['serial_flow_control'] = Variable<String>(serialFlowControl);
+    }
     return map;
   }
 
@@ -661,6 +907,7 @@ class Host extends DataClass implements Insertable<Host> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      sortOrder: Value(sortOrder),
       isFavorite: Value(isFavorite),
       lastConnectedAt: lastConnectedAt == null && nullToAbsent
           ? const Value.absent()
@@ -669,6 +916,25 @@ class Host extends DataClass implements Insertable<Host> {
       updatedAt: Value(updatedAt),
       syncVersion: Value(syncVersion),
       isDeleted: Value(isDeleted),
+      protocol: Value(protocol),
+      serialPort: serialPort == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialPort),
+      serialBaudRate: serialBaudRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialBaudRate),
+      serialDataBits: serialDataBits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialDataBits),
+      serialStopBits: serialStopBits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialStopBits),
+      serialParity: serialParity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialParity),
+      serialFlowControl: serialFlowControl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialFlowControl),
     );
   }
 
@@ -694,12 +960,24 @@ class Host extends DataClass implements Insertable<Host> {
       jumpHostId: serializer.fromJson<String?>(json['jumpHostId']),
       encoding: serializer.fromJson<String?>(json['encoding']),
       notes: serializer.fromJson<String?>(json['notes']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
       lastConnectedAt: serializer.fromJson<DateTime?>(json['lastConnectedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       syncVersion: serializer.fromJson<int>(json['syncVersion']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      protocol: $HostsTable.$converterprotocol.fromJson(
+        serializer.fromJson<int>(json['protocol']),
+      ),
+      serialPort: serializer.fromJson<String?>(json['serialPort']),
+      serialBaudRate: serializer.fromJson<int?>(json['serialBaudRate']),
+      serialDataBits: serializer.fromJson<int?>(json['serialDataBits']),
+      serialStopBits: serializer.fromJson<int?>(json['serialStopBits']),
+      serialParity: serializer.fromJson<String?>(json['serialParity']),
+      serialFlowControl: serializer.fromJson<String?>(
+        json['serialFlowControl'],
+      ),
     );
   }
   @override
@@ -722,12 +1000,22 @@ class Host extends DataClass implements Insertable<Host> {
       'jumpHostId': serializer.toJson<String?>(jumpHostId),
       'encoding': serializer.toJson<String?>(encoding),
       'notes': serializer.toJson<String?>(notes),
+      'sortOrder': serializer.toJson<int>(sortOrder),
       'isFavorite': serializer.toJson<bool>(isFavorite),
       'lastConnectedAt': serializer.toJson<DateTime?>(lastConnectedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'syncVersion': serializer.toJson<int>(syncVersion),
       'isDeleted': serializer.toJson<bool>(isDeleted),
+      'protocol': serializer.toJson<int>(
+        $HostsTable.$converterprotocol.toJson(protocol),
+      ),
+      'serialPort': serializer.toJson<String?>(serialPort),
+      'serialBaudRate': serializer.toJson<int?>(serialBaudRate),
+      'serialDataBits': serializer.toJson<int?>(serialDataBits),
+      'serialStopBits': serializer.toJson<int?>(serialStopBits),
+      'serialParity': serializer.toJson<String?>(serialParity),
+      'serialFlowControl': serializer.toJson<String?>(serialFlowControl),
     };
   }
 
@@ -746,12 +1034,20 @@ class Host extends DataClass implements Insertable<Host> {
     Value<String?> jumpHostId = const Value.absent(),
     Value<String?> encoding = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    int? sortOrder,
     bool? isFavorite,
     Value<DateTime?> lastConnectedAt = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     int? syncVersion,
     bool? isDeleted,
+    ProtocolType? protocol,
+    Value<String?> serialPort = const Value.absent(),
+    Value<int?> serialBaudRate = const Value.absent(),
+    Value<int?> serialDataBits = const Value.absent(),
+    Value<int?> serialStopBits = const Value.absent(),
+    Value<String?> serialParity = const Value.absent(),
+    Value<String?> serialFlowControl = const Value.absent(),
   }) => Host(
     id: id ?? this.id,
     label: label ?? this.label,
@@ -769,6 +1065,7 @@ class Host extends DataClass implements Insertable<Host> {
     jumpHostId: jumpHostId.present ? jumpHostId.value : this.jumpHostId,
     encoding: encoding.present ? encoding.value : this.encoding,
     notes: notes.present ? notes.value : this.notes,
+    sortOrder: sortOrder ?? this.sortOrder,
     isFavorite: isFavorite ?? this.isFavorite,
     lastConnectedAt: lastConnectedAt.present
         ? lastConnectedAt.value
@@ -777,6 +1074,21 @@ class Host extends DataClass implements Insertable<Host> {
     updatedAt: updatedAt ?? this.updatedAt,
     syncVersion: syncVersion ?? this.syncVersion,
     isDeleted: isDeleted ?? this.isDeleted,
+    protocol: protocol ?? this.protocol,
+    serialPort: serialPort.present ? serialPort.value : this.serialPort,
+    serialBaudRate: serialBaudRate.present
+        ? serialBaudRate.value
+        : this.serialBaudRate,
+    serialDataBits: serialDataBits.present
+        ? serialDataBits.value
+        : this.serialDataBits,
+    serialStopBits: serialStopBits.present
+        ? serialStopBits.value
+        : this.serialStopBits,
+    serialParity: serialParity.present ? serialParity.value : this.serialParity,
+    serialFlowControl: serialFlowControl.present
+        ? serialFlowControl.value
+        : this.serialFlowControl,
   );
   Host copyWithCompanion(HostsCompanion data) {
     return Host(
@@ -802,6 +1114,7 @@ class Host extends DataClass implements Insertable<Host> {
           : this.jumpHostId,
       encoding: data.encoding.present ? data.encoding.value : this.encoding,
       notes: data.notes.present ? data.notes.value : this.notes,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       isFavorite: data.isFavorite.present
           ? data.isFavorite.value
           : this.isFavorite,
@@ -814,6 +1127,25 @@ class Host extends DataClass implements Insertable<Host> {
           ? data.syncVersion.value
           : this.syncVersion,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      protocol: data.protocol.present ? data.protocol.value : this.protocol,
+      serialPort: data.serialPort.present
+          ? data.serialPort.value
+          : this.serialPort,
+      serialBaudRate: data.serialBaudRate.present
+          ? data.serialBaudRate.value
+          : this.serialBaudRate,
+      serialDataBits: data.serialDataBits.present
+          ? data.serialDataBits.value
+          : this.serialDataBits,
+      serialStopBits: data.serialStopBits.present
+          ? data.serialStopBits.value
+          : this.serialStopBits,
+      serialParity: data.serialParity.present
+          ? data.serialParity.value
+          : this.serialParity,
+      serialFlowControl: data.serialFlowControl.present
+          ? data.serialFlowControl.value
+          : this.serialFlowControl,
     );
   }
 
@@ -834,18 +1166,26 @@ class Host extends DataClass implements Insertable<Host> {
           ..write('jumpHostId: $jumpHostId, ')
           ..write('encoding: $encoding, ')
           ..write('notes: $notes, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('lastConnectedAt: $lastConnectedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncVersion: $syncVersion, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('protocol: $protocol, ')
+          ..write('serialPort: $serialPort, ')
+          ..write('serialBaudRate: $serialBaudRate, ')
+          ..write('serialDataBits: $serialDataBits, ')
+          ..write('serialStopBits: $serialStopBits, ')
+          ..write('serialParity: $serialParity, ')
+          ..write('serialFlowControl: $serialFlowControl')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     label,
     hostname,
@@ -860,13 +1200,21 @@ class Host extends DataClass implements Insertable<Host> {
     jumpHostId,
     encoding,
     notes,
+    sortOrder,
     isFavorite,
     lastConnectedAt,
     createdAt,
     updatedAt,
     syncVersion,
     isDeleted,
-  );
+    protocol,
+    serialPort,
+    serialBaudRate,
+    serialDataBits,
+    serialStopBits,
+    serialParity,
+    serialFlowControl,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -885,12 +1233,20 @@ class Host extends DataClass implements Insertable<Host> {
           other.jumpHostId == this.jumpHostId &&
           other.encoding == this.encoding &&
           other.notes == this.notes &&
+          other.sortOrder == this.sortOrder &&
           other.isFavorite == this.isFavorite &&
           other.lastConnectedAt == this.lastConnectedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncVersion == this.syncVersion &&
-          other.isDeleted == this.isDeleted);
+          other.isDeleted == this.isDeleted &&
+          other.protocol == this.protocol &&
+          other.serialPort == this.serialPort &&
+          other.serialBaudRate == this.serialBaudRate &&
+          other.serialDataBits == this.serialDataBits &&
+          other.serialStopBits == this.serialStopBits &&
+          other.serialParity == this.serialParity &&
+          other.serialFlowControl == this.serialFlowControl);
 }
 
 class HostsCompanion extends UpdateCompanion<Host> {
@@ -908,12 +1264,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
   final Value<String?> jumpHostId;
   final Value<String?> encoding;
   final Value<String?> notes;
+  final Value<int> sortOrder;
   final Value<bool> isFavorite;
   final Value<DateTime?> lastConnectedAt;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> syncVersion;
   final Value<bool> isDeleted;
+  final Value<ProtocolType> protocol;
+  final Value<String?> serialPort;
+  final Value<int?> serialBaudRate;
+  final Value<int?> serialDataBits;
+  final Value<int?> serialStopBits;
+  final Value<String?> serialParity;
+  final Value<String?> serialFlowControl;
   final Value<int> rowid;
   const HostsCompanion({
     this.id = const Value.absent(),
@@ -930,12 +1294,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
     this.jumpHostId = const Value.absent(),
     this.encoding = const Value.absent(),
     this.notes = const Value.absent(),
+    this.sortOrder = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.lastConnectedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncVersion = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.protocol = const Value.absent(),
+    this.serialPort = const Value.absent(),
+    this.serialBaudRate = const Value.absent(),
+    this.serialDataBits = const Value.absent(),
+    this.serialStopBits = const Value.absent(),
+    this.serialParity = const Value.absent(),
+    this.serialFlowControl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HostsCompanion.insert({
@@ -953,12 +1325,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
     this.jumpHostId = const Value.absent(),
     this.encoding = const Value.absent(),
     this.notes = const Value.absent(),
+    this.sortOrder = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.lastConnectedAt = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.syncVersion = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.protocol = const Value.absent(),
+    this.serialPort = const Value.absent(),
+    this.serialBaudRate = const Value.absent(),
+    this.serialDataBits = const Value.absent(),
+    this.serialStopBits = const Value.absent(),
+    this.serialParity = const Value.absent(),
+    this.serialFlowControl = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        label = Value(label),
@@ -982,12 +1362,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
     Expression<String>? jumpHostId,
     Expression<String>? encoding,
     Expression<String>? notes,
+    Expression<int>? sortOrder,
     Expression<bool>? isFavorite,
     Expression<DateTime>? lastConnectedAt,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? syncVersion,
     Expression<bool>? isDeleted,
+    Expression<int>? protocol,
+    Expression<String>? serialPort,
+    Expression<int>? serialBaudRate,
+    Expression<int>? serialDataBits,
+    Expression<int>? serialStopBits,
+    Expression<String>? serialParity,
+    Expression<String>? serialFlowControl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1005,12 +1393,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
       if (jumpHostId != null) 'jump_host_id': jumpHostId,
       if (encoding != null) 'encoding': encoding,
       if (notes != null) 'notes': notes,
+      if (sortOrder != null) 'sort_order': sortOrder,
       if (isFavorite != null) 'is_favorite': isFavorite,
       if (lastConnectedAt != null) 'last_connected_at': lastConnectedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncVersion != null) 'sync_version': syncVersion,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (protocol != null) 'protocol': protocol,
+      if (serialPort != null) 'serial_port': serialPort,
+      if (serialBaudRate != null) 'serial_baud_rate': serialBaudRate,
+      if (serialDataBits != null) 'serial_data_bits': serialDataBits,
+      if (serialStopBits != null) 'serial_stop_bits': serialStopBits,
+      if (serialParity != null) 'serial_parity': serialParity,
+      if (serialFlowControl != null) 'serial_flow_control': serialFlowControl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1030,12 +1426,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
     Value<String?>? jumpHostId,
     Value<String?>? encoding,
     Value<String?>? notes,
+    Value<int>? sortOrder,
     Value<bool>? isFavorite,
     Value<DateTime?>? lastConnectedAt,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? syncVersion,
     Value<bool>? isDeleted,
+    Value<ProtocolType>? protocol,
+    Value<String?>? serialPort,
+    Value<int?>? serialBaudRate,
+    Value<int?>? serialDataBits,
+    Value<int?>? serialStopBits,
+    Value<String?>? serialParity,
+    Value<String?>? serialFlowControl,
     Value<int>? rowid,
   }) {
     return HostsCompanion(
@@ -1053,12 +1457,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
       jumpHostId: jumpHostId ?? this.jumpHostId,
       encoding: encoding ?? this.encoding,
       notes: notes ?? this.notes,
+      sortOrder: sortOrder ?? this.sortOrder,
       isFavorite: isFavorite ?? this.isFavorite,
       lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncVersion: syncVersion ?? this.syncVersion,
       isDeleted: isDeleted ?? this.isDeleted,
+      protocol: protocol ?? this.protocol,
+      serialPort: serialPort ?? this.serialPort,
+      serialBaudRate: serialBaudRate ?? this.serialBaudRate,
+      serialDataBits: serialDataBits ?? this.serialDataBits,
+      serialStopBits: serialStopBits ?? this.serialStopBits,
+      serialParity: serialParity ?? this.serialParity,
+      serialFlowControl: serialFlowControl ?? this.serialFlowControl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1110,6 +1522,9 @@ class HostsCompanion extends UpdateCompanion<Host> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
     if (isFavorite.present) {
       map['is_favorite'] = Variable<bool>(isFavorite.value);
     }
@@ -1127,6 +1542,29 @@ class HostsCompanion extends UpdateCompanion<Host> {
     }
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (protocol.present) {
+      map['protocol'] = Variable<int>(
+        $HostsTable.$converterprotocol.toSql(protocol.value),
+      );
+    }
+    if (serialPort.present) {
+      map['serial_port'] = Variable<String>(serialPort.value);
+    }
+    if (serialBaudRate.present) {
+      map['serial_baud_rate'] = Variable<int>(serialBaudRate.value);
+    }
+    if (serialDataBits.present) {
+      map['serial_data_bits'] = Variable<int>(serialDataBits.value);
+    }
+    if (serialStopBits.present) {
+      map['serial_stop_bits'] = Variable<int>(serialStopBits.value);
+    }
+    if (serialParity.present) {
+      map['serial_parity'] = Variable<String>(serialParity.value);
+    }
+    if (serialFlowControl.present) {
+      map['serial_flow_control'] = Variable<String>(serialFlowControl.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -1151,12 +1589,20 @@ class HostsCompanion extends UpdateCompanion<Host> {
           ..write('jumpHostId: $jumpHostId, ')
           ..write('encoding: $encoding, ')
           ..write('notes: $notes, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('lastConnectedAt: $lastConnectedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncVersion: $syncVersion, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('protocol: $protocol, ')
+          ..write('serialPort: $serialPort, ')
+          ..write('serialBaudRate: $serialBaudRate, ')
+          ..write('serialDataBits: $serialDataBits, ')
+          ..write('serialStopBits: $serialStopBits, ')
+          ..write('serialParity: $serialParity, ')
+          ..write('serialFlowControl: $serialFlowControl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4599,6 +5045,328 @@ class KnownHostsCompanion extends UpdateCompanion<KnownHost> {
   }
 }
 
+class $SecretsTable extends Secrets with TableInfo<$SecretsTable, Secret> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SecretsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _encryptedValueMeta = const VerificationMeta(
+    'encryptedValue',
+  );
+  @override
+  late final GeneratedColumn<String> encryptedValue = GeneratedColumn<String>(
+    'encrypted_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nonceMeta = const VerificationMeta('nonce');
+  @override
+  late final GeneratedColumn<String> nonce = GeneratedColumn<String>(
+    'nonce',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, encryptedValue, nonce, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'secrets';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Secret> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('encrypted_value')) {
+      context.handle(
+        _encryptedValueMeta,
+        encryptedValue.isAcceptableOrUnknown(
+          data['encrypted_value']!,
+          _encryptedValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_encryptedValueMeta);
+    }
+    if (data.containsKey('nonce')) {
+      context.handle(
+        _nonceMeta,
+        nonce.isAcceptableOrUnknown(data['nonce']!, _nonceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nonceMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  Secret map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Secret(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      encryptedValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}encrypted_value'],
+      )!,
+      nonce: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nonce'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SecretsTable createAlias(String alias) {
+    return $SecretsTable(attachedDatabase, alias);
+  }
+}
+
+class Secret extends DataClass implements Insertable<Secret> {
+  /// Secret key name (unique identifier, e.g. "cloudshell_ssh_key_{id}").
+  final String key;
+
+  /// AES-256-GCM encrypted value (base64-encoded ciphertext + MAC tag).
+  final String encryptedValue;
+
+  /// AES-256-GCM nonce/IV used for this entry (base64-encoded, 12 bytes).
+  final String nonce;
+
+  /// Record creation/update timestamp.
+  final DateTime updatedAt;
+  const Secret({
+    required this.key,
+    required this.encryptedValue,
+    required this.nonce,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['encrypted_value'] = Variable<String>(encryptedValue);
+    map['nonce'] = Variable<String>(nonce);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SecretsCompanion toCompanion(bool nullToAbsent) {
+    return SecretsCompanion(
+      key: Value(key),
+      encryptedValue: Value(encryptedValue),
+      nonce: Value(nonce),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory Secret.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Secret(
+      key: serializer.fromJson<String>(json['key']),
+      encryptedValue: serializer.fromJson<String>(json['encryptedValue']),
+      nonce: serializer.fromJson<String>(json['nonce']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'encryptedValue': serializer.toJson<String>(encryptedValue),
+      'nonce': serializer.toJson<String>(nonce),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  Secret copyWith({
+    String? key,
+    String? encryptedValue,
+    String? nonce,
+    DateTime? updatedAt,
+  }) => Secret(
+    key: key ?? this.key,
+    encryptedValue: encryptedValue ?? this.encryptedValue,
+    nonce: nonce ?? this.nonce,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  Secret copyWithCompanion(SecretsCompanion data) {
+    return Secret(
+      key: data.key.present ? data.key.value : this.key,
+      encryptedValue: data.encryptedValue.present
+          ? data.encryptedValue.value
+          : this.encryptedValue,
+      nonce: data.nonce.present ? data.nonce.value : this.nonce,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Secret(')
+          ..write('key: $key, ')
+          ..write('encryptedValue: $encryptedValue, ')
+          ..write('nonce: $nonce, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, encryptedValue, nonce, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Secret &&
+          other.key == this.key &&
+          other.encryptedValue == this.encryptedValue &&
+          other.nonce == this.nonce &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SecretsCompanion extends UpdateCompanion<Secret> {
+  final Value<String> key;
+  final Value<String> encryptedValue;
+  final Value<String> nonce;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SecretsCompanion({
+    this.key = const Value.absent(),
+    this.encryptedValue = const Value.absent(),
+    this.nonce = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SecretsCompanion.insert({
+    required String key,
+    required String encryptedValue,
+    required String nonce,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       encryptedValue = Value(encryptedValue),
+       nonce = Value(nonce),
+       updatedAt = Value(updatedAt);
+  static Insertable<Secret> custom({
+    Expression<String>? key,
+    Expression<String>? encryptedValue,
+    Expression<String>? nonce,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (encryptedValue != null) 'encrypted_value': encryptedValue,
+      if (nonce != null) 'nonce': nonce,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SecretsCompanion copyWith({
+    Value<String>? key,
+    Value<String>? encryptedValue,
+    Value<String>? nonce,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SecretsCompanion(
+      key: key ?? this.key,
+      encryptedValue: encryptedValue ?? this.encryptedValue,
+      nonce: nonce ?? this.nonce,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (encryptedValue.present) {
+      map['encrypted_value'] = Variable<String>(encryptedValue.value);
+    }
+    if (nonce.present) {
+      map['nonce'] = Variable<String>(nonce.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SecretsCompanion(')
+          ..write('key: $key, ')
+          ..write('encryptedValue: $encryptedValue, ')
+          ..write('nonce: $nonce, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -4865,6 +5633,1257 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   }
 }
 
+class $SyncMetadataTable extends SyncMetadata
+    with TableInfo<$SyncMetadataTable, SyncMetadataData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncMetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastSyncVersionMeta = const VerificationMeta(
+    'lastSyncVersion',
+  );
+  @override
+  late final GeneratedColumn<int> lastSyncVersion = GeneratedColumn<int>(
+    'last_sync_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastSyncAtMeta = const VerificationMeta(
+    'lastSyncAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncAt = GeneratedColumn<DateTime>(
+    'last_sync_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    entityType,
+    lastSyncVersion,
+    lastSyncAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_metadata';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncMetadataData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('last_sync_version')) {
+      context.handle(
+        _lastSyncVersionMeta,
+        lastSyncVersion.isAcceptableOrUnknown(
+          data['last_sync_version']!,
+          _lastSyncVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_sync_at')) {
+      context.handle(
+        _lastSyncAtMeta,
+        lastSyncAt.isAcceptableOrUnknown(
+          data['last_sync_at']!,
+          _lastSyncAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entityType};
+  @override
+  SyncMetadataData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncMetadataData(
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      lastSyncVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_sync_version'],
+      )!,
+      lastSyncAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_sync_at'],
+      ),
+    );
+  }
+
+  @override
+  $SyncMetadataTable createAlias(String alias) {
+    return $SyncMetadataTable(attachedDatabase, alias);
+  }
+}
+
+class SyncMetadataData extends DataClass
+    implements Insertable<SyncMetadataData> {
+  /// Entity type name (primary key): 'host', 'ssh_key', 'group', etc.
+  final String entityType;
+
+  /// Last sync version successfully pulled from the server.
+  final int lastSyncVersion;
+
+  /// Timestamp of last successful sync.
+  final DateTime? lastSyncAt;
+  const SyncMetadataData({
+    required this.entityType,
+    required this.lastSyncVersion,
+    this.lastSyncAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entity_type'] = Variable<String>(entityType);
+    map['last_sync_version'] = Variable<int>(lastSyncVersion);
+    if (!nullToAbsent || lastSyncAt != null) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
+    }
+    return map;
+  }
+
+  SyncMetadataCompanion toCompanion(bool nullToAbsent) {
+    return SyncMetadataCompanion(
+      entityType: Value(entityType),
+      lastSyncVersion: Value(lastSyncVersion),
+      lastSyncAt: lastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncAt),
+    );
+  }
+
+  factory SyncMetadataData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncMetadataData(
+      entityType: serializer.fromJson<String>(json['entityType']),
+      lastSyncVersion: serializer.fromJson<int>(json['lastSyncVersion']),
+      lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entityType': serializer.toJson<String>(entityType),
+      'lastSyncVersion': serializer.toJson<int>(lastSyncVersion),
+      'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+    };
+  }
+
+  SyncMetadataData copyWith({
+    String? entityType,
+    int? lastSyncVersion,
+    Value<DateTime?> lastSyncAt = const Value.absent(),
+  }) => SyncMetadataData(
+    entityType: entityType ?? this.entityType,
+    lastSyncVersion: lastSyncVersion ?? this.lastSyncVersion,
+    lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+  );
+  SyncMetadataData copyWithCompanion(SyncMetadataCompanion data) {
+    return SyncMetadataData(
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      lastSyncVersion: data.lastSyncVersion.present
+          ? data.lastSyncVersion.value
+          : this.lastSyncVersion,
+      lastSyncAt: data.lastSyncAt.present
+          ? data.lastSyncAt.value
+          : this.lastSyncAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncMetadataData(')
+          ..write('entityType: $entityType, ')
+          ..write('lastSyncVersion: $lastSyncVersion, ')
+          ..write('lastSyncAt: $lastSyncAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(entityType, lastSyncVersion, lastSyncAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncMetadataData &&
+          other.entityType == this.entityType &&
+          other.lastSyncVersion == this.lastSyncVersion &&
+          other.lastSyncAt == this.lastSyncAt);
+}
+
+class SyncMetadataCompanion extends UpdateCompanion<SyncMetadataData> {
+  final Value<String> entityType;
+  final Value<int> lastSyncVersion;
+  final Value<DateTime?> lastSyncAt;
+  final Value<int> rowid;
+  const SyncMetadataCompanion({
+    this.entityType = const Value.absent(),
+    this.lastSyncVersion = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncMetadataCompanion.insert({
+    required String entityType,
+    this.lastSyncVersion = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : entityType = Value(entityType);
+  static Insertable<SyncMetadataData> custom({
+    Expression<String>? entityType,
+    Expression<int>? lastSyncVersion,
+    Expression<DateTime>? lastSyncAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entityType != null) 'entity_type': entityType,
+      if (lastSyncVersion != null) 'last_sync_version': lastSyncVersion,
+      if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncMetadataCompanion copyWith({
+    Value<String>? entityType,
+    Value<int>? lastSyncVersion,
+    Value<DateTime?>? lastSyncAt,
+    Value<int>? rowid,
+  }) {
+    return SyncMetadataCompanion(
+      entityType: entityType ?? this.entityType,
+      lastSyncVersion: lastSyncVersion ?? this.lastSyncVersion,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (lastSyncVersion.present) {
+      map['last_sync_version'] = Variable<int>(lastSyncVersion.value);
+    }
+    if (lastSyncAt.present) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncMetadataCompanion(')
+          ..write('entityType: $entityType, ')
+          ..write('lastSyncVersion: $lastSyncVersion, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncQueueTable extends SyncQueue
+    with TableInfo<$SyncQueueTable, SyncQueueData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncQueueTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncOperation, int> operation =
+      GeneratedColumn<int>(
+        'operation',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<SyncOperation>($SyncQueueTable.$converteroperation);
+  static const VerificationMeta _encryptedPayloadMeta = const VerificationMeta(
+    'encryptedPayload',
+  );
+  @override
+  late final GeneratedColumn<String> encryptedPayload = GeneratedColumn<String>(
+    'encrypted_payload',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncVersionMeta = const VerificationMeta(
+    'syncVersion',
+  );
+  @override
+  late final GeneratedColumn<int> syncVersion = GeneratedColumn<int>(
+    'sync_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _queuedAtMeta = const VerificationMeta(
+    'queuedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> queuedAt = GeneratedColumn<DateTime>(
+    'queued_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    entityType,
+    entityId,
+    operation,
+    encryptedPayload,
+    syncVersion,
+    queuedAt,
+    retryCount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_queue';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncQueueData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('encrypted_payload')) {
+      context.handle(
+        _encryptedPayloadMeta,
+        encryptedPayload.isAcceptableOrUnknown(
+          data['encrypted_payload']!,
+          _encryptedPayloadMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sync_version')) {
+      context.handle(
+        _syncVersionMeta,
+        syncVersion.isAcceptableOrUnknown(
+          data['sync_version']!,
+          _syncVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('queued_at')) {
+      context.handle(
+        _queuedAtMeta,
+        queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_queuedAtMeta);
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncQueueData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncQueueData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      operation: $SyncQueueTable.$converteroperation.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}operation'],
+        )!,
+      ),
+      encryptedPayload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}encrypted_payload'],
+      ),
+      syncVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sync_version'],
+      )!,
+      queuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}queued_at'],
+      )!,
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncQueueTable createAlias(String alias) {
+    return $SyncQueueTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<SyncOperation, int, int> $converteroperation =
+      const EnumIndexConverter<SyncOperation>(SyncOperation.values);
+}
+
+class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
+  /// Auto-incrementing ID.
+  final int id;
+
+  /// Entity type: 'host', 'ssh_key', 'group', 'snippet', 'port_forward'.
+  final String entityType;
+
+  /// Local UUID of the entity.
+  final String entityId;
+
+  /// Type of change.
+  final SyncOperation operation;
+
+  /// Pre-encrypted payload ready to push (null for deletes).
+  final String? encryptedPayload;
+
+  /// Sync version at time of queuing.
+  final int syncVersion;
+
+  /// When the change was queued.
+  final DateTime queuedAt;
+
+  /// Number of push retry attempts.
+  final int retryCount;
+  const SyncQueueData({
+    required this.id,
+    required this.entityType,
+    required this.entityId,
+    required this.operation,
+    this.encryptedPayload,
+    required this.syncVersion,
+    required this.queuedAt,
+    required this.retryCount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    {
+      map['operation'] = Variable<int>(
+        $SyncQueueTable.$converteroperation.toSql(operation),
+      );
+    }
+    if (!nullToAbsent || encryptedPayload != null) {
+      map['encrypted_payload'] = Variable<String>(encryptedPayload);
+    }
+    map['sync_version'] = Variable<int>(syncVersion);
+    map['queued_at'] = Variable<DateTime>(queuedAt);
+    map['retry_count'] = Variable<int>(retryCount);
+    return map;
+  }
+
+  SyncQueueCompanion toCompanion(bool nullToAbsent) {
+    return SyncQueueCompanion(
+      id: Value(id),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      operation: Value(operation),
+      encryptedPayload: encryptedPayload == null && nullToAbsent
+          ? const Value.absent()
+          : Value(encryptedPayload),
+      syncVersion: Value(syncVersion),
+      queuedAt: Value(queuedAt),
+      retryCount: Value(retryCount),
+    );
+  }
+
+  factory SyncQueueData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncQueueData(
+      id: serializer.fromJson<int>(json['id']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      operation: $SyncQueueTable.$converteroperation.fromJson(
+        serializer.fromJson<int>(json['operation']),
+      ),
+      encryptedPayload: serializer.fromJson<String?>(json['encryptedPayload']),
+      syncVersion: serializer.fromJson<int>(json['syncVersion']),
+      queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'operation': serializer.toJson<int>(
+        $SyncQueueTable.$converteroperation.toJson(operation),
+      ),
+      'encryptedPayload': serializer.toJson<String?>(encryptedPayload),
+      'syncVersion': serializer.toJson<int>(syncVersion),
+      'queuedAt': serializer.toJson<DateTime>(queuedAt),
+      'retryCount': serializer.toJson<int>(retryCount),
+    };
+  }
+
+  SyncQueueData copyWith({
+    int? id,
+    String? entityType,
+    String? entityId,
+    SyncOperation? operation,
+    Value<String?> encryptedPayload = const Value.absent(),
+    int? syncVersion,
+    DateTime? queuedAt,
+    int? retryCount,
+  }) => SyncQueueData(
+    id: id ?? this.id,
+    entityType: entityType ?? this.entityType,
+    entityId: entityId ?? this.entityId,
+    operation: operation ?? this.operation,
+    encryptedPayload: encryptedPayload.present
+        ? encryptedPayload.value
+        : this.encryptedPayload,
+    syncVersion: syncVersion ?? this.syncVersion,
+    queuedAt: queuedAt ?? this.queuedAt,
+    retryCount: retryCount ?? this.retryCount,
+  );
+  SyncQueueData copyWithCompanion(SyncQueueCompanion data) {
+    return SyncQueueData(
+      id: data.id.present ? data.id.value : this.id,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      operation: data.operation.present ? data.operation.value : this.operation,
+      encryptedPayload: data.encryptedPayload.present
+          ? data.encryptedPayload.value
+          : this.encryptedPayload,
+      syncVersion: data.syncVersion.present
+          ? data.syncVersion.value
+          : this.syncVersion,
+      queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncQueueData(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('operation: $operation, ')
+          ..write('encryptedPayload: $encryptedPayload, ')
+          ..write('syncVersion: $syncVersion, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('retryCount: $retryCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    entityType,
+    entityId,
+    operation,
+    encryptedPayload,
+    syncVersion,
+    queuedAt,
+    retryCount,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncQueueData &&
+          other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.operation == this.operation &&
+          other.encryptedPayload == this.encryptedPayload &&
+          other.syncVersion == this.syncVersion &&
+          other.queuedAt == this.queuedAt &&
+          other.retryCount == this.retryCount);
+}
+
+class SyncQueueCompanion extends UpdateCompanion<SyncQueueData> {
+  final Value<int> id;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<SyncOperation> operation;
+  final Value<String?> encryptedPayload;
+  final Value<int> syncVersion;
+  final Value<DateTime> queuedAt;
+  final Value<int> retryCount;
+  const SyncQueueCompanion({
+    this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.operation = const Value.absent(),
+    this.encryptedPayload = const Value.absent(),
+    this.syncVersion = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+    this.retryCount = const Value.absent(),
+  });
+  SyncQueueCompanion.insert({
+    this.id = const Value.absent(),
+    required String entityType,
+    required String entityId,
+    required SyncOperation operation,
+    this.encryptedPayload = const Value.absent(),
+    this.syncVersion = const Value.absent(),
+    required DateTime queuedAt,
+    this.retryCount = const Value.absent(),
+  }) : entityType = Value(entityType),
+       entityId = Value(entityId),
+       operation = Value(operation),
+       queuedAt = Value(queuedAt);
+  static Insertable<SyncQueueData> custom({
+    Expression<int>? id,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<int>? operation,
+    Expression<String>? encryptedPayload,
+    Expression<int>? syncVersion,
+    Expression<DateTime>? queuedAt,
+    Expression<int>? retryCount,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (operation != null) 'operation': operation,
+      if (encryptedPayload != null) 'encrypted_payload': encryptedPayload,
+      if (syncVersion != null) 'sync_version': syncVersion,
+      if (queuedAt != null) 'queued_at': queuedAt,
+      if (retryCount != null) 'retry_count': retryCount,
+    });
+  }
+
+  SyncQueueCompanion copyWith({
+    Value<int>? id,
+    Value<String>? entityType,
+    Value<String>? entityId,
+    Value<SyncOperation>? operation,
+    Value<String?>? encryptedPayload,
+    Value<int>? syncVersion,
+    Value<DateTime>? queuedAt,
+    Value<int>? retryCount,
+  }) {
+    return SyncQueueCompanion(
+      id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      operation: operation ?? this.operation,
+      encryptedPayload: encryptedPayload ?? this.encryptedPayload,
+      syncVersion: syncVersion ?? this.syncVersion,
+      queuedAt: queuedAt ?? this.queuedAt,
+      retryCount: retryCount ?? this.retryCount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (operation.present) {
+      map['operation'] = Variable<int>(
+        $SyncQueueTable.$converteroperation.toSql(operation.value),
+      );
+    }
+    if (encryptedPayload.present) {
+      map['encrypted_payload'] = Variable<String>(encryptedPayload.value);
+    }
+    if (syncVersion.present) {
+      map['sync_version'] = Variable<int>(syncVersion.value);
+    }
+    if (queuedAt.present) {
+      map['queued_at'] = Variable<DateTime>(queuedAt.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncQueueCompanion(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('operation: $operation, ')
+          ..write('encryptedPayload: $encryptedPayload, ')
+          ..write('syncVersion: $syncVersion, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('retryCount: $retryCount')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WorkspacesTable extends Workspaces
+    with TableInfo<$WorkspacesTable, Workspace> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorkspacesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _layoutJsonMeta = const VerificationMeta(
+    'layoutJson',
+  );
+  @override
+  late final GeneratedColumn<String> layoutJson = GeneratedColumn<String>(
+    'layout_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    layoutJson,
+    isActive,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'workspaces';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Workspace> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('layout_json')) {
+      context.handle(
+        _layoutJsonMeta,
+        layoutJson.isAcceptableOrUnknown(data['layout_json']!, _layoutJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_layoutJsonMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Workspace map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Workspace(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      layoutJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}layout_json'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WorkspacesTable createAlias(String alias) {
+    return $WorkspacesTable(attachedDatabase, alias);
+  }
+}
+
+class Workspace extends DataClass implements Insertable<Workspace> {
+  /// Unique workspace identifier (UUID).
+  final String id;
+
+  /// User-assigned workspace name.
+  final String name;
+
+  /// JSON-encoded layout state (page tabs, terminal host refs, active tab).
+  final String layoutJson;
+
+  /// Whether this is the currently active workspace.
+  final bool isActive;
+
+  /// When this workspace was first created.
+  final DateTime createdAt;
+
+  /// When this workspace was last modified.
+  final DateTime updatedAt;
+  const Workspace({
+    required this.id,
+    required this.name,
+    required this.layoutJson,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['layout_json'] = Variable<String>(layoutJson);
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  WorkspacesCompanion toCompanion(bool nullToAbsent) {
+    return WorkspacesCompanion(
+      id: Value(id),
+      name: Value(name),
+      layoutJson: Value(layoutJson),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory Workspace.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Workspace(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      layoutJson: serializer.fromJson<String>(json['layoutJson']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'layoutJson': serializer.toJson<String>(layoutJson),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  Workspace copyWith({
+    String? id,
+    String? name,
+    String? layoutJson,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => Workspace(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    layoutJson: layoutJson ?? this.layoutJson,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  Workspace copyWithCompanion(WorkspacesCompanion data) {
+    return Workspace(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      layoutJson: data.layoutJson.present
+          ? data.layoutJson.value
+          : this.layoutJson,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Workspace(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('layoutJson: $layoutJson, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, layoutJson, isActive, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Workspace &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.layoutJson == this.layoutJson &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class WorkspacesCompanion extends UpdateCompanion<Workspace> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> layoutJson;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const WorkspacesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.layoutJson = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorkspacesCompanion.insert({
+    required String id,
+    required String name,
+    required String layoutJson,
+    this.isActive = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       layoutJson = Value(layoutJson),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<Workspace> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? layoutJson,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (layoutJson != null) 'layout_json': layoutJson,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorkspacesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? layoutJson,
+    Value<bool>? isActive,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return WorkspacesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      layoutJson: layoutJson ?? this.layoutJson,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (layoutJson.present) {
+      map['layout_json'] = Variable<String>(layoutJson.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkspacesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('layoutJson: $layoutJson, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4874,7 +6893,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SnippetsTable snippets = $SnippetsTable(this);
   late final $PortForwardsTable portForwards = $PortForwardsTable(this);
   late final $KnownHostsTable knownHosts = $KnownHostsTable(this);
+  late final $SecretsTable secrets = $SecretsTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
+  late final $SyncMetadataTable syncMetadata = $SyncMetadataTable(this);
+  late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
+  late final $WorkspacesTable workspaces = $WorkspacesTable(this);
   late final Index idxHostsIsDeleted = Index(
     'idx_hosts_is_deleted',
     'CREATE INDEX idx_hosts_is_deleted ON hosts (is_deleted)',
@@ -4891,6 +6914,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_hosts_favorite',
     'CREATE INDEX idx_hosts_favorite ON hosts (is_favorite)',
   );
+  late final Index idxGroupsParent = Index(
+    'idx_groups_parent',
+    'CREATE INDEX idx_groups_parent ON host_groups (parent_group_id, is_deleted)',
+  );
+  late final Index idxSnippetsCategory = Index(
+    'idx_snippets_category',
+    'CREATE INDEX idx_snippets_category ON snippets (category, is_deleted)',
+  );
   late final Index idxKnownHostsLookup = Index(
     'idx_known_hosts_lookup',
     'CREATE INDEX idx_known_hosts_lookup ON known_hosts (hostname, port, is_trusted)',
@@ -4898,8 +6929,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final GroupDao groupDao = GroupDao(this as AppDatabase);
   late final HostDao hostDao = HostDao(this as AppDatabase);
   late final KeyDao keyDao = KeyDao(this as AppDatabase);
+  late final KnownHostDao knownHostDao = KnownHostDao(this as AppDatabase);
+  late final PortForwardDao portForwardDao = PortForwardDao(
+    this as AppDatabase,
+  );
+  late final SecretsDao secretsDao = SecretsDao(this as AppDatabase);
   late final SnippetDao snippetDao = SnippetDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
+  late final SyncMetadataDao syncMetadataDao = SyncMetadataDao(
+    this as AppDatabase,
+  );
+  late final SyncQueueDao syncQueueDao = SyncQueueDao(this as AppDatabase);
+  late final WorkspaceDao workspaceDao = WorkspaceDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4911,11 +6952,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     snippets,
     portForwards,
     knownHosts,
+    secrets,
     settings,
+    syncMetadata,
+    syncQueue,
+    workspaces,
     idxHostsIsDeleted,
     idxHostsGroup,
     idxHostsLastConnected,
     idxHostsFavorite,
+    idxGroupsParent,
+    idxSnippetsCategory,
     idxKnownHostsLookup,
   ];
 }
@@ -4936,12 +6983,20 @@ typedef $$HostsTableCreateCompanionBuilder =
       Value<String?> jumpHostId,
       Value<String?> encoding,
       Value<String?> notes,
+      Value<int> sortOrder,
       Value<bool> isFavorite,
       Value<DateTime?> lastConnectedAt,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> syncVersion,
       Value<bool> isDeleted,
+      Value<ProtocolType> protocol,
+      Value<String?> serialPort,
+      Value<int?> serialBaudRate,
+      Value<int?> serialDataBits,
+      Value<int?> serialStopBits,
+      Value<String?> serialParity,
+      Value<String?> serialFlowControl,
       Value<int> rowid,
     });
 typedef $$HostsTableUpdateCompanionBuilder =
@@ -4960,12 +7015,20 @@ typedef $$HostsTableUpdateCompanionBuilder =
       Value<String?> jumpHostId,
       Value<String?> encoding,
       Value<String?> notes,
+      Value<int> sortOrder,
       Value<bool> isFavorite,
       Value<DateTime?> lastConnectedAt,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> syncVersion,
       Value<bool> isDeleted,
+      Value<ProtocolType> protocol,
+      Value<String?> serialPort,
+      Value<int?> serialBaudRate,
+      Value<int?> serialDataBits,
+      Value<int?> serialStopBits,
+      Value<String?> serialParity,
+      Value<String?> serialFlowControl,
       Value<int> rowid,
     });
 
@@ -5048,6 +7111,11 @@ class $$HostsTableFilterComposer extends Composer<_$AppDatabase, $HostsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<bool> get isFavorite => $composableBuilder(
     column: $table.isFavorite,
     builder: (column) => ColumnFilters(column),
@@ -5075,6 +7143,42 @@ class $$HostsTableFilterComposer extends Composer<_$AppDatabase, $HostsTable> {
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
     column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<ProtocolType, ProtocolType, int>
+  get protocol => $composableBuilder(
+    column: $table.protocol,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get serialPort => $composableBuilder(
+    column: $table.serialPort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serialBaudRate => $composableBuilder(
+    column: $table.serialBaudRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serialDataBits => $composableBuilder(
+    column: $table.serialDataBits,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serialStopBits => $composableBuilder(
+    column: $table.serialStopBits,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serialParity => $composableBuilder(
+    column: $table.serialParity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serialFlowControl => $composableBuilder(
+    column: $table.serialFlowControl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5158,6 +7262,11 @@ class $$HostsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isFavorite => $composableBuilder(
     column: $table.isFavorite,
     builder: (column) => ColumnOrderings(column),
@@ -5185,6 +7294,41 @@ class $$HostsTableOrderingComposer
 
   ColumnOrderings<bool> get isDeleted => $composableBuilder(
     column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get protocol => $composableBuilder(
+    column: $table.protocol,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serialPort => $composableBuilder(
+    column: $table.serialPort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serialBaudRate => $composableBuilder(
+    column: $table.serialBaudRate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serialDataBits => $composableBuilder(
+    column: $table.serialDataBits,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serialStopBits => $composableBuilder(
+    column: $table.serialStopBits,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serialParity => $composableBuilder(
+    column: $table.serialParity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serialFlowControl => $composableBuilder(
+    column: $table.serialFlowControl,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -5249,6 +7393,9 @@ class $$HostsTableAnnotationComposer
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
   GeneratedColumn<bool> get isFavorite => $composableBuilder(
     column: $table.isFavorite,
     builder: (column) => column,
@@ -5272,6 +7419,39 @@ class $$HostsTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<ProtocolType, int> get protocol =>
+      $composableBuilder(column: $table.protocol, builder: (column) => column);
+
+  GeneratedColumn<String> get serialPort => $composableBuilder(
+    column: $table.serialPort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serialBaudRate => $composableBuilder(
+    column: $table.serialBaudRate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serialDataBits => $composableBuilder(
+    column: $table.serialDataBits,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serialStopBits => $composableBuilder(
+    column: $table.serialStopBits,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serialParity => $composableBuilder(
+    column: $table.serialParity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serialFlowControl => $composableBuilder(
+    column: $table.serialFlowControl,
+    builder: (column) => column,
+  );
 }
 
 class $$HostsTableTableManager
@@ -5316,12 +7496,20 @@ class $$HostsTableTableManager
                 Value<String?> jumpHostId = const Value.absent(),
                 Value<String?> encoding = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<DateTime?> lastConnectedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> syncVersion = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<ProtocolType> protocol = const Value.absent(),
+                Value<String?> serialPort = const Value.absent(),
+                Value<int?> serialBaudRate = const Value.absent(),
+                Value<int?> serialDataBits = const Value.absent(),
+                Value<int?> serialStopBits = const Value.absent(),
+                Value<String?> serialParity = const Value.absent(),
+                Value<String?> serialFlowControl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HostsCompanion(
                 id: id,
@@ -5338,12 +7526,20 @@ class $$HostsTableTableManager
                 jumpHostId: jumpHostId,
                 encoding: encoding,
                 notes: notes,
+                sortOrder: sortOrder,
                 isFavorite: isFavorite,
                 lastConnectedAt: lastConnectedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncVersion: syncVersion,
                 isDeleted: isDeleted,
+                protocol: protocol,
+                serialPort: serialPort,
+                serialBaudRate: serialBaudRate,
+                serialDataBits: serialDataBits,
+                serialStopBits: serialStopBits,
+                serialParity: serialParity,
+                serialFlowControl: serialFlowControl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5362,12 +7558,20 @@ class $$HostsTableTableManager
                 Value<String?> jumpHostId = const Value.absent(),
                 Value<String?> encoding = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<DateTime?> lastConnectedAt = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> syncVersion = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<ProtocolType> protocol = const Value.absent(),
+                Value<String?> serialPort = const Value.absent(),
+                Value<int?> serialBaudRate = const Value.absent(),
+                Value<int?> serialDataBits = const Value.absent(),
+                Value<int?> serialStopBits = const Value.absent(),
+                Value<String?> serialParity = const Value.absent(),
+                Value<String?> serialFlowControl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HostsCompanion.insert(
                 id: id,
@@ -5384,12 +7588,20 @@ class $$HostsTableTableManager
                 jumpHostId: jumpHostId,
                 encoding: encoding,
                 notes: notes,
+                sortOrder: sortOrder,
                 isFavorite: isFavorite,
                 lastConnectedAt: lastConnectedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncVersion: syncVersion,
                 isDeleted: isDeleted,
+                protocol: protocol,
+                serialPort: serialPort,
+                serialBaudRate: serialBaudRate,
+                serialDataBits: serialDataBits,
+                serialStopBits: serialStopBits,
+                serialParity: serialParity,
+                serialFlowControl: serialFlowControl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -6981,6 +9193,183 @@ typedef $$KnownHostsTableProcessedTableManager =
       KnownHost,
       PrefetchHooks Function()
     >;
+typedef $$SecretsTableCreateCompanionBuilder =
+    SecretsCompanion Function({
+      required String key,
+      required String encryptedValue,
+      required String nonce,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$SecretsTableUpdateCompanionBuilder =
+    SecretsCompanion Function({
+      Value<String> key,
+      Value<String> encryptedValue,
+      Value<String> nonce,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$SecretsTableFilterComposer
+    extends Composer<_$AppDatabase, $SecretsTable> {
+  $$SecretsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get encryptedValue => $composableBuilder(
+    column: $table.encryptedValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nonce => $composableBuilder(
+    column: $table.nonce,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SecretsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SecretsTable> {
+  $$SecretsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get encryptedValue => $composableBuilder(
+    column: $table.encryptedValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nonce => $composableBuilder(
+    column: $table.nonce,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SecretsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SecretsTable> {
+  $$SecretsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get encryptedValue => $composableBuilder(
+    column: $table.encryptedValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nonce =>
+      $composableBuilder(column: $table.nonce, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SecretsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SecretsTable,
+          Secret,
+          $$SecretsTableFilterComposer,
+          $$SecretsTableOrderingComposer,
+          $$SecretsTableAnnotationComposer,
+          $$SecretsTableCreateCompanionBuilder,
+          $$SecretsTableUpdateCompanionBuilder,
+          (Secret, BaseReferences<_$AppDatabase, $SecretsTable, Secret>),
+          Secret,
+          PrefetchHooks Function()
+        > {
+  $$SecretsTableTableManager(_$AppDatabase db, $SecretsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SecretsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SecretsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SecretsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> key = const Value.absent(),
+                Value<String> encryptedValue = const Value.absent(),
+                Value<String> nonce = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SecretsCompanion(
+                key: key,
+                encryptedValue: encryptedValue,
+                nonce: nonce,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String key,
+                required String encryptedValue,
+                required String nonce,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SecretsCompanion.insert(
+                key: key,
+                encryptedValue: encryptedValue,
+                nonce: nonce,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SecretsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SecretsTable,
+      Secret,
+      $$SecretsTableFilterComposer,
+      $$SecretsTableOrderingComposer,
+      $$SecretsTableAnnotationComposer,
+      $$SecretsTableCreateCompanionBuilder,
+      $$SecretsTableUpdateCompanionBuilder,
+      (Secret, BaseReferences<_$AppDatabase, $SecretsTable, Secret>),
+      Secret,
+      PrefetchHooks Function()
+    >;
 typedef $$SettingsTableCreateCompanionBuilder =
     SettingsCompanion Function({
       required String key,
@@ -7137,6 +9526,652 @@ typedef $$SettingsTableProcessedTableManager =
       Setting,
       PrefetchHooks Function()
     >;
+typedef $$SyncMetadataTableCreateCompanionBuilder =
+    SyncMetadataCompanion Function({
+      required String entityType,
+      Value<int> lastSyncVersion,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+typedef $$SyncMetadataTableUpdateCompanionBuilder =
+    SyncMetadataCompanion Function({
+      Value<String> entityType,
+      Value<int> lastSyncVersion,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+
+class $$SyncMetadataTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncMetadataTable> {
+  $$SyncMetadataTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastSyncVersion => $composableBuilder(
+    column: $table.lastSyncVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncMetadataTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncMetadataTable> {
+  $$SyncMetadataTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastSyncVersion => $composableBuilder(
+    column: $table.lastSyncVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncMetadataTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncMetadataTable> {
+  $$SyncMetadataTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastSyncVersion => $composableBuilder(
+    column: $table.lastSyncVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncMetadataTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncMetadataTable,
+          SyncMetadataData,
+          $$SyncMetadataTableFilterComposer,
+          $$SyncMetadataTableOrderingComposer,
+          $$SyncMetadataTableAnnotationComposer,
+          $$SyncMetadataTableCreateCompanionBuilder,
+          $$SyncMetadataTableUpdateCompanionBuilder,
+          (
+            SyncMetadataData,
+            BaseReferences<_$AppDatabase, $SyncMetadataTable, SyncMetadataData>,
+          ),
+          SyncMetadataData,
+          PrefetchHooks Function()
+        > {
+  $$SyncMetadataTableTableManager(_$AppDatabase db, $SyncMetadataTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncMetadataTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncMetadataTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncMetadataTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> entityType = const Value.absent(),
+                Value<int> lastSyncVersion = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncMetadataCompanion(
+                entityType: entityType,
+                lastSyncVersion: lastSyncVersion,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entityType,
+                Value<int> lastSyncVersion = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncMetadataCompanion.insert(
+                entityType: entityType,
+                lastSyncVersion: lastSyncVersion,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncMetadataTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncMetadataTable,
+      SyncMetadataData,
+      $$SyncMetadataTableFilterComposer,
+      $$SyncMetadataTableOrderingComposer,
+      $$SyncMetadataTableAnnotationComposer,
+      $$SyncMetadataTableCreateCompanionBuilder,
+      $$SyncMetadataTableUpdateCompanionBuilder,
+      (
+        SyncMetadataData,
+        BaseReferences<_$AppDatabase, $SyncMetadataTable, SyncMetadataData>,
+      ),
+      SyncMetadataData,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncQueueTableCreateCompanionBuilder =
+    SyncQueueCompanion Function({
+      Value<int> id,
+      required String entityType,
+      required String entityId,
+      required SyncOperation operation,
+      Value<String?> encryptedPayload,
+      Value<int> syncVersion,
+      required DateTime queuedAt,
+      Value<int> retryCount,
+    });
+typedef $$SyncQueueTableUpdateCompanionBuilder =
+    SyncQueueCompanion Function({
+      Value<int> id,
+      Value<String> entityType,
+      Value<String> entityId,
+      Value<SyncOperation> operation,
+      Value<String?> encryptedPayload,
+      Value<int> syncVersion,
+      Value<DateTime> queuedAt,
+      Value<int> retryCount,
+    });
+
+class $$SyncQueueTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncQueueTable> {
+  $$SyncQueueTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<SyncOperation, SyncOperation, int>
+  get operation => $composableBuilder(
+    column: $table.operation,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get encryptedPayload => $composableBuilder(
+    column: $table.encryptedPayload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get syncVersion => $composableBuilder(
+    column: $table.syncVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncQueueTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncQueueTable> {
+  $$SyncQueueTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get operation => $composableBuilder(
+    column: $table.operation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get encryptedPayload => $composableBuilder(
+    column: $table.encryptedPayload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get syncVersion => $composableBuilder(
+    column: $table.syncVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncQueueTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncQueueTable> {
+  $$SyncQueueTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<SyncOperation, int> get operation =>
+      $composableBuilder(column: $table.operation, builder: (column) => column);
+
+  GeneratedColumn<String> get encryptedPayload => $composableBuilder(
+    column: $table.encryptedPayload,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get syncVersion => $composableBuilder(
+    column: $table.syncVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get queuedAt =>
+      $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncQueueTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncQueueTable,
+          SyncQueueData,
+          $$SyncQueueTableFilterComposer,
+          $$SyncQueueTableOrderingComposer,
+          $$SyncQueueTableAnnotationComposer,
+          $$SyncQueueTableCreateCompanionBuilder,
+          $$SyncQueueTableUpdateCompanionBuilder,
+          (
+            SyncQueueData,
+            BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueData>,
+          ),
+          SyncQueueData,
+          PrefetchHooks Function()
+        > {
+  $$SyncQueueTableTableManager(_$AppDatabase db, $SyncQueueTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncQueueTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncQueueTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncQueueTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<SyncOperation> operation = const Value.absent(),
+                Value<String?> encryptedPayload = const Value.absent(),
+                Value<int> syncVersion = const Value.absent(),
+                Value<DateTime> queuedAt = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+              }) => SyncQueueCompanion(
+                id: id,
+                entityType: entityType,
+                entityId: entityId,
+                operation: operation,
+                encryptedPayload: encryptedPayload,
+                syncVersion: syncVersion,
+                queuedAt: queuedAt,
+                retryCount: retryCount,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String entityType,
+                required String entityId,
+                required SyncOperation operation,
+                Value<String?> encryptedPayload = const Value.absent(),
+                Value<int> syncVersion = const Value.absent(),
+                required DateTime queuedAt,
+                Value<int> retryCount = const Value.absent(),
+              }) => SyncQueueCompanion.insert(
+                id: id,
+                entityType: entityType,
+                entityId: entityId,
+                operation: operation,
+                encryptedPayload: encryptedPayload,
+                syncVersion: syncVersion,
+                queuedAt: queuedAt,
+                retryCount: retryCount,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncQueueTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncQueueTable,
+      SyncQueueData,
+      $$SyncQueueTableFilterComposer,
+      $$SyncQueueTableOrderingComposer,
+      $$SyncQueueTableAnnotationComposer,
+      $$SyncQueueTableCreateCompanionBuilder,
+      $$SyncQueueTableUpdateCompanionBuilder,
+      (
+        SyncQueueData,
+        BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueData>,
+      ),
+      SyncQueueData,
+      PrefetchHooks Function()
+    >;
+typedef $$WorkspacesTableCreateCompanionBuilder =
+    WorkspacesCompanion Function({
+      required String id,
+      required String name,
+      required String layoutJson,
+      Value<bool> isActive,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$WorkspacesTableUpdateCompanionBuilder =
+    WorkspacesCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> layoutJson,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$WorkspacesTableFilterComposer
+    extends Composer<_$AppDatabase, $WorkspacesTable> {
+  $$WorkspacesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get layoutJson => $composableBuilder(
+    column: $table.layoutJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WorkspacesTableOrderingComposer
+    extends Composer<_$AppDatabase, $WorkspacesTable> {
+  $$WorkspacesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get layoutJson => $composableBuilder(
+    column: $table.layoutJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WorkspacesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WorkspacesTable> {
+  $$WorkspacesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get layoutJson => $composableBuilder(
+    column: $table.layoutJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$WorkspacesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WorkspacesTable,
+          Workspace,
+          $$WorkspacesTableFilterComposer,
+          $$WorkspacesTableOrderingComposer,
+          $$WorkspacesTableAnnotationComposer,
+          $$WorkspacesTableCreateCompanionBuilder,
+          $$WorkspacesTableUpdateCompanionBuilder,
+          (
+            Workspace,
+            BaseReferences<_$AppDatabase, $WorkspacesTable, Workspace>,
+          ),
+          Workspace,
+          PrefetchHooks Function()
+        > {
+  $$WorkspacesTableTableManager(_$AppDatabase db, $WorkspacesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WorkspacesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WorkspacesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WorkspacesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> layoutJson = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkspacesCompanion(
+                id: id,
+                name: name,
+                layoutJson: layoutJson,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String layoutJson,
+                Value<bool> isActive = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => WorkspacesCompanion.insert(
+                id: id,
+                name: name,
+                layoutJson: layoutJson,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WorkspacesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WorkspacesTable,
+      Workspace,
+      $$WorkspacesTableFilterComposer,
+      $$WorkspacesTableOrderingComposer,
+      $$WorkspacesTableAnnotationComposer,
+      $$WorkspacesTableCreateCompanionBuilder,
+      $$WorkspacesTableUpdateCompanionBuilder,
+      (Workspace, BaseReferences<_$AppDatabase, $WorkspacesTable, Workspace>),
+      Workspace,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7153,6 +10188,14 @@ class $AppDatabaseManager {
       $$PortForwardsTableTableManager(_db, _db.portForwards);
   $$KnownHostsTableTableManager get knownHosts =>
       $$KnownHostsTableTableManager(_db, _db.knownHosts);
+  $$SecretsTableTableManager get secrets =>
+      $$SecretsTableTableManager(_db, _db.secrets);
   $$SettingsTableTableManager get settings =>
       $$SettingsTableTableManager(_db, _db.settings);
+  $$SyncMetadataTableTableManager get syncMetadata =>
+      $$SyncMetadataTableTableManager(_db, _db.syncMetadata);
+  $$SyncQueueTableTableManager get syncQueue =>
+      $$SyncQueueTableTableManager(_db, _db.syncQueue);
+  $$WorkspacesTableTableManager get workspaces =>
+      $$WorkspacesTableTableManager(_db, _db.workspaces);
 }

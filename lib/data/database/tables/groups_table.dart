@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 ///
 /// Groups support nesting (parent-child) and inheritable
 /// defaults for username, port, and SSH key.
+@TableIndex(name: 'idx_groups_parent', columns: {#parentGroupId, #isDeleted})
 class HostGroups extends Table {
   /// Unique identifier (UUID v4).
   TextColumn get id => text()();

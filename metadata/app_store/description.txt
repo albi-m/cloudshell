@@ -1,0 +1,33 @@
+CloudShell is a professional SSH client for managing remote servers from your Mac, iPhone, or iPad.
+
+KEY FEATURES
+
+- Full Terminal Emulation: xterm-compatible terminal with 256-color and truecolor support, Unicode rendering, and scrollback buffer.
+
+- Secure Connections: SSH2 protocol with password and key-based authentication (RSA, Ed25519, ECDSA). Host key verification with TOFU model.
+
+- Multi-Tab Sessions: Open multiple terminal sessions in tabs with persistent scrollback. Split panes for side-by-side workflows.
+
+- SFTP File Browser: Browse, upload, download, rename, and manage files on remote servers with drag-and-drop support and a dual-pane browser.
+
+- SSH Key Management: Import keys from files or clipboard. View fingerprints, associate keys with hosts, and manage your key library.
+
+- Port Forwarding: Local, remote, and dynamic (SOCKS proxy) port forwarding with saved rules and active session management.
+
+- Snippets & Commands: Save frequently used commands with variable substitution. Quick-insert from any terminal session.
+
+- Command Palette: Fuzzy search across hosts, snippets, and actions with a keyboard-driven interface (Cmd+K).
+
+- Proxy Jump / Bastion Host: Connect through intermediate jump hosts with recursive SSH chain support.
+
+- Workspaces: Save and restore your terminal tab layouts for different projects or environments.
+
+- End-to-End Encrypted Sync: Optional account with zero-knowledge encryption (Argon2id + AES-256-GCM). Sync hosts, keys, and snippets across devices.
+
+- Cloud Import: Import servers from AWS EC2 and DigitalOcean with multi-step wizard.
+
+- Customization: 9 built-in terminal themes plus a custom theme editor. Configurable fonts, font sizes, cursor styles, and keyboard shortcuts.
+
+- Privacy First: No tracking, no analytics, no ads. Your data stays on your device unless you choose to sync.
+
+CloudShell is designed for developers, system administrators, and DevOps engineers who need reliable SSH access from any Apple device.

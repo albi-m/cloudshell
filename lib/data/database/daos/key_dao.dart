@@ -37,20 +37,56 @@ class KeyDao extends DatabaseAccessor<AppDatabase> with _$KeyDaoMixin {
     return into(sshKeys).insert(key);
   }
 
-  /// Updates an existing SSH key record.
-  Future<bool> updateKey(SshKeysCompanion key) {
-    return (update(sshKeys)..where((k) => k.id.equals(key.id.value)))
-        .write(key)
-        .then((rows) => rows > 0);
+  /// Updates an existing SSH key record (bumps syncVersion).
+  Future<bool> updateKey(SshKeysCompanion key) async {
+    final rows = await (update(sshKeys)..where((k) => k.id.equals(key.id.value)))
+        .write(key);
+    if (rows > 0) await _bumpSyncVersion(key.id.value);
+    return rows > 0;
   }
 
-  /// Soft-deletes an SSH key by setting the isDeleted tombstone.
-  Future<int> softDeleteKey(String id) {
-    return (update(sshKeys)..where((k) => k.id.equals(id))).write(
+  /// Soft-deletes an SSH key by setting the isDeleted tombstone (bumps syncVersion).
+  Future<int> softDeleteKey(String id) async {
+    final rows = await (update(sshKeys)..where((k) => k.id.equals(id))).write(
       SshKeysCompanion(
         isDeleted: const Value(true),
         updatedAt: Value(DateTime.now()),
       ),
+    );
+    if (rows > 0) await _bumpSyncVersion(id);
+    return rows;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sync operations
+  // ---------------------------------------------------------------------------
+
+  /// Gets all keys changed since [version] (includes soft-deleted).
+  Future<List<SshKey>> getChangedSince(int version) {
+    return (select(sshKeys)
+          ..where((k) => k.syncVersion.isBiggerThanValue(version))
+          ..orderBy([(k) => OrderingTerm.asc(k.syncVersion)]))
+        .get();
+  }
+
+  /// Gets the maximum syncVersion across all key rows.
+  Future<int> getMaxSyncVersion() async {
+    final expr = sshKeys.syncVersion.max();
+    final query = selectOnly(sshKeys)..addColumns([expr]);
+    final row = await query.getSingle();
+    return row.read(expr) ?? 0;
+  }
+
+  /// Upserts a key from a remote sync operation.
+  Future<void> upsertFromRemote(SshKeysCompanion companion) {
+    return into(sshKeys).insertOnConflictUpdate(companion);
+  }
+
+  /// Bumps the syncVersion for a key after a local change.
+  Future<void> _bumpSyncVersion(String id) async {
+    await customStatement(
+      'UPDATE ssh_keys SET sync_version = sync_version + 1 WHERE id = ?',
+      [id],
     );
   }
 }

@@ -47,21 +47,24 @@ class SnippetDao extends DatabaseAccessor<AppDatabase> with _$SnippetDaoMixin {
     return into(snippets).insert(snippet);
   }
 
-  /// Updates an existing snippet record.
-  Future<bool> updateSnippet(SnippetsCompanion snippet) {
-    return (update(snippets)..where((s) => s.id.equals(snippet.id.value)))
-        .write(snippet)
-        .then((rows) => rows > 0);
+  /// Updates an existing snippet record (bumps syncVersion).
+  Future<bool> updateSnippet(SnippetsCompanion snippet) async {
+    final rows = await (update(snippets)..where((s) => s.id.equals(snippet.id.value)))
+        .write(snippet);
+    if (rows > 0) await _bumpSyncVersion(snippet.id.value);
+    return rows > 0;
   }
 
-  /// Soft-deletes a snippet by setting the isDeleted tombstone.
-  Future<int> softDeleteSnippet(String id) {
-    return (update(snippets)..where((s) => s.id.equals(id))).write(
+  /// Soft-deletes a snippet by setting the isDeleted tombstone (bumps syncVersion).
+  Future<int> softDeleteSnippet(String id) async {
+    final rows = await (update(snippets)..where((s) => s.id.equals(id))).write(
       SnippetsCompanion(
         isDeleted: const Value(true),
         updatedAt: Value(DateTime.now()),
       ),
     );
+    if (rows > 0) await _bumpSyncVersion(id);
+    return rows;
   }
 
   /// Gets all unique category names for grouping.
@@ -72,5 +75,38 @@ class SnippetDao extends DatabaseAccessor<AppDatabase> with _$SnippetDaoMixin {
           ..where(snippets.category.isNotNull()))
         .get();
     return results.map((row) => row.read(snippets.category)!).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sync operations
+  // ---------------------------------------------------------------------------
+
+  /// Gets all snippets changed since [version] (includes soft-deleted).
+  Future<List<Snippet>> getChangedSince(int version) {
+    return (select(snippets)
+          ..where((s) => s.syncVersion.isBiggerThanValue(version))
+          ..orderBy([(s) => OrderingTerm.asc(s.syncVersion)]))
+        .get();
+  }
+
+  /// Gets the maximum syncVersion across all snippet rows.
+  Future<int> getMaxSyncVersion() async {
+    final expr = snippets.syncVersion.max();
+    final query = selectOnly(snippets)..addColumns([expr]);
+    final row = await query.getSingle();
+    return row.read(expr) ?? 0;
+  }
+
+  /// Upserts a snippet from a remote sync operation.
+  Future<void> upsertFromRemote(SnippetsCompanion companion) {
+    return into(snippets).insertOnConflictUpdate(companion);
+  }
+
+  /// Bumps the syncVersion for a snippet after a local change.
+  Future<void> _bumpSyncVersion(String id) async {
+    await customStatement(
+      'UPDATE snippets SET sync_version = sync_version + 1 WHERE id = ?',
+      [id],
+    );
   }
 }

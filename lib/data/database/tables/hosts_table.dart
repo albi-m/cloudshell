@@ -9,6 +9,9 @@ import 'package:drift/drift.dart';
 /// Supported SSH authentication methods.
 enum AuthMethodType { key, password, keyAndPassword, interactive }
 
+/// Connection protocol types.
+enum ProtocolType { ssh, telnet, serial }
+
 /// Drift table for SSH host connection configurations.
 ///
 /// Each row represents a saved SSH server with all its
@@ -60,6 +63,9 @@ class Hosts extends Table {
   /// User notes about this host.
   TextColumn get notes => text().nullable()();
 
+  /// Manual sort order for drag-and-drop reordering.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
   /// Whether this host is marked as favorite.
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
 
@@ -77,6 +83,30 @@ class Hosts extends Table {
 
   /// Soft-delete tombstone flag.
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+
+  /// Connection protocol (SSH, Telnet, Serial). Defaults to SSH.
+  IntColumn get protocol =>
+      intEnum<ProtocolType>().withDefault(const Constant(0))();
+
+  // --- Serial port configuration (nullable, only used when protocol == serial) ---
+
+  /// Serial port device path (e.g. /dev/ttyUSB0, COM3).
+  TextColumn get serialPort => text().nullable()();
+
+  /// Serial baud rate (e.g. 9600, 115200).
+  IntColumn get serialBaudRate => integer().nullable()();
+
+  /// Serial data bits (5, 6, 7, or 8).
+  IntColumn get serialDataBits => integer().nullable()();
+
+  /// Serial stop bits (1 or 2).
+  IntColumn get serialStopBits => integer().nullable()();
+
+  /// Serial parity mode (none, odd, even, mark, space).
+  TextColumn get serialParity => text().nullable()();
+
+  /// Serial flow control (none, hardware, software).
+  TextColumn get serialFlowControl => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

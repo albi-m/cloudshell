@@ -43,6 +43,25 @@ abstract final class AppConstants {
   /// Terminal line height multiplier for readable spacing.
   static const double terminalLineHeight = 1.5;
 
+  /// Default terminal font family.
+  static const String defaultTerminalFontFamily = 'JetBrainsMono';
+
+  /// Available terminal font families.
+  ///
+  /// First entry is bundled; the rest load via Google Fonts.
+  static const List<String> terminalFonts = [
+    'JetBrainsMono',
+    'Fira Code',
+    'Source Code Pro',
+    'Roboto Mono',
+    'IBM Plex Mono',
+    'Inconsolata',
+    'Ubuntu Mono',
+    'Cousine',
+    'Anonymous Pro',
+    'PT Mono',
+  ];
+
   // --- Security Defaults ---
 
   /// Auto-lock timeout in seconds (5 minutes).
@@ -62,11 +81,39 @@ abstract final class AppConstants {
 
   // --- UI Constants ---
 
+  // --- Border Radii ---
+
+  /// Small radius for buttons, inputs, and compact elements.
+  static const double radiusSmall = 4.0;
+
+  /// Medium radius for standard components.
+  static const double radiusMedium = 6.0;
+
+  /// Large radius for cards, popups, and containers.
+  static const double radiusLarge = 10.0;
+
+  /// Extra-large radius for modals and dialogs.
+  static const double radiusXLarge = 14.0;
+
   /// Desktop sidebar width in logical pixels.
-  static const double sidebarWidth = 260.0;
+  static const double sidebarWidth = 256.0;
+
+  /// Desktop sidebar collapsed width (icon-only mode) in logical pixels.
+  static const double sidebarCollapsedWidth = 60.0;
+
+  /// Breakpoint below which phone/mobile layout is used (bottom nav bar).
+  ///
+  /// Covers iPhone and iPad Slide Over narrow mode.
+  static const double phoneBreakpoint = 600.0;
 
   /// Breakpoint width at which the layout switches from mobile to desktop.
   static const double desktopBreakpoint = 768.0;
+
+  /// Breakpoint below which the sidebar is forced to icon-only collapsed mode.
+  ///
+  /// Ensures iPad Split View (50/50) and narrow desktop windows get a
+  /// usable compact sidebar instead of the full expanded sidebar.
+  static const double compactSidebarBreakpoint = 900.0;
 
   /// Breakpoint width for wide desktop layouts.
   static const double wideDesktopBreakpoint = 1200.0;
@@ -79,6 +126,20 @@ abstract final class AppConstants {
 
   /// Slow animation duration for page transitions.
   static const Duration slowAnimationDuration = Duration(milliseconds: 350);
+
+  // --- Reconnect ---
+
+  /// Maximum number of automatic reconnection attempts.
+  static const int maxReconnectAttempts = 5;
+
+  /// Exponential backoff delays in seconds for reconnect attempts.
+  static const List<int> reconnectBackoffSeconds = [1, 2, 5, 10, 30];
+
+  /// Default bind address for local port forwarding.
+  static const String defaultLocalBindAddress = '127.0.0.1';
+
+  /// Default threshold in seconds for long-running command notification.
+  static const int defaultCommandNotifyThreshold = 30;
 
   // --- Sync ---
 

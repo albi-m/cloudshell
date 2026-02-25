@@ -1,7 +1,7 @@
-/// CloudShell ThemeData configuration.
+/// CloudShell ThemeData configuration — "Aether" design system.
 ///
 /// Builds complete Flutter ThemeData instances from the
-/// design system color palette and typography definitions.
+/// Aether color palette and Plus Jakarta Sans typography.
 library;
 
 import 'package:flutter/material.dart';
@@ -25,16 +25,15 @@ abstract final class AppTheme {
     scaffoldBackgroundColor: AppColors.bgDeepest,
     canvasColor: AppColors.bgDeep,
     cardColor: AppColors.bgSurface,
-    // Dialog background color set via dialogTheme below
     dividerColor: AppColors.borderSubtle,
     textTheme: AppTypography.textTheme,
-    fontFamily: 'Inter',
+    fontFamily: 'PlusJakartaSans',
 
     // Color scheme
     colorScheme: const ColorScheme.dark(
       primary: AppColors.accentPrimary,
       onPrimary: AppColors.textInverse,
-      secondary: AppColors.accentCyan,
+      secondary: AppColors.accentBlue,
       onSecondary: AppColors.textInverse,
       error: AppColors.accentRed,
       onError: AppColors.textPrimary,
@@ -67,7 +66,7 @@ abstract final class AppTheme {
       backgroundColor: AppColors.bgDeep,
       selectedIconTheme: IconThemeData(color: AppColors.accentPrimary),
       unselectedIconTheme: IconThemeData(color: AppColors.textTertiary),
-      indicatorColor: AppColors.bgActive,
+      indicatorColor: AppColors.accentGlow,
     ),
 
     // Cards
@@ -75,7 +74,7 @@ abstract final class AppTheme {
       color: AppColors.bgSurface,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
         side: BorderSide(color: AppColors.borderSubtle),
       ),
     ),
@@ -86,7 +85,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.accentPrimary,
         foregroundColor: AppColors.textInverse,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         textStyle: AppTypography.button,
         elevation: 0,
       ),
@@ -97,7 +96,7 @@ abstract final class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.textPrimary,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         side: const BorderSide(color: AppColors.borderDefault),
         textStyle: AppTypography.button,
       ),
@@ -122,19 +121,19 @@ abstract final class AppTheme {
       fillColor: AppColors.bgRaised,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColors.borderDefault),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColors.borderDefault),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColors.accentPrimary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColors.accentRed),
       ),
       hintStyle: AppTypography.body.copyWith(color: AppColors.textTertiary),
@@ -144,7 +143,7 @@ abstract final class AppTheme {
     // Dialogs
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.bgRaised,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       titleTextStyle: AppTypography.h2,
     ),
 
@@ -160,7 +159,7 @@ abstract final class AppTheme {
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.bgRaised,
       contentTextStyle: AppTypography.body,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       behavior: SnackBarBehavior.floating,
     ),
 
@@ -192,7 +191,7 @@ abstract final class AppTheme {
     popupMenuTheme: PopupMenuThemeData(
       color: AppColors.bgRaised,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         side: const BorderSide(color: AppColors.borderDefault),
       ),
     ),
@@ -248,12 +247,12 @@ abstract final class AppTheme {
     cardColor: AppColorsLight.bgSurface,
     dividerColor: AppColorsLight.borderSubtle,
     textTheme: AppTypography.textThemeLight,
-    fontFamily: 'Inter',
+    fontFamily: 'PlusJakartaSans',
 
     colorScheme: const ColorScheme.light(
       primary: AppColorsLight.accentPrimary,
       onPrimary: Colors.white,
-      secondary: AppColorsLight.accentCyan,
+      secondary: AppColorsLight.accentBlue,
       onSecondary: Colors.white,
       error: AppColorsLight.accentRed,
       onError: Colors.white,
@@ -286,7 +285,7 @@ abstract final class AppTheme {
       backgroundColor: AppColorsLight.bgDeep,
       selectedIconTheme: IconThemeData(color: AppColorsLight.accentPrimary),
       unselectedIconTheme: IconThemeData(color: AppColorsLight.textTertiary),
-      indicatorColor: AppColorsLight.bgActive,
+      indicatorColor: AppColorsLight.accentGlow,
     ),
 
     // Cards
@@ -294,7 +293,7 @@ abstract final class AppTheme {
       color: AppColorsLight.bgSurface,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
         side: BorderSide(color: AppColorsLight.borderSubtle),
       ),
     ),
@@ -305,7 +304,7 @@ abstract final class AppTheme {
         backgroundColor: AppColorsLight.accentPrimary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         textStyle: AppTypography.button,
         elevation: 0,
       ),
@@ -316,7 +315,7 @@ abstract final class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColorsLight.textPrimary,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         side: const BorderSide(color: AppColorsLight.borderDefault),
         textStyle: AppTypography.button,
       ),
@@ -341,19 +340,19 @@ abstract final class AppTheme {
       fillColor: AppColorsLight.bgRaised,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColorsLight.borderDefault),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColorsLight.borderDefault),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColorsLight.accentPrimary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: AppColorsLight.accentRed),
       ),
       hintStyle: AppTypography.body.copyWith(color: AppColorsLight.textTertiary),
@@ -363,7 +362,7 @@ abstract final class AppTheme {
     // Dialogs
     dialogTheme: DialogThemeData(
       backgroundColor: AppColorsLight.bgRaised,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       titleTextStyle: AppTypography.h2.copyWith(color: AppColorsLight.textPrimary),
     ),
 
@@ -379,7 +378,7 @@ abstract final class AppTheme {
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColorsLight.textPrimary,
       contentTextStyle: AppTypography.body.copyWith(color: Colors.white),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       behavior: SnackBarBehavior.floating,
     ),
 
@@ -410,7 +409,7 @@ abstract final class AppTheme {
     popupMenuTheme: PopupMenuThemeData(
       color: AppColorsLight.bgRaised,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         side: const BorderSide(color: AppColorsLight.borderDefault),
       ),
     ),

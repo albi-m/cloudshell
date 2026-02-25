@@ -64,7 +64,7 @@ class ErrorHandler {
       return 'SSH connection error. Please try again.';
     }
     if (error is SftpException) {
-      return 'File transfer error. Please try again.';
+      return 'SFTP error: ${error.message}';
     }
     if (error is InvalidPasswordException) {
       return 'Incorrect master password. Please try again.';
@@ -82,15 +82,18 @@ class ErrorHandler {
       return 'Authentication error. Please sign in again.';
     }
     if (error is SecureStorageException) {
-      return 'Secure storage error. Your keychain may be locked.';
+      return 'Secure storage error: ${error.message}. Try restarting the app.';
     }
     if (error is KeyException) {
-      return 'SSH key error. Please check the key file.';
+      return 'SSH key error: ${error.message}';
     }
     if (error is PortForwardException) {
       return 'Port forwarding error. Please try again.';
     }
-    return 'An unexpected error occurred. Please try again.';
+    if (error is CloudImportException) {
+      return 'Cloud import error: ${error.message}';
+    }
+    return 'Could not complete the request. Please try again.';
   }
 
   /// Routes exceptions to the correct log level.
@@ -130,6 +133,12 @@ class ErrorHandler {
       case PortForwardException():
         _logger.e(
           'Port forward error',
+          error: error.cause,
+          stackTrace: stackTrace,
+        );
+      case CloudImportException():
+        _logger.e(
+          'Cloud import error',
           error: error.cause,
           stackTrace: stackTrace,
         );

@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 ///
 /// Snippets are reusable commands that can be inserted
 /// into terminal sessions with optional {{variable}} placeholders.
+@TableIndex(name: 'idx_snippets_category', columns: {#category, #isDeleted})
 class Snippets extends Table {
   /// Unique identifier (UUID v4).
   TextColumn get id => text()();

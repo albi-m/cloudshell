@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_typography.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Full-page error state with retry button.
 ///
@@ -26,6 +27,7 @@ class ErrorDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final message = ErrorHandler.userMessage(error);
 
     return Center(
@@ -41,7 +43,7 @@ class ErrorDisplay extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Something went wrong',
+              l10n.error,
               style: AppTypography.h3.copyWith(
                 color: theme.colorScheme.onSurface,
               ),
@@ -59,7 +61,7 @@ class ErrorDisplay extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(LucideIcons.refreshCw, size: 16),
-                label: const Text('Try Again'),
+                label: Text(l10n.retry),
               ),
             ],
           ],

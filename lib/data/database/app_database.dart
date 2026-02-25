@@ -1,46 +1,49 @@
 /// Drift database definition for CloudShell.
 ///
 /// Defines the local SQLite database with all tables and DAOs.
-/// The database is encrypted at rest using SQLCipher via a key
-/// stored in the platform keychain.
+/// SQLCipher encryption will be added in a future sprint.
 library;
 
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
-
-import '../../core/constants/storage_keys.dart';
 import 'daos/group_dao.dart';
 import 'daos/host_dao.dart';
 import 'daos/key_dao.dart';
+import 'daos/known_host_dao.dart';
+import 'daos/port_forward_dao.dart';
+import 'daos/secrets_dao.dart';
 import 'daos/settings_dao.dart';
 import 'daos/snippet_dao.dart';
+import 'daos/sync_metadata_dao.dart';
+import 'daos/sync_queue_dao.dart';
+import 'daos/workspace_dao.dart';
 import 'tables/groups_table.dart';
 import 'tables/hosts_table.dart';
 import 'tables/keys_table.dart';
 import 'tables/known_hosts_table.dart';
 import 'tables/port_forwards_table.dart';
+import 'tables/secrets_table.dart';
 import 'tables/settings_table.dart';
 import 'tables/snippets_table.dart';
+import 'tables/sync_metadata_table.dart';
+import 'tables/sync_queue_table.dart';
+import 'tables/workspaces_table.dart';
 
 part 'app_database.g.dart';
 
 /// The main Drift database for CloudShell.
 ///
 /// Includes all tables for hosts, groups, SSH keys, snippets,
-/// port forwarding rules, known hosts, and settings.
+/// port forwarding rules, known hosts, settings, and sync state.
 ///
 /// Data Access Objects (DAOs) provide typed query interfaces
-/// for each domain. The database is encrypted at rest using
-/// SQLCipher with a 256-bit key stored in the platform keychain.
+/// for each domain.
 @DriftDatabase(
   tables: [
     Hosts,
@@ -49,14 +52,24 @@ part 'app_database.g.dart';
     Snippets,
     PortForwards,
     KnownHosts,
+    Secrets,
     Settings,
+    SyncMetadata,
+    SyncQueue,
+    Workspaces,
   ],
   daos: [
     GroupDao,
     HostDao,
     KeyDao,
+    KnownHostDao,
+    PortForwardDao,
+    SecretsDao,
     SnippetDao,
     SettingsDao,
+    SyncMetadataDao,
+    SyncQueueDao,
+    WorkspaceDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -64,7 +77,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Database schema version — increment when tables change.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -73,61 +86,78 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Handle schema migrations here as the app evolves.
+        // v1 → v2: Add secrets table for encrypted key-value storage.
+        if (from < 2) {
+          await m.createTable(secrets);
+        }
+        // v2 → v3: Add sortOrder column to hosts for drag-and-drop reorder.
+        if (from < 3) {
+          await m.addColumn(hosts, hosts.sortOrder);
+        }
+        // v3 → v4: Add sync metadata and sync queue tables.
+        if (from < 4) {
+          await m.createTable(syncMetadata);
+          await m.createTable(syncQueue);
+        }
+        // v4 → v5: Add workspaces table for layout persistence.
+        if (from < 5) {
+          await m.createTable(workspaces);
+        }
+        // v5 → v6: Add indexes for snippet category and group hierarchy.
+        if (from < 6) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_snippets_category '
+            'ON snippets (category, is_deleted)',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_groups_parent '
+            'ON host_groups (parent_group_id, is_deleted)',
+          );
+        }
+        // v6 → v7: Add protocol type and serial port columns to hosts.
+        if (from < 7) {
+          await customStatement(
+            'ALTER TABLE hosts ADD COLUMN protocol INTEGER NOT NULL DEFAULT 0',
+          );
+          await customStatement(
+            'ALTER TABLE hosts ADD COLUMN serial_port TEXT',
+          );
+          await customStatement(
+            'ALTER TABLE hosts ADD COLUMN serial_baud_rate INTEGER',
+          );
+          await customStatement(
+            'ALTER TABLE hosts ADD COLUMN serial_data_bits INTEGER',
+          );
+          await customStatement(
+            'ALTER TABLE hosts ADD COLUMN serial_stop_bits INTEGER',
+          );
+          await customStatement(
+            'ALTER TABLE hosts ADD COLUMN serial_parity TEXT',
+          );
+          await customStatement(
+            'ALTER TABLE hosts ADD COLUMN serial_flow_control TEXT',
+          );
+        }
       },
     );
   }
 }
 
-/// Generates or retrieves the database encryption key from
-/// the platform keychain.
-///
-/// On first launch a cryptographically random 32-byte key is
-/// generated and stored. Subsequent launches retrieve the same key.
-Future<String> _getOrCreateDbEncryptionKey() async {
-  const storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-    mOptions: MacOsOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-  );
-
-  var key = await storage.read(key: StorageKeys.dbEncryptionKey);
-  if (key == null) {
-    final rng = Random.secure();
-    final bytes = List<int>.generate(32, (_) => rng.nextInt(256));
-    key = base64Url.encode(bytes);
-    await storage.write(key: StorageKeys.dbEncryptionKey, value: key);
-  }
-  return key;
-}
-
-/// Opens an encrypted SQLite database connection.
+/// Opens the SQLite database connection.
 ///
 /// The database file is stored in the application support
-/// directory and encrypted with SQLCipher using a key from
-/// the platform keychain.
-LazyDatabase _openEncryptedConnection() {
+/// directory. SQLCipher encryption will be enabled in a future
+/// sprint when sqlcipher_flutter_libs is added as a dependency.
+LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
 
     final dbFolder = await getApplicationSupportDirectory();
     final file = File(p.join(dbFolder.path, 'cloudshell.db'));
 
-    final encryptionKey = await _getOrCreateDbEncryptionKey();
-
     return NativeDatabase.createInBackground(
       file,
       setup: (db) {
-        // Enable SQLCipher encryption with the keychain-stored key.
-        final keyHex = encryptionKey.codeUnits
-            .map((c) => c.toRadixString(16).padLeft(2, '0'))
-            .join();
-        db.execute("PRAGMA key = \"x'$keyHex'\";");
-        db.execute('PRAGMA kdf_iter = 256000;');
         db.execute('PRAGMA journal_mode = WAL;');
         db.execute('PRAGMA foreign_keys = ON;');
       },
@@ -137,7 +167,7 @@ LazyDatabase _openEncryptedConnection() {
 
 /// Riverpod provider for the application database singleton.
 final databaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase(_openEncryptedConnection());
+  final db = AppDatabase(_openConnection());
   ref.onDispose(() => db.close());
   return db;
 });

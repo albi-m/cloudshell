@@ -7,9 +7,11 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Callback type for extra key presses.
 ///
@@ -42,6 +44,7 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
   bool _altActive = false;
 
   void _sendKey(String sequence) {
+    HapticFeedback.selectionClick();
     if (_ctrlActive) {
       // Ctrl+key: for ASCII letters, send the control character
       // Control characters are char code 1-26 for a-z
@@ -75,6 +78,7 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -89,50 +93,56 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
         children: [
           // ESC
           _ExtraKey(
-            label: 'ESC',
+            label: l10n.extraKeyEsc,
             onTap: () => _sendKey('\x1B'),
           ),
           // TAB
           _ExtraKey(
-            label: 'TAB',
+            label: l10n.extraKeyTab,
             onTap: () => _sendKey('\t'),
           ),
           // CTL (toggle)
           _ExtraKey(
-            label: 'CTL',
+            label: l10n.extraKeyCtl,
             isActive: _ctrlActive,
-            onTap: () => setState(() {
-              _ctrlActive = !_ctrlActive;
-              if (_ctrlActive) _altActive = false;
-            }),
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _ctrlActive = !_ctrlActive;
+                if (_ctrlActive) _altActive = false;
+              });
+            },
           ),
           // ALT (toggle)
           _ExtraKey(
-            label: 'ALT',
+            label: l10n.extraKeyAlt,
             isActive: _altActive,
-            onTap: () => setState(() {
-              _altActive = !_altActive;
-              if (_altActive) _ctrlActive = false;
-            }),
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _altActive = !_altActive;
+                if (_altActive) _ctrlActive = false;
+              });
+            },
           ),
 
           const SizedBox(width: 4),
 
           // Arrow keys
           _ExtraKey(
-            label: '←',
+            label: '\u2190',
             onTap: () => _sendKey('\x1B[D'),
           ),
           _ExtraKey(
-            label: '↑',
+            label: '\u2191',
             onTap: () => _sendKey('\x1B[A'),
           ),
           _ExtraKey(
-            label: '↓',
+            label: '\u2193',
             onTap: () => _sendKey('\x1B[B'),
           ),
           _ExtraKey(
-            label: '→',
+            label: '\u2192',
             onTap: () => _sendKey('\x1B[C'),
           ),
         ],

@@ -12,7 +12,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/validators.dart';
+import '../../l10n/app_localizations.dart';
 import '../../data/database/app_database.dart';
+import '../../providers/group_provider.dart';
 
 /// Shows a dialog to create or edit a host group.
 ///
@@ -42,6 +44,7 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _defaultUsernameController;
   late final TextEditingController _defaultPortController;
+  String? _parentGroupId;
   bool _isSaving = false;
 
   bool get _isEditing => widget.group != null;
@@ -56,6 +59,7 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
     _defaultPortController = TextEditingController(
       text: widget.group?.defaultPort?.toString() ?? '',
     );
+    _parentGroupId = widget.group?.parentGroupId;
   }
 
   @override
@@ -82,6 +86,7 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
         await db.groupDao.updateGroup(HostGroupsCompanion(
           id: Value(widget.group!.id),
           name: Value(name),
+          parentGroupId: Value(_parentGroupId),
           defaultUsername:
               Value(defaultUsername.isEmpty ? null : defaultUsername),
           defaultPort: Value(defaultPort),
@@ -93,6 +98,7 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
         await db.groupDao.insertGroup(HostGroupsCompanion(
           id: Value(id),
           name: Value(name),
+          parentGroupId: Value(_parentGroupId),
           defaultUsername:
               Value(defaultUsername.isEmpty ? null : defaultUsername),
           defaultPort: Value(defaultPort),
@@ -103,8 +109,9 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save group: $e')),
+          SnackBar(content: Text('${l10n.error}: $e')),
         );
         setState(() => _isSaving = false);
       }
@@ -113,13 +120,16 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final groupsAsync = ref.watch(allGroupsProvider);
+
     return AlertDialog(
       title: Row(
         children: [
           const Icon(LucideIcons.folderPlus, size: 20),
           const SizedBox(width: 8),
           Text(
-            _isEditing ? 'Edit Group' : 'New Group',
+            _isEditing ? l10n.groupFormTitleEdit : l10n.groupFormTitleNew,
             style: AppTypography.h2,
           ),
         ],
@@ -133,39 +143,71 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Group Name',
-                  hintText: 'e.g., Production Servers',
-                  prefixIcon: Icon(LucideIcons.folder, size: 18),
+                decoration: InputDecoration(
+                  labelText: l10n.groupFormNameField,
+                  hintText: l10n.groupFormNameHint,
+                  prefixIcon: const Icon(LucideIcons.folder, size: 18),
                 ),
                 validator: Validators.label,
                 autofocus: true,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
+              // Parent group selector
+              groupsAsync.when(
+                data: (groups) {
+                  // Exclude self and own descendants to prevent cycles
+                  final editingId = widget.group?.id;
+                  final available = groups
+                      .where((g) => g.id != editingId)
+                      .toList();
+                  return DropdownButtonFormField<String?>(
+                    initialValue: _parentGroupId,
+                    decoration: InputDecoration(
+                      labelText: l10n.groupFormParentField,
+                      prefixIcon: const Icon(LucideIcons.folderTree, size: 18),
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(l10n.groupFormParentNone),
+                      ),
+                      ...available.map((g) => DropdownMenuItem<String?>(
+                            value: g.id,
+                            child: Text(g.name),
+                          )),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _parentGroupId = value),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _defaultUsernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Default Username (optional)',
-                  hintText: 'e.g., root',
-                  prefixIcon: Icon(LucideIcons.user, size: 18),
+                decoration: InputDecoration(
+                  labelText: l10n.hostFormUsernameField,
+                  hintText: l10n.hostFormUsernameHint,
+                  prefixIcon: const Icon(LucideIcons.user, size: 18),
                 ),
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _defaultPortController,
-                decoration: const InputDecoration(
-                  labelText: 'Default Port (optional)',
+                decoration: InputDecoration(
+                  labelText: l10n.hostFormPortField,
                   hintText: '22',
-                  prefixIcon: Icon(LucideIcons.hash, size: 18),
+                  prefixIcon: const Icon(LucideIcons.hash, size: 18),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
                   final n = int.tryParse(value.trim());
                   if (n == null || n < 1 || n > 65535) {
-                    return 'Enter a valid port (1-65535)';
+                    return l10n.hostFormHostnameRequired;
                   }
                   return null;
                 },
@@ -179,7 +221,7 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
       actions: [
         TextButton(
           onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _isSaving ? null : _save,
@@ -189,7 +231,7 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(_isEditing ? 'Save' : 'Create'),
+              : Text(_isEditing ? l10n.save : l10n.confirm),
         ),
       ],
     );

@@ -92,3 +92,8 @@ class KeyException extends AppException {
 class PortForwardException extends AppException {
   const PortForwardException(super.message, [super.cause]);
 }
+
+/// Cloud provider import errors (AWS, DigitalOcean, etc.).
+class CloudImportException extends AppException {
+  const CloudImportException(super.message, [super.cause]);
+}

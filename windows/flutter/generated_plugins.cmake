@@ -3,7 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  app_links
   connectivity_plus
+  desktop_drop
+  flutter_libserialport
   flutter_secure_storage_windows
   local_auth_windows
   share_plus

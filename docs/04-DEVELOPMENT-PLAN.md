@@ -217,6 +217,11 @@ Tasks:
 │   ├── Active forwards with stop button
 │   ├── Saved rules with start button
 │   └── Status indicators
+├── Proxy jump / bastion host support
+│   ├── Jump host field in host form
+│   ├── Multi-hop SSH connection via jump hosts
+│   ├── SSH ProxyJump chain support
+│   └── Bastion host connection flow
 ├── Split pane terminal
 │   ├── Horizontal split (Cmd+D)
 │   ├── Vertical split (Cmd+Shift+D)
@@ -465,56 +470,64 @@ Tasks:
 └── Dynamic port forwarding (SOCKS proxy)
 ```
 
-### Sprint 27-28 (Weeks 27-28)
+### Sprint 27-28 (Weeks 27-28) ✅
 
 ```
 Tasks:
-├── Terminal session logging
+├── Terminal session logging ✅
 │   ├── Log to file (configurable)
 │   ├── Export session log
 │   └── Timestamp option
-├── Broadcast input to multiple sessions
-├── Workspaces
-│   ├── Group sessions into workspaces
-│   ├── Save/restore workspace layout
-│   └── Quick-switch between workspaces
-├── Advanced SSH features
-│   ├── SSH agent forwarding
-│   ├── Jump host / proxy support
-│   ├── PPK format import
-│   └── Keyboard-interactive auth improvements
-└── iPad multitasking
-    ├── Split View support
-    ├── Slide Over support
-    └── Stage Manager compatibility
+├── Broadcast input to multiple sessions ✅
+│   ├── Selective per-tab broadcast groups
+│   ├── BroadcastPanel bottom sheet UI
+│   └── CAST button (tap: all, long-press: selective)
+├── Workspaces ✅
+│   ├── DB persistence (Drift table + DAO)
+│   ├── Auto-save with 2s debounce
+│   ├── Restore on app startup
+│   ├── WorkspaceManagerScreen (save/rename/delete/switch)
+│   └── Command palette + settings integration
+├── PPK format import ✅
+│   ├── PpkParser: PPK v2 unencrypted RSA/Ed25519
+│   ├── Auto-detect in SshKeyService.importKey()
+│   └── Key import screen updated with PPK hints
+├── iPad multitasking ✅
+│   ├── 3-tier responsive: ≥900 full / ≥600 compact / <600 mobile
+│   ├── forceCollapsed sidebar in compact mode
+│   └── Updated context extensions (isMobile/isTablet/isCompactDesktop)
+├── SSH agent forwarding — DEFERRED
+│   └── dartssh2 v2.9.0 has no agent forwarding API surface
+└── Keyboard-interactive auth improvements — DEFERRED
 ```
 
-### Sprint 29-30 (Weeks 29-30)
+### Sprint 29-30 (Weeks 29-30) — DONE
 
 ```
 Tasks:
-├── Self-hosted sync server
-│   ├── Docker image for backend
-│   ├── Docker Compose with PostgreSQL
-│   ├── Environment variable configuration
-│   ├── Setup documentation
-│   └── Client: custom server URL setting
-├── Performance optimization pass
-│   ├── App startup time
-│   ├── Terminal rendering benchmarks
-│   ├── Memory usage optimization
-│   ├── Database query optimization
-│   └── Network request optimization
-├── Comprehensive testing
-│   ├── Full integration test suite
-│   ├── Cross-platform testing matrix
-│   ├── Accessibility audit
-│   └── Security penetration testing
-└── App store preparation
-    ├── App Store screenshots (all devices)
-    ├── App descriptions
-    ├── Privacy policy finalization
-    └── Review guidelines compliance
+├── Self-hosted sync server — SKIPPED
+│   └── Supabase backend handles auth, sync, vault, and E2E encryption
+├── Performance optimization pass ✓
+│   ├── Bundle PlusJakartaSans font (eliminate Google Fonts network fetch)
+│   ├── Terminal output micro-batching (16ms flush, 64KB ceiling)
+│   ├── Extract StatusBar timer (eliminate full-tree 1s rebuilds)
+│   ├── Memoize xterm theme conversion (cache by theme name)
+│   ├── Parallel workspace reconnection (Future.wait, max 3 concurrent)
+│   └── Database indexes: idx_snippets_category, idx_groups_parent (schema v6)
+├── Comprehensive testing ✓
+│   ├── Test infrastructure (in-memory DB helper, provider overrides)
+│   ├── DAO unit tests: HostDao (9), SnippetDao (5), SettingsDao (6)
+│   ├── Service unit tests: SecureStorageService (10)
+│   ├── Widget smoke test with DB override (1)
+│   └── Integration tests: app launch, navigation, settings persistence
+└── App store preparation ✓
+    ├── Version bump to 1.0.0+1
+    ├── CHANGELOG.md with full feature list
+    ├── iOS PrivacyInfo.xcprivacy (no tracking, FileTimestamp + UserDefaults)
+    ├── iOS Info.plist: NSFaceIDUsageDescription, NSLocalNetworkUsageDescription
+    ├── Android: INTERNET permission in main manifest (was debug-only)
+    ├── macOS: read-write file entitlement for SFTP (was read-only)
+    └── Store metadata: App Store description, keywords, Play Store short description
 ```
 
 ---
@@ -523,13 +536,44 @@ Tasks:
 
 **Goal:** Extension system, additional protocols, team features, community.
 
-### Sprint 31-34 (Weeks 31-34)
+### Sprint 31: Internationalization (i18n) — DONE
 
 ```
 Tasks:
-├── Mosh (mobile shell) support
-├── Telnet protocol support
-├── Serial port support
+├── Flutter i18n infrastructure (flutter_localizations + l10n.yaml + generate: true) ✓
+├── 600+ ARB string keys extracted from 49 UI files into app_en.arb ✓
+├── AppLocalizations wired into MaterialApp.router (delegates + supportedLocales + locale) ✓
+├── Language picker in Settings > Appearance (RadioGroup, 8 options incl. System) ✓
+├── Translation ARB files for 6 languages (es/de/fr/ja/zh/ko) ✓
+├── All 49 UI files refactored: hardcoded strings → AppLocalizations calls ✓
+└── flutter analyze: zero errors ✓
+```
+
+### Sprint 32: Open Source Release Polish — DONE
+
+```
+Tasks:
+├── README.md: full rewrite (features, tech stack, build instructions, project structure) ✓
+├── CONTRIBUTING.md: updated clone URL, added flutter gen-l10n step ✓
+├── CHANGELOG.md: added v1.1.0 (i18n, Telnet, Serial, open source) ✓
+├── CI/CD: added flutter gen-l10n to all workflow jobs ✓
+├── pubspec.yaml: version bump to 1.1.0+2, added homepage/repository/issue_tracker ✓
+├── Settings version display updated to 1.1.0 ✓
+├── Issue templates (bug report + feature request) already present ✓
+├── PR template already present ✓
+├── .gitignore verified (secrets, build artifacts, IDE files) ✓
+├── flutter analyze: zero errors ✓
+└── flutter test: 49 tests pass ✓
+```
+
+### Sprint 33-34 (Weeks 33-34)
+
+```
+Tasks:
+├── Mosh (mobile shell) support — SKIPPED
+│   └── No Dart binding; auto-reconnect covers the use case
+├── Telnet protocol support ✓ (done Sprint 29-30)
+├── Serial port support ✓ (done Sprint 29-30)
 ├── Team vault sharing
 │   ├── Shared team vault concept
 │   ├── Invite team members
@@ -540,10 +584,6 @@ Tasks:
 │   ├── Extension manifest format
 │   ├── Extension marketplace (community themes, snippets)
 │   └── Example extensions
-├── Internationalization (i18n)
-│   ├── Language selection
-│   ├── Translation files (en, es, de, fr, ja, zh, ko)
-│   └── RTL support
 └── Community
     ├── Open source client release
     ├── Contribution guidelines

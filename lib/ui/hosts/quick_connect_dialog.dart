@@ -14,12 +14,14 @@ import 'package:uuid/uuid.dart';
 import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../l10n/app_localizations.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables/hosts_table.dart';
 import '../../providers/connection_provider.dart';
 import '../../providers/key_provider.dart';
+import '../../providers/terminal_tab_provider.dart';
 import '../../services/ssh/ssh_service.dart';
-import '../terminal/terminal_screen.dart';
+import '../../services/telnet/telnet_service.dart';
 
 /// Shows the quick connect dialog and returns true if a connection
 /// was established.
@@ -96,6 +98,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
   static const _uuid = Uuid();
 
   final _connectionController = TextEditingController();
+  ProtocolType _protocol = ProtocolType.ssh;
   AuthMethodType _authMethod = AuthMethodType.key;
   String? _selectedKeyId;
   bool _saveConnection = false;
@@ -109,9 +112,10 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
   }
 
   _ParsedConnection? _validate() {
+    final l10n = AppLocalizations.of(context);
     final parsed = _ParsedConnection.tryParse(_connectionController.text);
     if (parsed == null) {
-      setState(() => _parseError = 'Enter a valid connection string');
+      setState(() => _parseError = l10n.quickConnectInvalidFormat);
       return null;
     }
     setState(() => _parseError = null);
@@ -126,8 +130,12 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
 
     try {
       final db = ref.read(databaseProvider);
-      final sshService = ref.read(sshServiceProvider);
       final connections = ref.read(activeConnectionsProvider.notifier);
+
+      // Use correct default port for protocol.
+      final port = parsed.port == 22 && _protocol == ProtocolType.telnet
+          ? 23
+          : parsed.port;
 
       // Build a temporary or saved host
       final hostId = _uuid.v4();
@@ -138,10 +146,11 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
         id: Value(hostId),
         label: Value(label),
         hostname: Value(parsed.hostname),
-        port: Value(parsed.port),
+        port: Value(port),
         username: Value(parsed.username),
         authMethod: Value(_authMethod),
         keyId: Value(_selectedKeyId),
+        protocol: Value(_protocol),
         createdAt: Value(now),
         updatedAt: Value(now),
       );
@@ -150,12 +159,11 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
         await db.hostDao.insertHost(companion);
       }
 
-      // Build a Host object for the SSH service
       final host = Host(
         id: hostId,
         label: label,
         hostname: parsed.hostname,
-        port: parsed.port,
+        port: port,
         username: parsed.username,
         authMethod: _authMethod,
         keyId: _selectedKeyId,
@@ -166,15 +174,28 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
         jumpHostId: null,
         encoding: null,
         notes: null,
+        sortOrder: 0,
         isFavorite: false,
         lastConnectedAt: null,
         createdAt: now,
         updatedAt: now,
         syncVersion: 0,
         isDeleted: false,
+        protocol: _protocol,
+        serialPort: null,
+        serialBaudRate: null,
+        serialDataBits: null,
+        serialStopBits: null,
+        serialParity: null,
+        serialFlowControl: null,
       );
 
-      final session = await sshService.connect(host: host);
+      // Connect based on selected protocol.
+      final session = switch (_protocol) {
+        ProtocolType.ssh => await ref.read(sshServiceProvider).connect(host: host),
+        ProtocolType.telnet => await ref.read(telnetServiceProvider).connect(host: host),
+        ProtocolType.serial => throw UnsupportedError('Use host form for serial'),
+      };
 
       connections.addConnection(session.sessionId, hostId);
       connections.updateStatus(session.sessionId, ConnectionStatus.connected);
@@ -183,16 +204,12 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
         await db.hostDao.updateLastConnected(hostId);
       }
 
+      // Add terminal tab (provider owns xterm state)
+      await ref.read(terminalTabsProvider.notifier).addTab(session, label);
+
+      // Pop dialog with true — caller handles workspace tab opening
       if (mounted) {
         Navigator.of(context).pop(true);
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => TerminalScreen(
-              session: session,
-              hostLabel: label,
-            ),
-          ),
-        );
       }
     } catch (e) {
       ErrorHandler.handle(e);
@@ -210,6 +227,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final keysAsync = ref.watch(allKeysProvider);
 
     return AlertDialog(
@@ -217,7 +235,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
         children: [
           const Icon(LucideIcons.zap, size: 20),
           const SizedBox(width: 8),
-          Text('Quick Connect', style: AppTypography.h2),
+          Text(l10n.quickConnectTitle, style: AppTypography.h2),
         ],
       ),
       content: SizedBox(
@@ -226,15 +244,63 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Protocol toggle (SSH / Telnet)
+            SegmentedButton<ProtocolType>(
+              segments: [
+                ButtonSegment(
+                  value: ProtocolType.ssh,
+                  label: Text(l10n.hostFormProtocolSsh),
+                  icon: const Icon(LucideIcons.terminal, size: 14),
+                ),
+                ButtonSegment(
+                  value: ProtocolType.telnet,
+                  label: Text(l10n.hostFormProtocolTelnet),
+                  icon: const Icon(LucideIcons.globe, size: 14),
+                ),
+              ],
+              selected: {_protocol},
+              onSelectionChanged: (selected) =>
+                  setState(() => _protocol = selected.first),
+            ),
+
+            // Telnet warning
+            if (_protocol == ProtocolType.telnet) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.accentOrange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.alertTriangle,
+                        size: 14, color: AppColors.accentOrange),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Telnet sends data in plaintext.',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.accentOrange,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 12),
+
             // Connection string input
             TextField(
               controller: _connectionController,
               decoration: InputDecoration(
-                labelText: 'Connection',
-                hintText: 'user@hostname:port',
+                labelText: l10n.quickConnectTitle,
+                hintText: l10n.quickConnectHint,
                 prefixIcon: const Icon(LucideIcons.globe, size: 18),
                 errorText: _parseError,
-                helperText: 'e.g., root@192.168.1.1:22',
+                helperText: l10n.quickConnectHelperText,
               ),
               autofocus: true,
               autocorrect: false,
@@ -245,22 +311,25 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
             ),
             const SizedBox(height: 16),
 
-            // Auth method selector
-            Text('Authentication', style: AppTypography.overline.copyWith(
-              color: AppColors.textTertiary,
-            )),
-            const SizedBox(height: 8),
+            // Auth method selector (SSH only)
+            if (_protocol == ProtocolType.ssh) ...[
+              Text(l10n.hostDetailSectionAuthentication, style: AppTypography.overline.copyWith(
+                color: AppColors.textTertiary,
+              )),
+              const SizedBox(height: 8),
+            ],
+            if (_protocol == ProtocolType.ssh)
             SegmentedButton<AuthMethodType>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: AuthMethodType.key,
-                  label: Text('Key'),
-                  icon: Icon(LucideIcons.keyRound, size: 14),
+                  label: Text(l10n.hostFormAuthMethodKey),
+                  icon: const Icon(LucideIcons.keyRound, size: 14),
                 ),
                 ButtonSegment(
                   value: AuthMethodType.password,
-                  label: Text('Password'),
-                  icon: Icon(LucideIcons.lock, size: 14),
+                  label: Text(l10n.hostFormAuthMethodPassword),
+                  icon: const Icon(LucideIcons.lock, size: 14),
                 ),
               ],
               selected: {_authMethod},
@@ -268,28 +337,42 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
                   setState(() => _authMethod = selected.first),
             ),
 
-            // Key selector (when key auth selected)
-            if (_authMethod == AuthMethodType.key) ...[
+            // Key selector (when SSH + key auth selected)
+            if (_protocol == ProtocolType.ssh && _authMethod == AuthMethodType.key) ...[
               const SizedBox(height: 12),
               keysAsync.when(
                 data: (keys) {
                   if (keys.isEmpty) {
                     return Text(
-                      'No SSH keys available. Import one first.',
+                      l10n.hostFormKeyNone,
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     );
                   }
-                  return DropdownButtonFormField<String>(
-                    initialValue: _selectedKeyId,
-                    decoration: const InputDecoration(
-                      labelText: 'SSH Key',
-                      prefixIcon: Icon(LucideIcons.keyRound, size: 16),
+                  // Reset if the selected key no longer exists
+                  final keyIds = keys.map((k) => k.id).toSet();
+                  if (_selectedKeyId != null &&
+                      !keyIds.contains(_selectedKeyId)) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() => _selectedKeyId = null);
+                      }
+                    });
+                  }
+                  final safeKeyId = _selectedKeyId != null &&
+                          keyIds.contains(_selectedKeyId)
+                      ? _selectedKeyId
+                      : null;
+                  return DropdownButtonFormField<String?>(
+                    initialValue: safeKeyId,
+                    decoration: InputDecoration(
+                      labelText: l10n.hostFormKeyField,
+                      prefixIcon: const Icon(LucideIcons.keyRound, size: 16),
                       isDense: true,
                     ),
                     items: keys.map((key) {
-                      return DropdownMenuItem(
+                      return DropdownMenuItem<String?>(
                         value: key.id,
                         child: Text(key.label),
                       );
@@ -300,7 +383,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
                 },
                 loading: () => const LinearProgressIndicator(),
                 error: (_, _) => Text(
-                  'Failed to load keys',
+                  l10n.error,
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.accentRed,
                   ),
@@ -327,7 +410,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
                   onTap: () =>
                       setState(() => _saveConnection = !_saveConnection),
                   child: Text(
-                    'Save this connection',
+                    l10n.quickConnectSaveHost,
                     style: AppTypography.body,
                   ),
                 ),
@@ -339,7 +422,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
       actions: [
         TextButton(
           onPressed: _isConnecting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton.icon(
           onPressed: _isConnecting ? null : _connect,
@@ -350,7 +433,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(LucideIcons.play, size: 16),
-          label: Text(_isConnecting ? 'Connecting...' : 'Connect'),
+          label: Text(_isConnecting ? '${l10n.quickConnectConnect}...' : l10n.quickConnectConnect),
         ),
       ],
     );
