@@ -2,9 +2,9 @@ name: cloudshell
 description: "CloudShell - Cross-platform SSH client with E2E encrypted sync"
 publish_to: 'none'
 version: 1.1.0+2
-homepage: https://github.com/cloudshell-app/cloudshell
-repository: https://github.com/cloudshell-app/cloudshell
-issue_tracker: https://github.com/cloudshell-app/cloudshell/issues
+homepage: https://github.com/albi-m/cloudshell
+repository: https://github.com/albi-m/cloudshell
+issue_tracker: https://github.com/albi-m/cloudshell/issues
 
 environment:
   sdk: ^3.10.8
