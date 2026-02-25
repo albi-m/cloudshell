@@ -45,7 +45,8 @@ class _CloudShellAppState extends ConsumerState<CloudShellApp>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await ref.read(workspaceProvider.notifier).restoreWorkspace();
-      } catch (_) {
+      } catch (e) {
+        debugPrint('Workspace restore failed: $e');
         // Workspace restore is best-effort
       }
     });

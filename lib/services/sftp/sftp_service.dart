@@ -11,6 +11,7 @@ import 'dart:typed_data';
 
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/errors/app_exception.dart';
@@ -25,6 +26,8 @@ class SftpEntry {
     this.size,
     this.modifiedAt,
     this.permissions,
+    this.userCanWrite = true,
+    this.userCanRead = true,
   });
 
   final String name;
@@ -33,6 +36,12 @@ class SftpEntry {
   final int? size;
   final DateTime? modifiedAt;
   final String? permissions;
+
+  /// Whether the current user has write permission on this entry.
+  final bool userCanWrite;
+
+  /// Whether the current user has read permission on this entry.
+  final bool userCanRead;
 
   bool get isParentDir => name == '..';
   bool get isCurrentDir => name == '.';
@@ -49,6 +58,8 @@ typedef TransferProgress = void Function(int bytesTransferred, int totalBytes);
 class SftpService {
   SftpService(this._session);
 
+  static final _log = Logger();
+
   final SshSessionWrapper _session;
   SftpClient? _sftp;
 
@@ -61,7 +72,8 @@ class SftpService {
     try {
       _sftp = await _session.client.sftp();
     } catch (e) {
-      throw const SftpException('Failed to open SFTP session');
+      if (e is AppException) rethrow;
+      throw SftpException('Failed to open SFTP session: $e', e);
     }
   }
 
@@ -86,6 +98,15 @@ class SftpService {
 
         final isDir = item.attr.isDirectory;
         final modTime = item.attr.modifyTime;
+        final mode = item.attr.mode;
+
+        // Determine read/write access from permission bits.
+        // We check user OR group OR other since we don't know
+        // which applies to the current SSH user.
+        final canRead = mode == null ||
+            mode.userRead || mode.groupRead || mode.otherRead;
+        final canWrite = mode == null ||
+            mode.userWrite || mode.groupWrite || mode.otherWrite;
 
         entries.add(SftpEntry(
           name: item.filename,
@@ -95,7 +116,9 @@ class SftpService {
           modifiedAt: modTime != null
               ? DateTime.fromMillisecondsSinceEpoch(modTime * 1000)
               : null,
-          permissions: _formatPermissions(item.attr.mode),
+          permissions: _formatPermissions(mode),
+          userCanRead: canRead,
+          userCanWrite: canWrite,
         ));
       }
 
@@ -112,7 +135,7 @@ class SftpService {
       return entries;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw SftpException('Failed to list directory: $path');
+      throw SftpException('Failed to list directory: $path — $e', e);
     }
   }
 
@@ -144,7 +167,7 @@ class SftpService {
       await file.close();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw SftpException('Failed to download file: $remotePath');
+      throw SftpException('Failed to download file: $remotePath — $e', e);
     }
   }
 
@@ -179,7 +202,7 @@ class SftpService {
       await remoteFile.close();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw SftpException('Failed to upload file: $localPath');
+      throw SftpException('Failed to upload file: $localPath — $e', e);
     }
   }
 
@@ -189,7 +212,7 @@ class SftpService {
     try {
       await _sftp!.mkdir(path);
     } catch (e) {
-      throw SftpException('Failed to create directory: $path');
+      throw SftpException('Failed to create directory: $path — $e', e);
     }
   }
 
@@ -199,7 +222,7 @@ class SftpService {
     try {
       await _sftp!.remove(path);
     } catch (e) {
-      throw SftpException('Failed to delete file: $path');
+      throw SftpException('Failed to delete file: $path — $e', e);
     }
   }
 
@@ -209,7 +232,7 @@ class SftpService {
     try {
       await _sftp!.rmdir(path);
     } catch (e) {
-      throw SftpException('Failed to delete directory: $path');
+      throw SftpException('Failed to delete directory: $path — $e', e);
     }
   }
 
@@ -219,7 +242,7 @@ class SftpService {
     try {
       await _sftp!.rename(oldPath, newPath);
     } catch (e) {
-      throw SftpException('Failed to rename: $oldPath');
+      throw SftpException('Failed to rename: $oldPath — $e', e);
     }
   }
 
@@ -240,7 +263,99 @@ class SftpService {
         permissions: _formatPermissions(attrs.mode),
       );
     } catch (e) {
-      throw SftpException('Failed to stat: $path');
+      throw SftpException('Failed to stat: $path — $e', e);
+    }
+  }
+
+  /// Sets the permission mode on a remote file or directory.
+  ///
+  /// [octalMode] is the integer value of the octal permission string.
+  /// For example, "755" should be passed as `int.parse('755', radix: 8)`.
+  Future<void> setPermissions(String path, int octalMode) async {
+    _ensureConnected();
+    try {
+      final user = (octalMode >> 6) & 7;
+      final group = (octalMode >> 3) & 7;
+      final other = octalMode & 7;
+
+      final mode = SftpFileMode(
+        userRead: (user & 4) != 0,
+        userWrite: (user & 2) != 0,
+        userExecute: (user & 1) != 0,
+        groupRead: (group & 4) != 0,
+        groupWrite: (group & 2) != 0,
+        groupExecute: (group & 1) != 0,
+        otherRead: (other & 4) != 0,
+        otherWrite: (other & 2) != 0,
+        otherExecute: (other & 1) != 0,
+      );
+
+      await _sftp!.setStat(path, SftpFileAttrs(mode: mode));
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw SftpException('Failed to set permissions on: $path — $e', e);
+    }
+  }
+
+  /// Reads the entire content of a remote text file as a String.
+  ///
+  /// Limits to [maxBytes] (default 5 MB) to prevent loading huge binaries.
+  Future<String> readFileContent(String path,
+      {int maxBytes = 5 * 1024 * 1024}) async {
+    _ensureConnected();
+    try {
+      final attrs = await _sftp!.stat(path);
+      final size = attrs.size ?? 0;
+      if (size > maxBytes) {
+        throw SftpException(
+            'File too large for editing '
+            '(${(size / 1024 / 1024).toStringAsFixed(1)} MB, '
+            'max ${(maxBytes / 1024 / 1024).toStringAsFixed(0)} MB)');
+      }
+      final file = await _sftp!.open(path);
+      final bytes = await file.readBytes();
+      await file.close();
+      return String.fromCharCodes(bytes);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw SftpException('Failed to read file: $path — $e', e);
+    }
+  }
+
+  /// Writes string content to a remote file, replacing its contents.
+  Future<void> writeFileContent(String path, String content) async {
+    _ensureConnected();
+    try {
+      final file = await _sftp!.open(
+        path,
+        mode: SftpFileOpenMode.write |
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate,
+      );
+      final bytes = Uint8List.fromList(content.codeUnits);
+      final stream = Stream.value(bytes);
+      await file.write(stream).done;
+      await file.close();
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw SftpException('Failed to write file: $path — $e', e);
+    }
+  }
+
+  /// Checks if a directory is writable by the current user.
+  ///
+  /// Returns true if the directory likely has write permission,
+  /// false otherwise. Conservative: assumes readable if no mode info.
+  Future<bool> isDirectoryWritable(String path) async {
+    _ensureConnected();
+    try {
+      final attrs = await _sftp!.stat(path);
+      final mode = attrs.mode;
+      if (mode == null) return true; // No mode info, assume writable
+      return mode.userWrite || mode.groupWrite || mode.otherWrite;
+    } catch (e, stackTrace) {
+      _log.d('Directory writable check failed for: $path', error: e, stackTrace: stackTrace);
+      return false;
     }
   }
 

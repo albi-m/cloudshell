@@ -12,6 +12,7 @@ import 'dart:typed_data';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
 import 'package:pointycastle/digests/sha256.dart';
 import 'package:uuid/uuid.dart';
 
@@ -19,6 +20,7 @@ import '../../core/errors/app_exception.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables/keys_table.dart';
 import '../crypto/secure_storage.dart';
+import 'ppk_parser.dart';
 
 /// Result of an SSH key pair generation or import operation.
 class KeyPairResult {
@@ -49,6 +51,8 @@ class SshKeyService {
     required this.secureStorage,
   });
 
+  static final _log = Logger();
+
   final AppDatabase db;
   final SecureStorageService secureStorage;
 
@@ -67,8 +71,18 @@ class SshKeyService {
     try {
       final id = _uuid.v4();
 
+      // Auto-detect and convert PuTTY PPK format
+      var keyContent = privateKeyPem;
+      if (PpkParser.isPpkFormat(keyContent)) {
+        try {
+          keyContent = PpkParser.convertToPem(keyContent, passphrase: passphrase);
+        } on PpkException catch (e) {
+          throw KeyException('PPK key detected but conversion failed: $e');
+        }
+      }
+
       // Parse the PEM to validate and extract key info
-      final keyPairs = SSHKeyPair.fromPem(privateKeyPem, passphrase);
+      final keyPairs = SSHKeyPair.fromPem(keyContent, passphrase);
       if (keyPairs.isEmpty) {
         throw const KeyException('No valid key found in the provided PEM data');
       }
@@ -86,8 +100,8 @@ class SshKeyService {
       final keyType = _detectKeyType(keyPair.name);
       final keyBits = _detectKeyBits(keyPair.name);
 
-      // Store private key in platform keychain
-      await secureStorage.storeSshPrivateKey(id, privateKeyPem);
+      // Store private key in platform keychain (converted PEM if was PPK)
+      await secureStorage.storeSshPrivateKey(id, keyContent);
 
       if (passphrase != null && passphrase.isNotEmpty) {
         await secureStorage.storeSshPassphrase(id, passphrase);
@@ -125,7 +139,12 @@ class SshKeyService {
   /// with dartssh2 for use with SSHClient.
   Future<List<SSHKeyPair>> getKeyPairsForAuth(String keyId) async {
     final privateKeyPem = await secureStorage.getSshPrivateKey(keyId);
-    if (privateKeyPem == null) return [];
+    if (privateKeyPem == null) {
+      throw const KeyException(
+        'SSH key not found in secure storage. '
+        'Please re-import the key from the Keys screen.',
+      );
+    }
 
     final passphrase = await secureStorage.getSshPassphrase(keyId);
 
@@ -143,8 +162,23 @@ class SshKeyService {
   }
 
   /// Deletes a key pair (both metadata and private key material).
+  ///
+  /// Also clears the `keyId` on any hosts that referenced this key
+  /// so they don't retain a dangling foreign key (which would crash
+  /// the host form dropdown).
   Future<void> deleteKey(String keyId) async {
-    await secureStorage.deleteSshPrivateKey(keyId);
+    // Delete private key from secure storage (best-effort — may not exist
+    // if keychain was switched or key was never stored).
+    try {
+      await secureStorage.deleteSshPrivateKey(keyId);
+    } catch (e, stackTrace) {
+      // Ignore — soft-delete from DB should still proceed.
+      _log.d('Failed to delete private key from secure storage', error: e, stackTrace: stackTrace);
+    }
+
+    // Clear keyId on all hosts that referenced this key
+    await db.hostDao.clearKeyReferences(keyId);
+
     await db.keyDao.softDeleteKey(keyId);
   }
 

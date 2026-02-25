@@ -261,7 +261,9 @@ final customTerminalThemesProvider =
             if (theme != null) {
               themes[themeId] = theme;
             }
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('Theme deserialization failed for ${entry.key}: $e');
+          }
         }
       }
       return themes;
@@ -309,7 +311,8 @@ TerminalTheme? _deserializeTheme(String jsonStr) {
       brightCyan: parseColor('brightCyan', const Color(0xFF7DCFFF)),
       brightWhite: parseColor('brightWhite', const Color(0xFFC0CAF5)),
     );
-  } catch (_) {
+  } catch (e) {
+    debugPrint('Theme JSON deserialization failed: $e');
     return null;
   }
 }
