@@ -19,13 +19,22 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Fix plugins that don't declare an Android namespace (required by AGP 8+).
-// flutter_libserialport 0.4.0 is the known offender.
+// Fix legacy plugins (flutter_libserialport 0.4.0) that lack AGP 8+ namespace
+// and have JVM target mismatches between Java (1.8) and Kotlin (17).
 subprojects {
     plugins.withId("com.android.library") {
         val android = extensions.getByType<com.android.build.gradle.LibraryExtension>()
         if (android.namespace.isNullOrEmpty()) {
             android.namespace = "dev.cloudshell.${project.name.replace("-", "_")}"
+        }
+        android.compileOptions {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+        }
+    }
+    plugins.withId("org.jetbrains.kotlin.android") {
+        extensions.findByType<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension>()?.apply {
+            compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
 }
