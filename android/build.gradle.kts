@@ -19,32 +19,6 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Fix legacy plugins (flutter_libserialport 0.4.0) that lack AGP 8+ namespace,
-// have low compileSdk, and JVM target mismatches.
-subprojects {
-    plugins.withId("com.android.library") {
-        val android = extensions.getByType<com.android.build.gradle.LibraryExtension>()
-        if (android.namespace.isNullOrEmpty()) {
-            android.namespace = "dev.cloudshell.${project.name.replace("-", "_")}"
-        }
-        android.compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-        }
-        // compileSdk must be set after evaluation so it overrides the plugin's own value
-        project.afterEvaluate {
-            if (android.compileSdk == null || android.compileSdk!! < 34) {
-                android.compileSdk = 34
-            }
-        }
-    }
-    plugins.withId("org.jetbrains.kotlin.android") {
-        extensions.findByType<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension>()?.apply {
-            compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
-}
-
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
