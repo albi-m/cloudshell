@@ -27,12 +27,15 @@ subprojects {
         if (android.namespace.isNullOrEmpty()) {
             android.namespace = "dev.cloudshell.${project.name.replace("-", "_")}"
         }
-        if (android.compileSdk != null && android.compileSdk!! < 34) {
-            android.compileSdk = 34
-        }
         android.compileOptions {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
+        }
+        // compileSdk must be set after evaluation so it overrides the plugin's own value
+        project.afterEvaluate {
+            if (android.compileSdk == null || android.compileSdk!! < 34) {
+                android.compileSdk = 34
+            }
         }
     }
     plugins.withId("org.jetbrains.kotlin.android") {
