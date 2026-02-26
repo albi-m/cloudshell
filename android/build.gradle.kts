@@ -22,11 +22,10 @@ subprojects {
 // Fix plugins that don't declare an Android namespace (required by AGP 8+).
 // flutter_libserialport 0.4.0 is the known offender.
 subprojects {
-    afterEvaluate {
-        extensions.findByType<com.android.build.gradle.LibraryExtension>()?.let { android ->
-            if (android.namespace.isNullOrEmpty()) {
-                android.namespace = "dev.cloudshell.${project.name.replace("-", "_")}"
-            }
+    plugins.withId("com.android.library") {
+        val android = extensions.getByType<com.android.build.gradle.LibraryExtension>()
+        if (android.namespace.isNullOrEmpty()) {
+            android.namespace = "dev.cloudshell.${project.name.replace("-", "_")}"
         }
     }
 }
