@@ -110,7 +110,7 @@ class SftpService {
 
         entries.add(SftpEntry(
           name: item.filename,
-          path: p.posix.join(path, item.filename),
+          path: normalizePath(p.posix.join(path, item.filename)),
           isDirectory: isDir,
           size: item.attr.size,
           modifiedAt: modTime != null
@@ -369,6 +369,20 @@ class SftpService {
     if (_sftp == null) {
       throw const SftpException('SFTP session not connected');
     }
+  }
+
+  /// Normalizes a remote path to prevent path traversal via "..".
+  ///
+  /// Returns the POSIX-normalized path. Throws if the resulting path
+  /// would escape above the root directory.
+  static String normalizePath(String inputPath) {
+    final normalized = p.posix.normalize(inputPath);
+    // Reject paths that resolve to parent traversal above root
+    if (normalized.startsWith('../') || normalized == '..') {
+      throw SftpException(
+          'Path traversal detected: $inputPath resolves to $normalized');
+    }
+    return normalized;
   }
 
   /// Formats permission bits as a unix-style string (e.g., "755").

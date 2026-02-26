@@ -36,10 +36,15 @@ abstract final class Validators {
     return null;
   }
 
-  /// Validates a username (non-empty, no spaces).
+  /// Validates a username (non-empty, no spaces or shell metacharacters).
   static String? username(String? value) {
     if (value.isNullOrBlank) return 'Username is required';
-    if (value!.contains(' ')) return 'Username cannot contain spaces';
+    final v = value!.trim();
+    if (v.contains(' ')) return 'Username cannot contain spaces';
+    if (v.contains(RegExp(r'[;&|`$(){}\\<>!#]'))) {
+      return 'Username contains invalid characters';
+    }
+    if (v.length > 64) return 'Username must be 64 characters or less';
     return null;
   }
 

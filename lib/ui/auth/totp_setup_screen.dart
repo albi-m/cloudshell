@@ -5,13 +5,14 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/clipboard_helper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/auth/totp_service.dart';
 
@@ -237,7 +238,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
               IconButton(
                 icon: const Icon(LucideIcons.copy, size: 18),
                 onPressed: () {
-                  Clipboard.setData(ClipboardData(text: enrollment.secret));
+                  copyWithAutoClear(enrollment.secret);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l10n.totpSetupSecretCopied)),
                   );

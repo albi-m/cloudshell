@@ -356,11 +356,21 @@ class VaultCryptoService {
   ///
   /// AuthHash = PBKDF2-SHA256(masterKey, salt=email, 1 iteration)
   /// This will be sent to the server for login (Phase 3 Sprint 19-20).
+  ///
+  /// **Why 1 iteration?** The masterKey input has already been through
+  /// Argon2id (64 MB / 3 iterations / 4 parallelism), so it already has
+  /// full key-stretching protection. This second PBKDF2 pass is *not*
+  /// for key-stretching — it exists solely to produce a deterministic,
+  /// one-way transformation of the masterKey that can be sent to the
+  /// server without revealing the masterKey itself. The server stores
+  /// bcrypt(authHash) for an additional layer. This follows the
+  /// Bitwarden model: Argon2id(password) → masterKey, then
+  /// PBKDF2(masterKey, email, 1) → authHash for server auth.
   Future<Uint8List> computeAuthHash(
       SecretKey masterKey, String email) async {
     final pbkdf2 = Pbkdf2(
       macAlgorithm: Hmac.sha256(),
-      iterations: 1, // Already derived from Argon2id
+      iterations: 1,
       bits: 256,
     );
     final authKey = await pbkdf2.deriveKey(
