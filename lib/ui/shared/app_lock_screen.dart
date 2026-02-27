@@ -1,8 +1,8 @@
 /// Lock screen overlay for biometric authentication.
 ///
-/// Shown when the app is locked. Displays the app logo and a
-/// button to trigger biometric authentication (Touch ID / Face ID).
-/// Includes rate limiting feedback when too many attempts fail.
+/// Shown when the app is locked. Displays the app logo and an
+/// unlock button. Biometric authentication only triggers when
+/// the user explicitly taps the button — no auto-prompts.
 library;
 
 import 'dart:async';
@@ -27,15 +27,6 @@ class AppLockScreen extends ConsumerStatefulWidget {
 class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   bool _authFailed = false;
   Timer? _countdownTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    // Auto-trigger biometric prompt on show
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _authenticate();
-    });
-  }
 
   @override
   void dispose() {
@@ -128,20 +119,26 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
             ),
             const SizedBox(height: 32),
 
-            if (isAuthenticating)
-              const CircularProgressIndicator()
-            else ...[
-              // Unlock button (disabled during lockout)
-              ElevatedButton.icon(
-                onPressed: lockedOut ? null : _authenticate,
-                icon: const Icon(LucideIcons.fingerprint, size: 20),
-                label: Text(l10n.appLockUnlockButton),
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                ),
+            // Unlock button — only way to trigger biometric
+            ElevatedButton.icon(
+              onPressed: (lockedOut || isAuthenticating) ? null : _authenticate,
+              icon: isAuthenticating
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(LucideIcons.fingerprint, size: 20),
+              label: Text(isAuthenticating
+                  ? l10n.appLockTitle
+                  : l10n.appLockUnlockButton),
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               ),
+            ),
 
+            if (!isAuthenticating) ...[
               if (_authFailed && !lockedOut) ...[
                 const SizedBox(height: 16),
                 Text(

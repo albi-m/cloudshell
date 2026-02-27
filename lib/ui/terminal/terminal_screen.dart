@@ -812,6 +812,7 @@ class _TerminalPaneViewState extends State<_TerminalPaneView>
               controller: widget.controller,
               theme: widget.xtermTheme,
               cursorType: widget.cursorType,
+              padding: const EdgeInsets.only(top: 2),
               textStyle: xterm.TerminalStyle(
                 fontFamily: widget.fontFamily,
                 fontSize: widget.fontSize,
