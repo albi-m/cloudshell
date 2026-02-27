@@ -165,7 +165,7 @@ class VaultTile extends ConsumerWidget {
     final newController = TextEditingController();
     final confirmController = TextEditingController();
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.changePasswordTitle, style: AppTypography.h2),
@@ -245,7 +245,11 @@ class VaultTile extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ).then((_) {
+      currentController.dispose();
+      newController.dispose();
+      confirmController.dispose();
+    });
   }
 }
 

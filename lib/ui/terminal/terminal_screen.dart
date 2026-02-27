@@ -645,15 +645,17 @@ class _SplitPaneLayoutState extends State<_SplitPaneLayout> {
           SizedBox(
             width: isHorizontal ? totalSize * _splitRatio : null,
             height: isHorizontal ? null : totalSize * _splitRatio,
-            child: _TerminalPaneView(
-              terminal: panes[0].terminal,
-              controller: panes[0].controller,
-              isActive: panes[0].id == widget.tab.activePaneId,
-              xtermTheme: widget.xtermTheme,
-              fontSize: widget.fontSize,
-              fontFamily: widget.fontFamily,
-              cursorType: widget.cursorType,
-              onTap: () => widget.onSwitchPane(panes[0].id),
+            child: RepaintBoundary(
+              child: _TerminalPaneView(
+                terminal: panes[0].terminal,
+                controller: panes[0].controller,
+                isActive: panes[0].id == widget.tab.activePaneId,
+                xtermTheme: widget.xtermTheme,
+                fontSize: widget.fontSize,
+                fontFamily: widget.fontFamily,
+                cursorType: widget.cursorType,
+                onTap: () => widget.onSwitchPane(panes[0].id),
+              ),
             ),
           ),
 
@@ -666,15 +668,17 @@ class _SplitPaneLayoutState extends State<_SplitPaneLayout> {
 
           // Pane 1
           Expanded(
-            child: _TerminalPaneView(
-              terminal: panes[1].terminal,
-              controller: panes[1].controller,
-              isActive: panes[1].id == widget.tab.activePaneId,
-              xtermTheme: widget.xtermTheme,
-              fontSize: widget.fontSize,
-              fontFamily: widget.fontFamily,
-              cursorType: widget.cursorType,
-              onTap: () => widget.onSwitchPane(panes[1].id),
+            child: RepaintBoundary(
+              child: _TerminalPaneView(
+                terminal: panes[1].terminal,
+                controller: panes[1].controller,
+                isActive: panes[1].id == widget.tab.activePaneId,
+                xtermTheme: widget.xtermTheme,
+                fontSize: widget.fontSize,
+                fontFamily: widget.fontFamily,
+                cursorType: widget.cursorType,
+                onTap: () => widget.onSwitchPane(panes[1].id),
+              ),
             ),
           ),
         ];
@@ -703,6 +707,8 @@ class _TerminalPaneView extends StatefulWidget {
     required this.cursorType,
     this.onTap,
   });
+
+  static final _activeBorderColor = AppColors.accentPrimary.withValues(alpha: 0.3);
 
   final xterm.Terminal terminal;
   final xterm.TerminalController controller;
@@ -794,7 +800,7 @@ class _TerminalPaneViewState extends State<_TerminalPaneView>
         decoration: widget.isActive && widget.onTap != null
             ? BoxDecoration(
                 border: Border.all(
-                  color: AppColors.accentPrimary.withValues(alpha: 0.3),
+                  color: _TerminalPaneView._activeBorderColor,
                   width: 1.5,
                 ),
               )
@@ -816,17 +822,19 @@ class _TerminalPaneViewState extends State<_TerminalPaneView>
             ),
             // Faint teal wash at top
             Positioned.fill(
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.accentPrimary.withValues(alpha: 0.03),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.3],
+              child: RepaintBoundary(
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.accentPrimary.withValues(alpha: 0.03),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.3],
+                      ),
                     ),
                   ),
                 ),
@@ -1388,28 +1396,6 @@ class _StatusBar extends StatefulWidget {
 }
 
 class _StatusBarState extends State<_StatusBar> {
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  String get _durationText {
-    if (widget.connectedAt == null) return '0:00';
-    final elapsed = DateTime.now().difference(widget.connectedAt!);
-    return Formatters.duration(elapsed);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1465,10 +1451,7 @@ class _StatusBarState extends State<_StatusBar> {
                       style: AppTypography.caption.copyWith(fontSize: 11),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      _durationText,
-                      style: AppTypography.code(fontSize: 11),
-                    ),
+                    _DurationCounter(connectedAt: widget.connectedAt),
                   ],
                 ],
               ),
@@ -1567,6 +1550,48 @@ class _StatusBarState extends State<_StatusBar> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Lightweight widget that only rebuilds once per second to show elapsed duration.
+///
+/// Extracted from _StatusBarState so the timer-driven rebuild is isolated
+/// to just the duration text, not the entire status bar.
+class _DurationCounter extends StatefulWidget {
+  const _DurationCounter({required this.connectedAt});
+  final DateTime? connectedAt;
+
+  @override
+  State<_DurationCounter> createState() => _DurationCounterState();
+}
+
+class _DurationCounterState extends State<_DurationCounter> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.connectedAt == null) {
+      return Text('0:00', style: AppTypography.code(fontSize: 11));
+    }
+    final elapsed = DateTime.now().difference(widget.connectedAt!);
+    return Text(
+      Formatters.duration(elapsed),
+      style: AppTypography.code(fontSize: 11),
     );
   }
 }

@@ -51,6 +51,7 @@ class TerminalPane {
   final xterm.TerminalController controller;
   SSHSession? shell;
   StreamSubscription<dynamic>? outputSubscription;
+  TerminalOutputBuffer? outputBuffer;
   bool isConnected;
   DateTime? connectedAt;
 
@@ -550,6 +551,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     // Clean up split panes
     for (final pane in tab.panes) {
       pane.outputSubscription?.cancel();
+      pane.outputBuffer?.dispose();
       pane.shell?.close();
       if (pane.controller != tab.controller) {
         pane.controller.dispose();
@@ -591,6 +593,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       // Clean up split panes
       for (final pane in tab.panes) {
         pane.outputSubscription?.cancel();
+        pane.outputBuffer?.dispose();
         pane.shell?.close();
         if (pane.controller != tab.controller) {
           pane.controller.dispose();
@@ -649,11 +652,13 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
         shell.resizeTerminal(w, h);
       };
 
+      final splitBuffer = TerminalOutputBuffer(terminal: newTerminal);
       final subscription = outputStream.listen(
         (data) {
-          newTerminal.write(utf8.decode(data, allowMalformed: true));
+          splitBuffer.add(utf8.decode(data, allowMalformed: true));
         },
         onDone: () {
+          splitBuffer.dispose();
           final pane =
               tab.panes.where((p) => p.id == newPaneId).firstOrNull;
           if (pane != null) {
@@ -682,7 +687,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
         outputSubscription: subscription,
         isConnected: true,
         connectedAt: DateTime.now(),
-      );
+      )..outputBuffer = splitBuffer;
 
       tab.panes
         ..clear()
@@ -711,6 +716,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     for (final pane in tab.panes) {
       if (pane.shell != null) {
         pane.outputSubscription?.cancel();
+        pane.outputBuffer?.dispose();
         pane.shell?.close();
         pane.controller.dispose();
       }
