@@ -324,68 +324,13 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       controller: controller,
     );
 
-    // Wire terminal output → SSH session input (+ broadcast)
-    terminal.onOutput = (data) {
-      if (tab.isConnected) {
-        session.writeString(data);
-      }
-      // If broadcast mode is enabled, send to other connected tabs
-      if (_broadcastEnabled && tab.id == state.activeTabId) {
-        for (final other in state.tabs) {
-          if (other.id == tab.id || !other.isConnected) continue;
-          // Selective: only send to group members when group is set
-          if (_broadcastGroup.isNotEmpty &&
-              !_broadcastGroup.contains(other.id)) continue;
-          other.session.writeString(data);
-        }
-      }
-    };
-
-    // Wire terminal resize → SSH session resize
-    terminal.onResize = (width, height, pixelWidth, pixelHeight) {
-      if (tab.isConnected) {
-        session.resize(width, height);
-      }
-    };
+    _wireTerminalIO(tab, session);
 
     // Start the shell
     try {
       await session.startSession(termWidth: 80, termHeight: 24);
       tab.connectedAt = DateTime.now();
-
-      // Subscribe to SSH output → buffered terminal writes + logger
-      final outputBuffer = TerminalOutputBuffer(
-        terminal: terminal,
-        onFlush: () => _trackCommandOutput(tab),
-      );
-      tab.outputBuffer = outputBuffer;
-
-      tab.outputSubscription = session.output.listen(
-        (data) {
-          final decoded = utf8.decode(data, allowMalformed: true);
-          outputBuffer.add(decoded);
-          tab.sessionLogger?.write(decoded);
-        },
-        onDone: () {
-          outputBuffer.flush();
-          if (!tab.isReconnecting) {
-            _onDisconnected(tab);
-          }
-        },
-        onError: (_) {
-          outputBuffer.flush();
-          if (!tab.isReconnecting) {
-            _onDisconnected(tab);
-          }
-        },
-      );
-
-      // Monitor connection close
-      session.done.then((_) {
-        if (!tab.isReconnecting) {
-          _onDisconnected(tab);
-        }
-      });
+      _subscribeToOutput(tab, session);
 
       // Execute startup command after shell initializes
       if (startupCommand != null && startupCommand.trim().isNotEmpty) {
@@ -405,6 +350,65 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       tabs: [...state.tabs, tab],
       activeTabId: () => tab.id,
     );
+  }
+
+  /// Wires terminal output/resize callbacks to the session.
+  ///
+  /// Output includes broadcast to other tabs when broadcast mode is enabled.
+  void _wireTerminalIO(TerminalTab tab, ConnectionSession session) {
+    tab.terminal.onOutput = (data) {
+      if (tab.isConnected) {
+        session.writeString(data);
+      }
+      if (_broadcastEnabled && tab.id == state.activeTabId) {
+        for (final other in state.tabs) {
+          if (other.id == tab.id || !other.isConnected) continue;
+          if (_broadcastGroup.isNotEmpty &&
+              !_broadcastGroup.contains(other.id)) {
+            continue;
+          }
+          other.session.writeString(data);
+        }
+      }
+    };
+
+    tab.terminal.onResize = (width, height, pixelWidth, pixelHeight) {
+      if (tab.isConnected) {
+        session.resize(width, height);
+      }
+    };
+  }
+
+  /// Subscribes to session output and monitors connection close.
+  ///
+  /// Creates a buffered output writer, wires the session logger,
+  /// and sets up disconnect detection via onDone/onError/done.
+  void _subscribeToOutput(TerminalTab tab, ConnectionSession session) {
+    final outputBuffer = TerminalOutputBuffer(
+      terminal: tab.terminal,
+      onFlush: () => _trackCommandOutput(tab),
+    );
+    tab.outputBuffer = outputBuffer;
+
+    tab.outputSubscription = session.output.listen(
+      (data) {
+        final decoded = utf8.decode(data, allowMalformed: true);
+        outputBuffer.add(decoded);
+        tab.sessionLogger?.write(decoded);
+      },
+      onDone: () {
+        outputBuffer.flush();
+        if (!tab.isReconnecting) _onDisconnected(tab);
+      },
+      onError: (_) {
+        outputBuffer.flush();
+        if (!tab.isReconnecting) _onDisconnected(tab);
+      },
+    );
+
+    session.done.then((_) {
+      if (!tab.isReconnecting) _onDisconnected(tab);
+    });
   }
 
   /// Called when a session disconnects.
@@ -476,60 +480,12 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
           termHeight: tab.terminal.viewHeight,
         );
 
-        // Cancel old subscription and dispose old buffer
+        // Clean up old I/O and re-wire with new session
         tab.outputSubscription?.cancel();
         tab.outputBuffer?.dispose();
-
-        // Update session reference
         tab.session = newSession;
-
-        // Re-wire output with fresh buffer (+ logger + command notify)
-        final reconnectBuffer = TerminalOutputBuffer(
-          terminal: tab.terminal,
-          onFlush: () => _trackCommandOutput(tab),
-        );
-        tab.outputBuffer = reconnectBuffer;
-
-        tab.outputSubscription = newSession.output.listen(
-          (data) {
-            final decoded = utf8.decode(data, allowMalformed: true);
-            reconnectBuffer.add(decoded);
-            tab.sessionLogger?.write(decoded);
-          },
-          onDone: () {
-            reconnectBuffer.flush();
-            if (!tab.isReconnecting) _onDisconnected(tab);
-          },
-          onError: (_) {
-            reconnectBuffer.flush();
-            if (!tab.isReconnecting) _onDisconnected(tab);
-          },
-        );
-
-        // Re-wire terminal callbacks (with broadcast support)
-        tab.terminal.onOutput = (data) {
-          if (tab.isConnected) {
-            newSession.writeString(data);
-          }
-          if (_broadcastEnabled && tab.id == state.activeTabId) {
-            for (final other in state.tabs) {
-              if (other.id == tab.id || !other.isConnected) continue;
-              if (_broadcastGroup.isNotEmpty &&
-                  !_broadcastGroup.contains(other.id)) continue;
-              other.session.writeString(data);
-            }
-          }
-        };
-
-        tab.terminal.onResize = (w, h, pw, ph) {
-          if (tab.isConnected) {
-            newSession.resize(w, h);
-          }
-        };
-
-        newSession.done.then((_) {
-          if (!tab.isReconnecting) _onDisconnected(tab);
-        });
+        _wireTerminalIO(tab, newSession);
+        _subscribeToOutput(tab, newSession);
 
         // Update connection tracking
         ref.read(activeConnectionsProvider.notifier).addConnection(

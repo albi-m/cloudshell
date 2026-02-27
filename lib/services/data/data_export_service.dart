@@ -118,173 +118,12 @@ class DataExportService {
       return ImportResult(error: 'Unsupported export version: $version');
     }
 
-    var hostsImported = 0;
-    var groupsImported = 0;
-    var snippetsImported = 0;
-    var portForwardsImported = 0;
-    var keysImported = 0;
-    var settingsImported = 0;
-
-    // Import groups first (hosts reference them)
-    final groups = data['groups'] as List<dynamic>? ?? [];
-    for (final g in groups) {
-      final map = g as Map<String, dynamic>;
-      try {
-        await _db.into(_db.hostGroups).insertOnConflictUpdate(
-              HostGroupsCompanion(
-                id: Value(map['id'] as String),
-                name: Value(map['name'] as String),
-                defaultUsername: Value(map['defaultUsername'] as String?),
-                defaultPort: Value(map['defaultPort'] as int?),
-                sortOrder: Value(map['sortOrder'] as int? ?? 0),
-                createdAt: Value(DateTime.parse(map['createdAt'] as String)),
-                updatedAt: Value(DateTime.parse(map['updatedAt'] as String)),
-              ),
-            );
-        groupsImported++;
-      } catch (e, stackTrace) {
-        _log.d('Import group skipped', error: e, stackTrace: stackTrace);
-      }
-    }
-
-    // Import hosts
-    final hosts = data['hosts'] as List<dynamic>? ?? [];
-    for (final h in hosts) {
-      final map = h as Map<String, dynamic>;
-      try {
-        await _db.into(_db.hosts).insertOnConflictUpdate(
-              HostsCompanion(
-                id: Value(map['id'] as String),
-                label: Value(map['label'] as String),
-                hostname: Value(map['hostname'] as String),
-                port: Value(map['port'] as int? ?? 22),
-                username: Value(map['username'] as String),
-                authMethod: Value(
-                    AuthMethodType.values[map['authMethod'] as int? ?? 0]),
-                keyId: Value(map['keyId'] as String?),
-                groupId: Value(map['groupId'] as String?),
-                tags: Value(map['tags'] as String? ?? ''),
-                startupCommand: Value(map['startupCommand'] as String?),
-                keepAliveSeconds:
-                    Value(map['keepAliveSeconds'] as int? ?? 60),
-                jumpHostId: Value(map['jumpHostId'] as String?),
-                encoding: Value(map['encoding'] as String?),
-                notes: Value(map['notes'] as String?),
-                sortOrder: Value(map['sortOrder'] as int? ?? 0),
-                isFavorite: Value(map['isFavorite'] as bool? ?? false),
-                createdAt:
-                    Value(DateTime.parse(map['createdAt'] as String)),
-                updatedAt:
-                    Value(DateTime.parse(map['updatedAt'] as String)),
-              ),
-            );
-        hostsImported++;
-      } catch (e, stackTrace) {
-        _log.d('Import host skipped', error: e, stackTrace: stackTrace);
-      }
-    }
-
-    // Import snippets
-    final snippets = data['snippets'] as List<dynamic>? ?? [];
-    for (final s in snippets) {
-      final map = s as Map<String, dynamic>;
-      try {
-        await _db.into(_db.snippets).insertOnConflictUpdate(
-              SnippetsCompanion(
-                id: Value(map['id'] as String),
-                name: Value(map['name'] as String),
-                command: Value(map['command'] as String),
-                category: Value(map['category'] as String?),
-                variables: Value(map['variables'] as String? ?? '[]'),
-                description: Value(map['description'] as String?),
-                createdAt:
-                    Value(DateTime.parse(map['createdAt'] as String)),
-                updatedAt:
-                    Value(DateTime.parse(map['updatedAt'] as String)),
-              ),
-            );
-        snippetsImported++;
-      } catch (e, stackTrace) {
-        _log.d('Import snippet skipped', error: e, stackTrace: stackTrace);
-      }
-    }
-
-    // Import port forwards
-    final portForwards = data['portForwards'] as List<dynamic>? ?? [];
-    for (final pf in portForwards) {
-      final map = pf as Map<String, dynamic>;
-      try {
-        await _db.into(_db.portForwards).insertOnConflictUpdate(
-              PortForwardsCompanion(
-                id: Value(map['id'] as String),
-                label: Value(map['label'] as String),
-                type: Value(PortForwardTypeEnum
-                    .values[map['type'] as int? ?? 0]),
-                hostId: Value(map['hostId'] as String),
-                sourcePort: Value(map['sourcePort'] as int),
-                destinationHost:
-                    Value(map['destinationHost'] as String?),
-                destinationPort:
-                    Value(map['destinationPort'] as int?),
-                autoStart:
-                    Value(map['autoStart'] as bool? ?? false),
-                createdAt:
-                    Value(DateTime.parse(map['createdAt'] as String)),
-                updatedAt:
-                    Value(DateTime.parse(map['updatedAt'] as String)),
-              ),
-            );
-        portForwardsImported++;
-      } catch (e, stackTrace) {
-        _log.d('Import port forward skipped', error: e, stackTrace: stackTrace);
-      }
-    }
-
-    // Import key metadata (NOT private keys)
-    final keys = data['keys'] as List<dynamic>? ?? [];
-    for (final k in keys) {
-      final map = k as Map<String, dynamic>;
-      try {
-        final existing = await _db.keyDao.getKeyById(map['id'] as String);
-        if (existing == null) {
-          await _db.into(_db.sshKeys).insert(
-                SshKeysCompanion(
-                  id: Value(map['id'] as String),
-                  label: Value(map['label'] as String),
-                  keyType: Value(
-                      KeyTypeEnum.values[map['keyType'] as int? ?? 0]),
-                  keyBits: Value(map['keyBits'] as int?),
-                  publicKey: Value(map['publicKey'] as String? ?? ''),
-                  privateKeyRef:
-                      Value(map['privateKeyRef'] as String? ?? ''),
-                  fingerprint:
-                      Value(map['fingerprint'] as String? ?? ''),
-                  hasPassphrase:
-                      Value(map['hasPassphrase'] as bool? ?? false),
-                  createdAt:
-                      Value(DateTime.parse(map['createdAt'] as String)),
-                  updatedAt:
-                      Value(DateTime.parse(map['updatedAt'] as String)),
-                ),
-              );
-          keysImported++;
-        }
-      } catch (e, stackTrace) {
-        _log.d('Import key skipped', error: e, stackTrace: stackTrace);
-      }
-    }
-
-    // Import settings (non-vault)
-    final settingsList = data['settings'] as List<dynamic>? ?? [];
-    for (final s in settingsList) {
-      final map = s as Map<String, dynamic>;
-      final key = map['key'] as String?;
-      final value = map['value'] as String?;
-      if (key != null && value != null && !key.startsWith('vault_')) {
-        await _db.settingsDao.setValue(key, value);
-        settingsImported++;
-      }
-    }
+    final groupsImported = await _importGroupList(data['groups'] as List<dynamic>? ?? []);
+    final hostsImported = await _importHostList(data['hosts'] as List<dynamic>? ?? []);
+    final snippetsImported = await _importSnippetList(data['snippets'] as List<dynamic>? ?? []);
+    final portForwardsImported = await _importPortForwardList(data['portForwards'] as List<dynamic>? ?? []);
+    final keysImported = await _importKeyList(data['keys'] as List<dynamic>? ?? []);
+    final settingsImported = await _importSettingList(data['settings'] as List<dynamic>? ?? []);
 
     return ImportResult(
       hostsImported: hostsImported,
@@ -474,182 +313,14 @@ class DataExportService {
 
       final data = jsonDecode(plaintextJson) as Map<String, dynamic>;
 
-      // Import database records using the same logic as importData
-      var hostsImported = 0;
-      var groupsImported = 0;
-      var snippetsImported = 0;
-      var portForwardsImported = 0;
-      var keysImported = 0;
-      var settingsImported = 0;
+      // Import database records using shared helpers
+      final groupsImported = await _importGroupList(data['groups'] as List<dynamic>? ?? []);
+      final hostsImported = await _importHostList(data['hosts'] as List<dynamic>? ?? []);
+      final snippetsImported = await _importSnippetList(data['snippets'] as List<dynamic>? ?? []);
+      final portForwardsImported = await _importPortForwardList(data['portForwards'] as List<dynamic>? ?? []);
+      final keysImported = await _importKeyList(data['keys'] as List<dynamic>? ?? []);
+      final settingsImported = await _importSettingList(data['settings'] as List<dynamic>? ?? []);
       var secretsImported = 0;
-
-      // Import groups first
-      final groups = data['groups'] as List<dynamic>? ?? [];
-      for (final g in groups) {
-        try {
-          final map = g as Map<String, dynamic>;
-          await _db.into(_db.hostGroups).insertOnConflictUpdate(
-                HostGroupsCompanion(
-                  id: Value(map['id'] as String),
-                  name: Value(map['name'] as String),
-                  defaultUsername: Value(map['defaultUsername'] as String?),
-                  defaultPort: Value(map['defaultPort'] as int?),
-                  sortOrder: Value(map['sortOrder'] as int? ?? 0),
-                  createdAt:
-                      Value(DateTime.parse(map['createdAt'] as String)),
-                  updatedAt:
-                      Value(DateTime.parse(map['updatedAt'] as String)),
-                ),
-              );
-          groupsImported++;
-        } catch (e, stackTrace) {
-          _log.d('Import group skipped', error: e, stackTrace: stackTrace);
-        }
-      }
-
-      // Import hosts
-      final hosts = data['hosts'] as List<dynamic>? ?? [];
-      for (final h in hosts) {
-        try {
-          final map = h as Map<String, dynamic>;
-          await _db.into(_db.hosts).insertOnConflictUpdate(
-                HostsCompanion(
-                  id: Value(map['id'] as String),
-                  label: Value(map['label'] as String),
-                  hostname: Value(map['hostname'] as String),
-                  port: Value(map['port'] as int? ?? 22),
-                  username: Value(map['username'] as String),
-                  authMethod: Value(AuthMethodType
-                      .values[map['authMethod'] as int? ?? 0]),
-                  keyId: Value(map['keyId'] as String?),
-                  groupId: Value(map['groupId'] as String?),
-                  tags: Value(map['tags'] as String? ?? ''),
-                  startupCommand:
-                      Value(map['startupCommand'] as String?),
-                  keepAliveSeconds:
-                      Value(map['keepAliveSeconds'] as int? ?? 60),
-                  jumpHostId: Value(map['jumpHostId'] as String?),
-                  encoding: Value(map['encoding'] as String?),
-                  notes: Value(map['notes'] as String?),
-                  sortOrder: Value(map['sortOrder'] as int? ?? 0),
-                  isFavorite:
-                      Value(map['isFavorite'] as bool? ?? false),
-                  createdAt:
-                      Value(DateTime.parse(map['createdAt'] as String)),
-                  updatedAt:
-                      Value(DateTime.parse(map['updatedAt'] as String)),
-                ),
-              );
-          hostsImported++;
-        } catch (e, stackTrace) {
-          _log.d('Import host skipped', error: e, stackTrace: stackTrace);
-        }
-      }
-
-      // Import snippets
-      final snippets = data['snippets'] as List<dynamic>? ?? [];
-      for (final s in snippets) {
-        try {
-          final map = s as Map<String, dynamic>;
-          await _db.into(_db.snippets).insertOnConflictUpdate(
-                SnippetsCompanion(
-                  id: Value(map['id'] as String),
-                  name: Value(map['name'] as String),
-                  command: Value(map['command'] as String),
-                  category: Value(map['category'] as String?),
-                  variables:
-                      Value(map['variables'] as String? ?? '[]'),
-                  description: Value(map['description'] as String?),
-                  createdAt:
-                      Value(DateTime.parse(map['createdAt'] as String)),
-                  updatedAt:
-                      Value(DateTime.parse(map['updatedAt'] as String)),
-                ),
-              );
-          snippetsImported++;
-        } catch (e, stackTrace) {
-          _log.d('Import snippet skipped', error: e, stackTrace: stackTrace);
-        }
-      }
-
-      // Import port forwards
-      final portForwards = data['portForwards'] as List<dynamic>? ?? [];
-      for (final pf in portForwards) {
-        try {
-          final map = pf as Map<String, dynamic>;
-          await _db.into(_db.portForwards).insertOnConflictUpdate(
-                PortForwardsCompanion(
-                  id: Value(map['id'] as String),
-                  label: Value(map['label'] as String),
-                  type: Value(PortForwardTypeEnum
-                      .values[map['type'] as int? ?? 0]),
-                  hostId: Value(map['hostId'] as String),
-                  sourcePort: Value(map['sourcePort'] as int),
-                  destinationHost:
-                      Value(map['destinationHost'] as String?),
-                  destinationPort:
-                      Value(map['destinationPort'] as int?),
-                  autoStart:
-                      Value(map['autoStart'] as bool? ?? false),
-                  createdAt:
-                      Value(DateTime.parse(map['createdAt'] as String)),
-                  updatedAt:
-                      Value(DateTime.parse(map['updatedAt'] as String)),
-                ),
-              );
-          portForwardsImported++;
-        } catch (e, stackTrace) {
-          _log.d('Import port forward skipped', error: e, stackTrace: stackTrace);
-        }
-      }
-
-      // Import keys
-      final keysList = data['keys'] as List<dynamic>? ?? [];
-      for (final k in keysList) {
-        try {
-          final map = k as Map<String, dynamic>;
-          final existing =
-              await _db.keyDao.getKeyById(map['id'] as String);
-          if (existing == null) {
-            await _db.into(_db.sshKeys).insert(
-                  SshKeysCompanion(
-                    id: Value(map['id'] as String),
-                    label: Value(map['label'] as String),
-                    keyType: Value(KeyTypeEnum
-                        .values[map['keyType'] as int? ?? 0]),
-                    keyBits: Value(map['keyBits'] as int?),
-                    publicKey:
-                        Value(map['publicKey'] as String? ?? ''),
-                    privateKeyRef:
-                        Value(map['privateKeyRef'] as String? ?? ''),
-                    fingerprint:
-                        Value(map['fingerprint'] as String? ?? ''),
-                    hasPassphrase:
-                        Value(map['hasPassphrase'] as bool? ?? false),
-                    createdAt: Value(
-                        DateTime.parse(map['createdAt'] as String)),
-                    updatedAt: Value(
-                        DateTime.parse(map['updatedAt'] as String)),
-                  ),
-                );
-            keysImported++;
-          }
-        } catch (e, stackTrace) {
-          _log.d('Import key skipped', error: e, stackTrace: stackTrace);
-        }
-      }
-
-      // Import settings
-      final settingsList = data['settings'] as List<dynamic>? ?? [];
-      for (final s in settingsList) {
-        final map = s as Map<String, dynamic>;
-        final key = map['key'] as String?;
-        final value = map['value'] as String?;
-        if (key != null && value != null && !key.startsWith('vault_')) {
-          await _db.settingsDao.setValue(key, value);
-          settingsImported++;
-        }
-      }
 
       // Import secrets (private keys, passphrases, host passwords)
       final secretsMap =
@@ -712,6 +383,183 @@ class DataExportService {
         .where((f) => f.path.endsWith('.json'))
         .toList()
       ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shared import helpers
+  // ---------------------------------------------------------------------------
+
+  Future<int> _importGroupList(List<dynamic> groups) async {
+    var count = 0;
+    for (final g in groups) {
+      final map = g as Map<String, dynamic>;
+      try {
+        await _db.into(_db.hostGroups).insertOnConflictUpdate(
+              HostGroupsCompanion(
+                id: Value(map['id'] as String),
+                name: Value(map['name'] as String),
+                defaultUsername: Value(map['defaultUsername'] as String?),
+                defaultPort: Value(map['defaultPort'] as int?),
+                sortOrder: Value(map['sortOrder'] as int? ?? 0),
+                createdAt: Value(DateTime.parse(map['createdAt'] as String)),
+                updatedAt: Value(DateTime.parse(map['updatedAt'] as String)),
+              ),
+            );
+        count++;
+      } catch (e, stackTrace) {
+        _log.d('Import group skipped', error: e, stackTrace: stackTrace);
+      }
+    }
+    return count;
+  }
+
+  Future<int> _importHostList(List<dynamic> hosts) async {
+    var count = 0;
+    for (final h in hosts) {
+      final map = h as Map<String, dynamic>;
+      try {
+        await _db.into(_db.hosts).insertOnConflictUpdate(
+              HostsCompanion(
+                id: Value(map['id'] as String),
+                label: Value(map['label'] as String),
+                hostname: Value(map['hostname'] as String),
+                port: Value(map['port'] as int? ?? 22),
+                username: Value(map['username'] as String),
+                authMethod: Value(
+                    AuthMethodType.values[map['authMethod'] as int? ?? 0]),
+                keyId: Value(map['keyId'] as String?),
+                groupId: Value(map['groupId'] as String?),
+                tags: Value(map['tags'] as String? ?? ''),
+                startupCommand: Value(map['startupCommand'] as String?),
+                keepAliveSeconds:
+                    Value(map['keepAliveSeconds'] as int? ?? 60),
+                jumpHostId: Value(map['jumpHostId'] as String?),
+                encoding: Value(map['encoding'] as String?),
+                notes: Value(map['notes'] as String?),
+                sortOrder: Value(map['sortOrder'] as int? ?? 0),
+                isFavorite: Value(map['isFavorite'] as bool? ?? false),
+                createdAt:
+                    Value(DateTime.parse(map['createdAt'] as String)),
+                updatedAt:
+                    Value(DateTime.parse(map['updatedAt'] as String)),
+              ),
+            );
+        count++;
+      } catch (e, stackTrace) {
+        _log.d('Import host skipped', error: e, stackTrace: stackTrace);
+      }
+    }
+    return count;
+  }
+
+  Future<int> _importSnippetList(List<dynamic> snippets) async {
+    var count = 0;
+    for (final s in snippets) {
+      final map = s as Map<String, dynamic>;
+      try {
+        await _db.into(_db.snippets).insertOnConflictUpdate(
+              SnippetsCompanion(
+                id: Value(map['id'] as String),
+                name: Value(map['name'] as String),
+                command: Value(map['command'] as String),
+                category: Value(map['category'] as String?),
+                variables: Value(map['variables'] as String? ?? '[]'),
+                description: Value(map['description'] as String?),
+                createdAt:
+                    Value(DateTime.parse(map['createdAt'] as String)),
+                updatedAt:
+                    Value(DateTime.parse(map['updatedAt'] as String)),
+              ),
+            );
+        count++;
+      } catch (e, stackTrace) {
+        _log.d('Import snippet skipped', error: e, stackTrace: stackTrace);
+      }
+    }
+    return count;
+  }
+
+  Future<int> _importPortForwardList(List<dynamic> portForwards) async {
+    var count = 0;
+    for (final pf in portForwards) {
+      final map = pf as Map<String, dynamic>;
+      try {
+        await _db.into(_db.portForwards).insertOnConflictUpdate(
+              PortForwardsCompanion(
+                id: Value(map['id'] as String),
+                label: Value(map['label'] as String),
+                type: Value(PortForwardTypeEnum
+                    .values[map['type'] as int? ?? 0]),
+                hostId: Value(map['hostId'] as String),
+                sourcePort: Value(map['sourcePort'] as int),
+                destinationHost:
+                    Value(map['destinationHost'] as String?),
+                destinationPort:
+                    Value(map['destinationPort'] as int?),
+                autoStart:
+                    Value(map['autoStart'] as bool? ?? false),
+                createdAt:
+                    Value(DateTime.parse(map['createdAt'] as String)),
+                updatedAt:
+                    Value(DateTime.parse(map['updatedAt'] as String)),
+              ),
+            );
+        count++;
+      } catch (e, stackTrace) {
+        _log.d('Import port forward skipped', error: e, stackTrace: stackTrace);
+      }
+    }
+    return count;
+  }
+
+  Future<int> _importKeyList(List<dynamic> keys) async {
+    var count = 0;
+    for (final k in keys) {
+      final map = k as Map<String, dynamic>;
+      try {
+        final existing = await _db.keyDao.getKeyById(map['id'] as String);
+        if (existing == null) {
+          await _db.into(_db.sshKeys).insert(
+                SshKeysCompanion(
+                  id: Value(map['id'] as String),
+                  label: Value(map['label'] as String),
+                  keyType: Value(
+                      KeyTypeEnum.values[map['keyType'] as int? ?? 0]),
+                  keyBits: Value(map['keyBits'] as int?),
+                  publicKey: Value(map['publicKey'] as String? ?? ''),
+                  privateKeyRef:
+                      Value(map['privateKeyRef'] as String? ?? ''),
+                  fingerprint:
+                      Value(map['fingerprint'] as String? ?? ''),
+                  hasPassphrase:
+                      Value(map['hasPassphrase'] as bool? ?? false),
+                  createdAt:
+                      Value(DateTime.parse(map['createdAt'] as String)),
+                  updatedAt:
+                      Value(DateTime.parse(map['updatedAt'] as String)),
+                ),
+              );
+          count++;
+        }
+      } catch (e, stackTrace) {
+        _log.d('Import key skipped', error: e, stackTrace: stackTrace);
+      }
+    }
+    return count;
+  }
+
+  Future<int> _importSettingList(List<dynamic> settingsList) async {
+    var count = 0;
+    for (final s in settingsList) {
+      final map = s as Map<String, dynamic>;
+      final key = map['key'] as String?;
+      final value = map['value'] as String?;
+      if (key != null && value != null && !key.startsWith('vault_')) {
+        await _db.settingsDao.setValue(key, value);
+        count++;
+      }
+    }
+    return count;
   }
 
   // ---------------------------------------------------------------------------
