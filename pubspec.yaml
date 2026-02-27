@@ -24,7 +24,7 @@ dependencies:
   riverpod_annotation: ^4.0.0
 
   # --- Database ---
-  drift: ^2.22.1
+  drift: ^2.31.0
   sqlite3_flutter_libs: ^0.5.28
 
   # --- Crypto ---
@@ -84,7 +84,7 @@ dev_dependencies:
   freezed: ^3.0.0
   json_serializable: ^6.9.4
   riverpod_generator: ^4.0.0
-  drift_dev: ^2.22.1
+  drift_dev: ^2.31.0
 
   # --- Linting ---
   flutter_lints: ^6.0.0
