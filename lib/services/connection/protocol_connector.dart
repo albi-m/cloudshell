@@ -14,13 +14,17 @@ import '../ssh/ssh_service.dart';
 import '../telnet/telnet_service.dart';
 import 'connection_session.dart';
 
-/// Reads a provider value. Works with both [Ref] and [WidgetRef].
+/// Generic provider reader function signature.
+///
+/// Accepts both `Ref.read` and `WidgetRef.read` so [connectByProtocol]
+/// can be called from notifiers and widget callbacks alike.
 typedef ProviderReader = T Function<T>(ProviderListenable<T> provider);
 
-/// Creates a [ConnectionSession] for [host] using the appropriate protocol service.
+/// Creates a [ConnectionSession] for [host] by dispatching to the correct protocol service.
 ///
-/// Pass `ref.read` as the first argument to work from both widget and
-/// notifier contexts.
+/// Switches on [Host.protocol] to select SSH, Telnet, or Serial. Pass `ref.read`
+/// as [read] so this function works from both widget and notifier contexts.
+/// Throws if the underlying service fails to establish the connection.
 Future<ConnectionSession> connectByProtocol(ProviderReader read, Host host) {
   return switch (host.protocol) {
     ProtocolType.ssh => read(sshServiceProvider).connect(host: host),

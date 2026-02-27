@@ -15,7 +15,9 @@ import '../../services/ssh/ssh_service.dart';
 
 /// Shows a host key verification dialog and returns the user's decision.
 ///
-/// Returns true if the user trusts the key, false to abort connection.
+/// Displays the server's fingerprint from [keyInfo] so the user can verify
+/// trust on first use (TOFU) or detect a changed host key.
+/// Returns `true` if the user accepts the key, `false` to abort the connection.
 Future<bool> showHostKeyVerifyDialog({
   required BuildContext context,
   required HostKeyInfo keyInfo,

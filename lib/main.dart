@@ -11,11 +11,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'services/backend/supabase/supabase_config.dart';
 
-/// Application entry point.
+/// Application entry point that bootstraps all platform services.
 ///
-/// Ensures Flutter bindings are initialized, initializes the
-/// Supabase client (if configured), and launches the app wrapped
-/// in a ProviderScope for Riverpod state management.
+/// Initialization sequence:
+/// 1. Ensures Flutter bindings are ready for async platform calls.
+/// 2. Initializes the Supabase client (no-op when `--dart-define` vars are absent).
+/// 3. Wraps the widget tree in a [ProviderScope] for Riverpod dependency injection.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

@@ -15,6 +15,10 @@ import '../../../l10n/app_localizations.dart';
 import '../../../providers/terminal_tab_provider.dart';
 
 /// Shows the broadcast panel as a modal bottom sheet.
+///
+/// Lets the user toggle broadcast mode to send keyboard input to all
+/// connected terminal tabs at once, or select individual tabs for
+/// selective broadcast.
 void showBroadcastPanel(BuildContext context) {
   showModalBottomSheet(
     context: context,

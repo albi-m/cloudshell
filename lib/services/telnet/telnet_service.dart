@@ -1,7 +1,8 @@
-// Telnet connection service.
-//
-// Creates TelnetSession instances by establishing TCP socket
-// connections to remote hosts.
+/// Telnet connection service.
+///
+/// Creates [TelnetSession] instances by establishing TCP socket
+/// connections to remote hosts.
+library;
 
 import 'dart:io';
 

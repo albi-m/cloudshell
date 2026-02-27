@@ -23,7 +23,10 @@ import '../../providers/snippet_provider.dart';
 import '../../providers/terminal_tab_provider.dart';
 import '../settings/workspace_manager_screen.dart';
 
-/// Shows the command palette overlay.
+/// Shows the command palette overlay as a modal dialog.
+///
+/// Provides fuzzy search across hosts, snippets, and app actions with
+/// keyboard navigation (arrow keys, Enter to select, Escape to dismiss).
 void showCommandPalette(BuildContext context) {
   showDialog(
     context: context,

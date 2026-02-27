@@ -1,7 +1,8 @@
-// Serial port connection service.
-//
-// Creates SerialSession instances and provides port enumeration.
-// Only available on desktop platforms (macOS, Windows, Linux).
+/// Serial port connection service.
+///
+/// Creates [SerialSession] instances and provides port enumeration.
+/// Only available on desktop platforms (macOS, Windows, Linux).
+library;
 
 import 'dart:io';
 
@@ -70,7 +71,9 @@ class SerialService {
       };
 }
 
-/// Common baud rates for serial connections.
+/// Standard baud rates for serial connections, from 300 to 921600.
+///
+/// Used to populate the baud rate picker in the host form.
 const serialBaudRates = [
   300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600,
 ];

@@ -18,7 +18,8 @@ import '../../providers/group_provider.dart';
 
 /// Shows a dialog to create or edit a host group.
 ///
-/// Returns the group ID if created/edited successfully, null if cancelled.
+/// Pass an existing [group] to edit it; omit it to create a new group.
+/// Returns the group ID if saved successfully, or null if the user cancelled.
 Future<String?> showGroupFormDialog(
   BuildContext context, {
   HostGroup? group,

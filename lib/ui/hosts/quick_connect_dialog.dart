@@ -23,8 +23,11 @@ import '../../providers/terminal_tab_provider.dart';
 import '../../services/ssh/ssh_service.dart';
 import '../../services/telnet/telnet_service.dart';
 
-/// Shows the quick connect dialog and returns true if a connection
-/// was established.
+/// Shows the quick connect dialog and returns `true` if a connection was
+/// established, `false` if the user cancelled.
+///
+/// The dialog accepts a connection string in `user@hostname:port` format and
+/// supports SSH and Telnet protocols with optional key-based authentication.
 Future<bool> showQuickConnectDialog(BuildContext context) async {
   final result = await showDialog<bool>(
     context: context,
