@@ -26,10 +26,8 @@ import '../../providers/key_provider.dart';
 import '../../providers/terminal_tab_provider.dart';
 import '../../providers/workspace_provider.dart';
 import '../../services/port_forwarding/port_forward_service.dart';
-import '../../services/serial/serial_service.dart';
-import '../../services/ssh/ssh_service.dart';
+import '../../services/connection/protocol_connector.dart';
 import '../../services/ssh/ssh_session.dart';
-import '../../services/telnet/telnet_service.dart';
 import '../shared/confirmation_dialog.dart';
 import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
@@ -290,12 +288,7 @@ class _HostDetailView extends ConsumerWidget {
         ),
       );
 
-      // Create session based on protocol type.
-      final session = switch (host.protocol) {
-        ProtocolType.ssh => await ref.read(sshServiceProvider).connect(host: host),
-        ProtocolType.telnet => await ref.read(telnetServiceProvider).connect(host: host),
-        ProtocolType.serial => await ref.read(serialServiceProvider).connect(host: host),
-      };
+      final session = await connectByProtocol(ref.read, host);
 
       connections.addConnection(session.sessionId, host.id);
       connections.updateStatus(session.sessionId, ConnectionStatus.connected);
