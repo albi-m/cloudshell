@@ -46,6 +46,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allPortForwardsProvider, (_, _) {});
       final forwards =
           await container.read(allPortForwardsProvider.future);
       expect(forwards, isEmpty);
@@ -71,6 +72,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allPortForwardsProvider, (_, _) {});
       final forwards =
           await container.read(allPortForwardsProvider.future);
       expect(forwards, hasLength(1));
@@ -108,6 +110,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allPortForwardsProvider, (_, _) {});
       final forwards =
           await container.read(allPortForwardsProvider.future);
       expect(forwards, hasLength(1));
@@ -149,11 +152,13 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(portForwardsByHostProvider('h1'), (_, _) {});
       final h1Forwards =
           await container.read(portForwardsByHostProvider('h1').future);
       expect(h1Forwards, hasLength(1));
       expect(h1Forwards.first.label, 'H1 Forward');
 
+      container.listen(portForwardsByHostProvider('h2'), (_, _) {});
       final h2Forwards =
           await container.read(portForwardsByHostProvider('h2').future);
       expect(h2Forwards, hasLength(1));
@@ -166,6 +171,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(portForwardsByHostProvider('h1'), (_, _) {});
       final forwards =
           await container.read(portForwardsByHostProvider('h1').future);
       expect(forwards, isEmpty);
@@ -200,6 +206,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(portForwardsByHostProvider('h1'), (_, _) {});
       final forwards =
           await container.read(portForwardsByHostProvider('h1').future);
       expect(forwards, hasLength(2));

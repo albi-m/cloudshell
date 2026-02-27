@@ -132,7 +132,7 @@ class AppearanceSection extends ConsumerWidget {
           icon: LucideIcons.languages,
           title: l10n.settingLanguageTitle,
           subtitle: languageDisplayName(
-            ref.watch(settingProvider(SettingsKeys.language)).valueOrNull ??
+            ref.watch(settingProvider(SettingsKeys.language)).value ??
                 'system',
             l10n,
           ),
@@ -146,7 +146,7 @@ class AppearanceSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final current = ref
             .read(settingProvider(SettingsKeys.language))
-            .valueOrNull ??
+            .value ??
         'system';
     final languages = supportedLanguages(l10n);
     showDialog(

@@ -138,7 +138,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
                   icon: const Icon(LucideIcons.checkSquare),
                   tooltip: l10n.hostsAllHostsHeader,
                   onPressed: () {
-                    final hosts = ref.read(allHostsProvider).valueOrNull ?? [];
+                    final hosts = ref.read(allHostsProvider).value ?? [];
                     _selectAll(hosts);
                   },
                 ),

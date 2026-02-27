@@ -109,7 +109,7 @@ class SyncNotifier extends AsyncNotifier<SyncStatus> {
 
         // Reset to idle after a short delay
         Future.delayed(const Duration(seconds: 3), () {
-          if (state.valueOrNull == SyncStatus.success) {
+          if (state.value == SyncStatus.success) {
             state = const AsyncValue.data(SyncStatus.idle);
           }
         });
@@ -160,8 +160,8 @@ class SyncNotifier extends AsyncNotifier<SyncStatus> {
   void _startAutoSync() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = Timer.periodic(_autoSyncInterval, (_) {
-      if (state.valueOrNull == SyncStatus.idle ||
-          state.valueOrNull == SyncStatus.error) {
+      if (state.value == SyncStatus.idle ||
+          state.value == SyncStatus.error) {
         sync();
       }
     });

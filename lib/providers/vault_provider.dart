@@ -702,7 +702,7 @@ final vaultProvider = AsyncNotifierProvider<VaultNotifier, VaultState>(
 /// Convenience provider that returns true when vault is unlocked.
 final isVaultUnlockedProvider = Provider<bool>((ref) {
   final vaultState = ref.watch(vaultProvider);
-  return vaultState.valueOrNull == VaultState.unlocked;
+  return vaultState.value == VaultState.unlocked;
 });
 
 /// Provides the auto-lock timeout setting (in seconds).

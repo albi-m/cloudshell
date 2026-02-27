@@ -414,7 +414,7 @@ class AutoLockTile extends ConsumerWidget {
     final timeout = ref.watch(vaultAutoLockTimeoutProvider);
     final vaultState = ref.watch(vaultProvider);
     final hasVault =
-        vaultState.valueOrNull != VaultState.noVault;
+        vaultState.value != VaultState.noVault;
 
     if (!hasVault) {
       return SettingsTile(
@@ -496,7 +496,7 @@ class TotpTile extends ConsumerWidget {
       );
     }
 
-    final isEnabled = totpAsync.valueOrNull ?? false;
+    final isEnabled = totpAsync.value ?? false;
 
     return SettingsTile(
       icon: isEnabled

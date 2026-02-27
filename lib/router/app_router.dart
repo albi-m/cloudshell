@@ -82,9 +82,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // (vault is needed for sync). Local-only users don't need vault.
       // VaultNotifier.build() tries auto-unlock from cached keys first,
       // so this only triggers if there are no cached keys.
-      final vaultState = ref.read(vaultProvider).valueOrNull;
+      final vaultState = ref.read(vaultProvider).value;
       final isAuthenticated =
-          ref.read(authProvider).valueOrNull == AuthState.authenticated;
+          ref.read(authProvider).value == AuthState.authenticated;
       final isVaultRoute = state.uri.path == RouteNames.vaultUnlock ||
           state.uri.path == RouteNames.masterPasswordSetup;
       if (vaultState == VaultState.locked &&

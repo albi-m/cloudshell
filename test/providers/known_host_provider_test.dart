@@ -24,6 +24,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allKnownHostsProvider, (_, _) {});
       final hosts = await container.read(allKnownHostsProvider.future);
       expect(hosts, isEmpty);
     });
@@ -47,6 +48,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allKnownHostsProvider, (_, _) {});
       final hosts = await container.read(allKnownHostsProvider.future);
       expect(hosts, hasLength(1));
       expect(hosts.first.hostname, 'example.com');
@@ -85,6 +87,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allKnownHostsProvider, (_, _) {});
       final hosts = await container.read(allKnownHostsProvider.future);
       expect(hosts, hasLength(2));
       // Ordered by hostname ascending
@@ -123,6 +126,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allKnownHostsProvider, (_, _) {});
       final hosts = await container.read(allKnownHostsProvider.future);
       expect(hosts, hasLength(2));
       // Same hostname, ordered by port ascending
@@ -150,6 +154,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allKnownHostsProvider, (_, _) {});
       final hosts = await container.read(allKnownHostsProvider.future);
       expect(hosts, isEmpty);
     });

@@ -58,7 +58,7 @@ class SyncAccountTile extends ConsumerWidget {
           case AuthState.authenticated:
             final emailAsync = ref.watch(currentUserEmailProvider);
             final email =
-                emailAsync.valueOrNull ?? l10n.syncSignedInDefault;
+                emailAsync.value ?? l10n.syncSignedInDefault;
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -361,7 +361,7 @@ class SyncToggleTile extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final authState = ref.watch(authProvider);
     final isAuthenticated =
-        authState.valueOrNull == AuthState.authenticated;
+        authState.value == AuthState.authenticated;
     final syncEnabled = ref.watch(syncEnabledProvider);
     final isVaultUnlocked = ref.watch(isVaultUnlockedProvider);
 
@@ -425,10 +425,10 @@ class SyncNowTile extends ConsumerWidget {
 
     final syncStatus = ref.watch(syncProvider);
     final status =
-        syncStatus.valueOrNull ?? SyncStatus.disabled;
+        syncStatus.value ?? SyncStatus.disabled;
     final lastSync = ref.watch(lastSyncTimeProvider);
     final pendingCount = ref.watch(pendingSyncCountProvider);
-    final pending = pendingCount.valueOrNull ?? 0;
+    final pending = pendingCount.value ?? 0;
 
     final isSyncing = status == SyncStatus.syncing;
 

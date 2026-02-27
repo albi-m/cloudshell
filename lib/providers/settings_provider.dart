@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/constants/app_constants.dart';
 import '../core/theme/terminal_themes.dart';

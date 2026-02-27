@@ -9,6 +9,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:logger/logger.dart';
 
 import '../../core/constants/storage_keys.dart';
