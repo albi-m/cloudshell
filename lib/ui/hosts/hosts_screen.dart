@@ -24,10 +24,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/host_provider.dart';
 import '../../providers/terminal_tab_provider.dart';
 import '../../providers/workspace_provider.dart';
-import '../../data/database/tables/hosts_table.dart';
-import '../../services/serial/serial_service.dart';
-import '../../services/ssh/ssh_service.dart';
-import '../../services/telnet/telnet_service.dart';
+import '../../services/connection/protocol_connector.dart';
 import '../shared/confirmation_dialog.dart';
 import '../shared/empty_state.dart';
 import '../shared/error_display.dart';
@@ -637,12 +634,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
         ),
       );
 
-      // Create session based on protocol type.
-      final session = switch (host.protocol) {
-        ProtocolType.ssh => await ref.read(sshServiceProvider).connect(host: host),
-        ProtocolType.telnet => await ref.read(telnetServiceProvider).connect(host: host),
-        ProtocolType.serial => await ref.read(serialServiceProvider).connect(host: host),
-      };
+      final session = await connectByProtocol(ref.read, host);
 
       connections.addConnection(session.sessionId, host.id);
       connections.updateStatus(session.sessionId, ConnectionStatus.connected);

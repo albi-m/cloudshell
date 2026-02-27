@@ -82,6 +82,33 @@ class SshService {
   /// Tracks active connection count for resource limiting.
   int _activeConnections = 0;
 
+  /// Throws [SshException] if the connection limit is reached.
+  void _guardConnectionLimit() {
+    if (_activeConnections >= _maxConcurrentConnections) {
+      throw const SshException(
+        'Too many active connections. Close an existing session first.',
+      );
+    }
+  }
+
+  /// Translates low-level SSH/socket exceptions into typed [AppException]s.
+  ///
+  /// Always throws — return type is [Never].
+  Never _translateSshException(Object error) {
+    if (error is SocketException) {
+      throw const SshTimeoutException(
+        'Connection timed out. Verify the server address and port.',
+      );
+    }
+    if (error is SSHAuthFailError) {
+      throw const SshAuthException(
+        'Authentication failed. Check your credentials.',
+      );
+    }
+    if (error is AppException) throw error;
+    throw const SshException('SSH connection failed. Please try again.');
+  }
+
   /// Connects to an SSH host and returns a session wrapper.
   ///
   /// [host] — the host record from the database.
@@ -95,12 +122,7 @@ class SshService {
     HostKeyVerifyCallback? onVerifyHostKey,
     Future<String?> Function()? onPasswordRequest,
   }) async {
-    if (_activeConnections >= _maxConcurrentConnections) {
-      throw const SshException(
-        'Too many active connections. Close an existing session first.',
-      );
-    }
-
+    _guardConnectionLimit();
     final sessionId = _uuid.v4();
 
     try {
@@ -159,7 +181,6 @@ class SshService {
         if (!accepted) {
           client.close();
           await socketResult.jumpSession?.close();
-          _activeConnections--;
           throw SshHostKeyException(
             'Host key verification rejected by user',
             fingerprint: computeFingerprint(capturedFingerprint!),
@@ -177,20 +198,9 @@ class SshService {
         jumpSession: socketResult.jumpSession,
         onClose: () => _activeConnections--,
       );
-    } on SocketException {
-      _activeConnections--;
-      throw const SshTimeoutException(
-        'Connection timed out. Verify the server address and port.',
-      );
-    } on SSHAuthFailError {
-      _activeConnections--;
-      throw const SshAuthException(
-        'Authentication failed. Check your credentials.',
-      );
     } catch (e) {
       _activeConnections--;
-      if (e is AppException) rethrow;
-      throw const SshException('SSH connection failed. Please try again.');
+      _translateSshException(e);
     }
   }
 
@@ -255,12 +265,7 @@ class SshService {
     List<SSHKeyPair>? identities,
     HostKeyVerifyCallback? onVerifyHostKey,
   }) async {
-    if (_activeConnections >= _maxConcurrentConnections) {
-      throw const SshException(
-        'Too many active connections. Close an existing session first.',
-      );
-    }
-
+    _guardConnectionLimit();
     final sessionId = _uuid.v4();
 
     try {
@@ -301,7 +306,6 @@ class SshService {
         );
         if (!accepted) {
           client.close();
-          _activeConnections--;
           throw SshHostKeyException(
             'Host key verification rejected by user',
             fingerprint: computeFingerprint(capturedFingerprint!),
@@ -315,20 +319,9 @@ class SshService {
         client: client,
         onClose: () => _activeConnections--,
       );
-    } on SocketException {
-      _activeConnections--;
-      throw const SshTimeoutException(
-        'Connection timed out. Verify the server address and port.',
-      );
-    } on SSHAuthFailError {
-      _activeConnections--;
-      throw const SshAuthException(
-        'Authentication failed. Check your credentials.',
-      );
     } catch (e) {
       _activeConnections--;
-      if (e is AppException) rethrow;
-      throw const SshException('SSH connection failed. Please try again.');
+      _translateSshException(e);
     }
   }
 
