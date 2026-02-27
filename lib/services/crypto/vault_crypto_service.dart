@@ -21,7 +21,9 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
-/// Holds the derived vault keys (in-memory only, never persisted).
+// Why in-memory only: keys never touch disk so a filesystem compromise
+// (backup extraction, device imaging) cannot recover vault contents.
+// Cleared on lock via destroy() to minimize the exposure window.
 class VaultKeys {
   const VaultKeys({
     required this.masterKey,
@@ -38,7 +40,9 @@ class VaultKeys {
   /// The 256-bit MAC key derived from master key via HKDF.
   final SecretKey macKey;
 
-  /// Wipes all key material from memory.
+  // Why explicit destroy: Dart's GC doesn't guarantee when memory is freed.
+  // Zeroing key bytes immediately on vault lock minimizes the window where
+  // a memory dump (cold boot attack, heap inspection) could recover keys.
   void destroy() {
     masterKey.destroy();
     encKey.destroy();
@@ -104,12 +108,15 @@ class EncryptedItem {
 class VaultCryptoService {
   static final _log = Logger();
 
-  // Argon2id parameters matching the security plan (release builds)
+  // Why Argon2id: memory-hard KDF that resists both GPU brute-force (via high
+  // memory cost) and side-channel attacks (via data-dependent addressing from
+  // the "id" hybrid mode). PBKDF2/bcrypt are far cheaper to attack on GPUs.
   static const int _argon2MemoryRelease = 65536; // 64 MB in KB
   static const int _argon2IterationsRelease = 3;
   static const int _argon2ParallelismRelease = 4;
 
-  // Lightweight params for debug builds (pure Dart Argon2id is ~100x slower)
+  // Why reduced debug params: pure-Dart Argon2id without native acceleration
+  // is ~100x slower; 64 MB would freeze the UI for minutes during development.
   static const int _argon2MemoryDebug = 1024; // 1 MB
   static const int _argon2IterationsDebug = 1;
   static const int _argon2ParallelismDebug = 1;
@@ -159,10 +166,10 @@ class VaultCryptoService {
     );
   }
 
-  /// Expands the master key into EncKey and MACKey using HKDF-SHA256.
-  ///
-  /// EncKey = HKDF(masterKey, info="cloudshell-enc")
-  /// MACKey = HKDF(masterKey, info="cloudshell-mac")
+  // Why HKDF-SHA256: provides domain separation so encKey and macKey are
+  // cryptographically independent even though derived from the same master key.
+  // Distinct info strings ("cloudshell-enc" / "cloudshell-mac") ensure
+  // compromising one key reveals nothing about the other.
   Future<({SecretKey encKey, SecretKey macKey})> expandKey(
       SecretKey masterKey) async {
     final hkdfEnc = Hkdf(
@@ -260,7 +267,10 @@ class VaultCryptoService {
     final aes = AesGcm.with256bits();
     final hmacAlgo = Hmac.sha256();
 
-    // Generate random per-item key (AES-256)
+    // Why per-item random key: if an attacker compromises one item's key,
+    // only that item is exposed — not the entire vault. Also limits the amount
+    // of data encrypted under any single key, staying well within AES-GCM nonce
+    // reuse safety bounds.
     final itemKey = await aes.newSecretKey();
 
     // Encrypt data with per-item key
@@ -279,7 +289,10 @@ class VaultCryptoService {
         keyBox.concatenation(nonce: false, mac: true);
     final keyNonce = keyBox.nonce;
 
-    // HMAC-SHA256 over ciphertext ‖ encryptedItemKey
+    // Why HMAC-SHA256 (encrypt-then-MAC): authenticates the ciphertext *after*
+    // encryption so we can reject tampered data before attempting decryption.
+    // This prevents padding oracle and chosen-ciphertext attacks. Using a
+    // separate macKey ensures MAC forgery doesn't compromise encryption.
     final hmacInput = Uint8List.fromList([...dataCiphertext, ...keyCiphertext]);
     final mac = await hmacAlgo.calculateMac(
       hmacInput,
@@ -311,7 +324,9 @@ class VaultCryptoService {
     final keyNonce = base64Decode(item.itemKeyNonce);
     final storedHmac = base64Decode(item.hmac);
 
-    // Verify HMAC
+    // Why verify HMAC *before* decryption: early rejection of tampered data
+    // prevents the decryptor from processing attacker-controlled ciphertext,
+    // closing off adaptive chosen-ciphertext attack vectors.
     final hmacInput = Uint8List.fromList([...dataCiphertext, ...keyCiphertext]);
     final computedMac = await hmacAlgo.calculateMac(
       hmacInput,
@@ -342,7 +357,8 @@ class VaultCryptoService {
     return utf8.decode(plainBytes);
   }
 
-  /// Constant-time comparison to prevent timing attacks.
+  // Why constant-time comparison: a naive early-return comparison leaks how
+  // many leading bytes match, letting an attacker forge MACs byte-by-byte.
   bool _constantTimeEquals(Uint8List a, Uint8List b) {
     if (a.length != b.length) return false;
     var result = 0;
