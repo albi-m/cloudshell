@@ -50,6 +50,7 @@ class _ShortcutReferenceDialog extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(LucideIcons.x, size: 16),
+                    tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],

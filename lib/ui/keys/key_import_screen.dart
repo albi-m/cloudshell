@@ -170,6 +170,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         title: Text(l10n.keyImportTitle, style: AppTypography.h2),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: l10n.back,
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -230,6 +231,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                     _obscurePassphrase ? LucideIcons.eyeOff : LucideIcons.eye,
                     size: 18,
                   ),
+                  tooltip: l10n.togglePassphraseVisibility,
                   onPressed: () => setState(
                     () => _obscurePassphrase = !_obscurePassphrase,
                   ),

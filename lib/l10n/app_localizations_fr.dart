@@ -48,6 +48,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get search => 'Rechercher';
 
   @override
+  String get clearSearch => 'Effacer la recherche';
+
+  @override
+  String get togglePasswordVisibility => 'Afficher/masquer le mot de passe';
+
+  @override
+  String get togglePassphraseVisibility => 'Afficher/masquer la phrase secrète';
+
+  @override
   String get ok => 'OK';
 
   @override

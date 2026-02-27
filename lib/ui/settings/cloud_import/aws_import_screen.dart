@@ -161,6 +161,7 @@ class _AwsImportScreenState extends ConsumerState<AwsImportScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(l10n.awsImportTitle),
@@ -218,6 +219,7 @@ class _AwsImportScreenState extends ConsumerState<AwsImportScreen> {
                 _obscureSecret ? LucideIcons.eyeOff : LucideIcons.eye,
                 size: 18,
               ),
+              tooltip: 'Toggle visibility',
               onPressed: () =>
                   setState(() => _obscureSecret = !_obscureSecret),
             ),

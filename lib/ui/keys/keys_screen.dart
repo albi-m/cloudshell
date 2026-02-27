@@ -98,6 +98,7 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(LucideIcons.x, size: 16),
+                            tooltip: l10n.clearSearch,
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');

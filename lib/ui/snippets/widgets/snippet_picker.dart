@@ -69,6 +69,7 @@ class _SnippetPickerDialogState extends ConsumerState<_SnippetPickerDialog> {
                   suffixIcon: _query.isNotEmpty
                       ? IconButton(
                           icon: const Icon(LucideIcons.x, size: 16),
+                          tooltip: l10n.close,
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _query = '');

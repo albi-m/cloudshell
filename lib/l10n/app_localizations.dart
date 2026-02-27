@@ -186,6 +186,24 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get search;
 
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @togglePasswordVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle password visibility'**
+  String get togglePasswordVisibility;
+
+  /// No description provided for @togglePassphraseVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle passphrase visibility'**
+  String get togglePassphraseVisibility;
+
   /// No description provided for @ok.
   ///
   /// In en, this message translates to:

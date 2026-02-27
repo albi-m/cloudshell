@@ -48,6 +48,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get search => '검색';
 
   @override
+  String get clearSearch => '검색 지우기';
+
+  @override
+  String get togglePasswordVisibility => '비밀번호 표시 전환';
+
+  @override
+  String get togglePassphraseVisibility => '암호 구문 표시 전환';
+
+  @override
   String get ok => '확인';
 
   @override

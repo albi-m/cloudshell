@@ -132,6 +132,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(LucideIcons.arrowLeft, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -192,6 +193,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     labelText: l10n.signUpPasswordLabel,
                     prefixIcon: const Icon(LucideIcons.lock, size: 18),
                     suffixIcon: IconButton(
+                      tooltip: 'Toggle password visibility',
                       icon: Icon(
                         _obscurePassword
                             ? LucideIcons.eyeOff
@@ -240,6 +242,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     labelText: l10n.signUpConfirmPasswordLabel,
                     prefixIcon: const Icon(LucideIcons.lock, size: 18),
                     suffixIcon: IconButton(
+                      tooltip: 'Toggle password visibility',
                       icon: Icon(
                         _obscureConfirm
                             ? LucideIcons.eyeOff

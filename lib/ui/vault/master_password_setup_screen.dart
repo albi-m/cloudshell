@@ -105,6 +105,7 @@ class _MasterPasswordSetupScreenState
       appBar: AppBar(
         title: Text(l10n.masterPasswordSetupTitle),
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(LucideIcons.x),
           onPressed: _isCreating ? null : () => Navigator.of(context).pop(),
         ),
@@ -182,6 +183,7 @@ class _MasterPasswordSetupScreenState
                       hintText: l10n.masterPasswordSetupPasswordHint,
                       prefixIcon: const Icon(LucideIcons.lock, size: 18),
                       suffixIcon: IconButton(
+                        tooltip: 'Toggle password visibility',
                         icon: Icon(
                           _obscurePassword
                               ? LucideIcons.eyeOff
@@ -247,6 +249,7 @@ class _MasterPasswordSetupScreenState
                       hintText: l10n.masterPasswordSetupConfirmHint,
                       prefixIcon: const Icon(LucideIcons.lock, size: 18),
                       suffixIcon: IconButton(
+                        tooltip: 'Toggle password visibility',
                         icon: Icon(
                           _obscureConfirm
                               ? LucideIcons.eyeOff
