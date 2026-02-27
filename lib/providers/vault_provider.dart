@@ -346,7 +346,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       return null;
     } on PlatformException {
       return 'Biometric authentication not available.';
-    } catch (e, stackTrace) { // ignore: unused_catch_stack
+    } catch (e) {
       state = const AsyncValue.data(VaultState.locked);
       return 'Biometric unlock failed: $e';
     }
@@ -451,7 +451,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       await _cacheKeys();
 
       return null; // success
-    } catch (e, stackTrace) { // ignore: unused_catch_stack
+    } catch (e) {
       return 'Password change failed: $e';
     }
   }
@@ -498,7 +498,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       // Re-check state
       state = const AsyncValue.data(VaultState.locked);
       return true;
-    } catch (e, stackTrace) { // ignore: unused_catch_stack
+    } catch (e) {
       _log.e('Failed to fetch vault config from server: $e');
       return false;
     }
@@ -558,7 +558,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       );
       _startAutoLockTimer();
       return true;
-    } catch (e, stackTrace) { // ignore: unused_catch_stack
+    } catch (e) {
       _log.w('Auto-unlock from cached key failed: $e');
       return false;
     }
@@ -573,7 +573,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
 
       final storage = ref.read(secureStorageProvider);
       await storage.write(StorageKeys.biometricMasterKey, masterKeyB64);
-    } catch (e, stackTrace) { // ignore: unused_catch_stack
+    } catch (e) {
       // Non-fatal — vault still works, just won't auto-unlock next time
       _log.w('Failed to cache vault keys: $e');
     }
@@ -604,7 +604,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
                 ? '$verifCt:$verifNonce'
                 : null,
       ));
-    } catch (e, stackTrace) { // ignore: unused_catch_stack
+    } catch (e) {
       // Non-fatal — vault works locally even if upload fails
       _log.w('Failed to upload vault config: $e');
     }

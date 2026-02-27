@@ -74,12 +74,13 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
           _labelController.text = name;
         }
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.keyImportFailedToReadFile(e.toString())),
+            content: Text(l10n.keyImportFailedToReadFile(ErrorHandler.userMessage(e))),
             backgroundColor: AppColors.accentRed,
           ),
         );
@@ -146,8 +147,8 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         );
         Navigator.of(context).pop(true);
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() => _isImporting = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -283,7 +284,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.file, size: 14, color: AppColors.accentGreen),
+                    const Icon(LucideIcons.file, size: 14, color: AppColors.accentGreen),
                     const SizedBox(width: 6),
                     Text(
                       _selectedFileName!,
@@ -332,7 +333,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(LucideIcons.info, size: 16, color: AppColors.accentPrimary),
+                  const Icon(LucideIcons.info, size: 16, color: AppColors.accentPrimary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

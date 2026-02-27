@@ -654,8 +654,8 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
               host.label,
             );
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -840,7 +840,7 @@ class _GroupHeader extends StatelessWidget {
           if (depth > 0)
             Padding(
               padding: const EdgeInsets.only(right: 6),
-              child: Icon(
+              child: const Icon(
                 LucideIcons.cornerDownRight,
                 size: 14,
                 color: AppColors.textTertiary,
@@ -929,7 +929,7 @@ class _HostListItemState extends State<_HostListItem> {
                     : AppColors.borderSubtle,
           ),
           boxShadow: _isHovered
-              ? [
+              ? const [
                   BoxShadow(
                     color: AppColors.accentGlow,
                     blurRadius: 12,

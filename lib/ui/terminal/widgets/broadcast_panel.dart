@@ -69,7 +69,7 @@ class _BroadcastPanel extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
               children: [
-                Icon(LucideIcons.radio, size: 18, color: AppColors.accentOrange),
+                const Icon(LucideIcons.radio, size: 18, color: AppColors.accentOrange),
                 const SizedBox(width: 8),
                 Text(l10n.broadcastPanelTitle, style: AppTypography.h3),
                 const Spacer(),

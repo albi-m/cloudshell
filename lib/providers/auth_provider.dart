@@ -228,8 +228,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final vaultNotifier = ref.read(vaultProvider.notifier);
       await vaultNotifier.setupVault(password);
       _log.i('Vault auto-created with account password');
-    } catch (e) {
-      _log.w('Failed to auto-create vault: $e');
+    } catch (e, stackTrace) {
+      _log.w('Failed to auto-create vault: $e', error: e, stackTrace: stackTrace);
     }
   }
 
@@ -269,8 +269,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         }
       }
       // If already unlocked (e.g. auto-unlock from cached key), nothing to do
-    } catch (e) {
-      _log.w('Failed to auto-unlock vault: $e');
+    } catch (e, stackTrace) {
+      _log.w('Failed to auto-unlock vault: $e', error: e, stackTrace: stackTrace);
     }
   }
 }

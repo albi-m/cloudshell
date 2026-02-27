@@ -368,8 +368,8 @@ class _EmptyTerminal extends ConsumerWidget {
               host.label,
             );
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -431,7 +431,7 @@ class _RecentHostTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(LucideIcons.play,
+                const Icon(LucideIcons.play,
                     size: 14, color: AppColors.accentPrimary),
               ],
             ),
@@ -1137,7 +1137,7 @@ class _RetryBanner extends StatelessWidget {
       color: AppColors.accentRed.withValues(alpha: 0.12),
       child: Row(
         children: [
-          Icon(LucideIcons.wifiOff, size: 14, color: AppColors.accentRed),
+          const Icon(LucideIcons.wifiOff, size: 14, color: AppColors.accentRed),
           const SizedBox(width: 8),
           Text(
             l10n.terminalConnectionLost,

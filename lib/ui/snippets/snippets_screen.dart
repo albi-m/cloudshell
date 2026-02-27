@@ -298,14 +298,14 @@ class _SnippetListItemState extends State<_SnippetListItem> {
                 : AppColors.borderSubtle,
           ),
           boxShadow: _isHovered
-              ? [
+              ? const [
                   BoxShadow(
                     color: AppColors.accentGlow,
                     blurRadius: 12,
                     spreadRadius: -2,
                   ),
                 ]
-              : [],
+              : const [],
         ),
         child: Material(
           color: Colors.transparent,
@@ -390,8 +390,8 @@ class _SnippetListItemState extends State<_SnippetListItem> {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.pencil, size: 16),
-                            SizedBox(width: 8),
+                            const Icon(LucideIcons.pencil, size: 16),
+                            const SizedBox(width: 8),
                             Text(l10n.snippetsMenuEdit),
                           ],
                         ),
@@ -400,9 +400,9 @@ class _SnippetListItemState extends State<_SnippetListItem> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.trash2,
+                            const Icon(LucideIcons.trash2,
                                 size: 16, color: AppColors.accentRed),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(l10n.snippetsMenuDelete),
                           ],
                         ),

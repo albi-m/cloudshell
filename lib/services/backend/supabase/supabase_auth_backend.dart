@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/errors/error_handler.dart';
 import '../auth_backend.dart';
 
 /// Supabase-backed authentication.
@@ -39,8 +40,9 @@ class SupabaseAuthBackend implements AuthBackend {
       );
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Sign up failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -76,8 +78,9 @@ class SupabaseAuthBackend implements AuthBackend {
       );
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Sign in failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -98,8 +101,9 @@ class SupabaseAuthBackend implements AuthBackend {
       );
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Verification failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -115,8 +119,9 @@ class SupabaseAuthBackend implements AuthBackend {
       return const AuthResult.success();
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Password reset failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -130,8 +135,9 @@ class SupabaseAuthBackend implements AuthBackend {
       return const AuthResult.success();
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Account deletion failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 

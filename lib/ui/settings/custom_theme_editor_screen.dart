@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/terminal_themes.dart';
@@ -143,11 +144,12 @@ class _CustomThemeEditorScreenState
       if (mounted) {
         Navigator.of(context).pop(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save: $e'),
+            content: Text(ErrorHandler.userMessage(e)),
             backgroundColor: AppColors.accentRed,
           ),
         );

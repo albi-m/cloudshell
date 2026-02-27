@@ -196,11 +196,11 @@ class _WorkspaceTabItemState extends State<_WorkspaceTabItem>
               ),
             ),
             boxShadow: widget.isActive
-                ? [
+                ? const [
                     BoxShadow(
                       color: AppColors.accentGlow,
                       blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ]
                 : null,
