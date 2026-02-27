@@ -17,6 +17,8 @@ A cross-platform SSH/SFTP client with E2E encrypted sync across macOS, Windows, 
 | 5 | **Security Plan** | `docs/05-SECURITY-PLAN.md` | Full threat model, encryption spec (Argon2id + AES-256-GCM + HKDF), OWASP Mobile Top 10 mitigations, incident response plan, backend hardening, compliance (GDPR/CCPA), security audit schedule, SDL |
 | 6 | **Documentation Plan** | `docs/06-DOCUMENTATION-PLAN.md` | 4-layer doc strategy (user/developer/ops/internal), per-phase doc deliverables, in-app help standards, code documentation rules (dartdoc), writing style guide, doc tooling (Docusaurus), quality gates, documentation website plan |
 | 7 | **Security Hardening** | `docs/07-SECURITY-HARDENING.md` | Implemented security measures, encryption at rest (SQLCipher + keychain), TOFU host key verification, clipboard auto-clear, error sanitization, secure logging, performance optimizations, database indexes, resource limits |
+| 8 | **Supabase Setup** | `docs/SUPABASE-SETUP.md` | Backend setup: creating a Supabase project, running the schema, configuring auth, how E2E encrypted sync works, self-hosting |
+| 9 | **Build & Release** | `docs/BUILD-RELEASE.md` | Platform builds, code signing (macOS/iOS/Android/Windows/Linux), CI/CD pipelines, release checklist |
 
 ---
 
@@ -41,9 +43,9 @@ A cross-platform SSH/SFTP client with E2E encrypted sync across macOS, Windows, 
 - **Secure Storage:** flutter_secure_storage — Keychain/Keystore/DPAPI
 - **State:** Riverpod — reactive state management
 - **Crypto:** pointycastle + cryptography — AES-256-GCM, Argon2id
-- **Backend:** Rust (Axum) or Go (Gin) + PostgreSQL
+- **Backend:** Supabase (optional) — auth + E2E encrypted sync
 - **Icons:** Lucide — 1400+ clean icons
-- **UI Font:** Inter — designed for screens
+- **UI Font:** Plus Jakarta Sans — bundled
 - **Terminal Font:** JetBrains Mono — ligatures, optimized for code
 
 ### Security Posture

@@ -75,6 +75,14 @@ secrets.yaml
 google-services.json
 GoogleService-Info.plist
 
+# ----- Internal Dev Files -----
+agents/
+review/
+design/
+ANALYSIS-REPORT.md
+reference/design-system/DESIGN-RESEARCH-RAW.md
+docs/PROGRESS-TRACKER.csv
+
 # ----- Misc -----
 *.class
 *.pyc
