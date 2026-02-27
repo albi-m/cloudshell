@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../l10n/app_localizations.dart';
@@ -62,10 +63,11 @@ class _RemoteTextEditorState extends State<RemoteTextEditor> {
         _controller.text = content;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = ErrorHandler.userMessage(e);
         _isLoading = false;
       });
     }
@@ -87,13 +89,14 @@ class _RemoteTextEditorState extends State<RemoteTextEditor> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.remoteEditorFileSaved)),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (!mounted) return;
       setState(() => _isSaving = false);
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.remoteEditorFailedToSave(e.toString())),
+          content: Text(l10n.remoteEditorFailedToSave(ErrorHandler.userMessage(e))),
           backgroundColor: AppColors.accentRed,
         ),
       );
@@ -116,7 +119,7 @@ class _RemoteTextEditorState extends State<RemoteTextEditor> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop('discard'),
             child: Text(l10n.remoteEditorDiscard,
-                style: TextStyle(color: AppColors.accentRed)),
+                style: const TextStyle(color: AppColors.accentRed)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop('save'),
@@ -214,7 +217,7 @@ class _RemoteTextEditorState extends State<RemoteTextEditor> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.alertTriangle,
+                          const Icon(LucideIcons.alertTriangle,
                               size: 48, color: AppColors.accentRed),
                           const SizedBox(height: 16),
                           Text(l10n.remoteEditorFailedToLoadFile,

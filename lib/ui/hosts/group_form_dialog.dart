@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/validators.dart';
 import '../../l10n/app_localizations.dart';
@@ -108,11 +109,11 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
         ));
         if (mounted) Navigator.of(context).pop(id);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
-        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.error}: $e')),
+          SnackBar(content: Text(ErrorHandler.userMessage(e))),
         );
         setState(() => _isSaving = false);
       }

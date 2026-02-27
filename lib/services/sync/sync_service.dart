@@ -90,8 +90,8 @@ class SyncService {
         pulled: totalPulled,
         pushed: totalPushed,
       );
-    } catch (e) {
-      _log.e('Sync failed: $e');
+    } catch (e, stackTrace) {
+      _log.e('Sync failed: $e', error: e, stackTrace: stackTrace);
       return SyncResult(success: false, error: '$e');
     }
   }

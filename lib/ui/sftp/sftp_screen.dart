@@ -441,7 +441,7 @@ class _SftpScreenState extends ConsumerState<SftpScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.upload,
+                            const Icon(LucideIcons.upload,
                                 size: 36, color: AppColors.accentPrimary),
                             const SizedBox(height: 8),
                             Text(
@@ -545,7 +545,7 @@ class _SftpToolbar extends StatelessWidget {
       child: Row(
         children: [
           // Host selector
-          Icon(LucideIcons.server, size: 16, color: AppColors.textSecondary),
+          const Icon(LucideIcons.server, size: 16, color: AppColors.textSecondary),
           const SizedBox(width: 8),
           if (hosts.isEmpty)
             Text(l10n.sftpNoSavedHostsTitle,
@@ -1175,7 +1175,7 @@ class _RemoteFilePaneState extends State<_RemoteFilePane> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.server,
+            const Icon(LucideIcons.server,
                 size: 40, color: AppColors.textTertiary),
             const SizedBox(height: 12),
             Text(l10n.sftpRemoteSelectHost,
@@ -1620,11 +1620,11 @@ class _FileListItem extends StatelessWidget {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.trash2,
+                            const Icon(LucideIcons.trash2,
                                 size: 14, color: AppColors.accentRed),
                             const SizedBox(width: 8),
                             Text(l10n.sftpFileMenuDelete,
-                                style: TextStyle(color: AppColors.accentRed)),
+                                style: const TextStyle(color: AppColors.accentRed)),
                           ],
                         ),
                       ),

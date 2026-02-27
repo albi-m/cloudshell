@@ -259,7 +259,7 @@ class _PickerItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            Icon(LucideIcons.code2, size: 16, color: AppColors.accentPrimary),
+            const Icon(LucideIcons.code2, size: 16, color: AppColors.accentPrimary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

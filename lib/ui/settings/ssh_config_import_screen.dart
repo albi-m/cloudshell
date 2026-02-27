@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/database/app_database.dart';
@@ -59,10 +60,11 @@ class _SshConfigImportScreenState extends ConsumerState<SshConfigImportScreen> {
           _selected.addAll(List.generate(entries.length, (i) => i));
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = ErrorHandler.userMessage(e);
           _isLoading = false;
         });
       }
@@ -144,12 +146,13 @@ class _SshConfigImportScreenState extends ConsumerState<SshConfigImportScreen> {
         );
         Navigator.of(context).pop(imported);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.sshConfigImportFailed2('$e')),
+            content: Text(l10n.sshConfigImportFailed2(ErrorHandler.userMessage(e))),
             backgroundColor: AppColors.accentRed,
           ),
         );

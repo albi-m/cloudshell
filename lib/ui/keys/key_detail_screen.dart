@@ -93,9 +93,9 @@ class _KeyDetailView extends ConsumerWidget {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(LucideIcons.trash2,
+                    const Icon(LucideIcons.trash2,
                         size: 16, color: AppColors.accentRed),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(l10n.delete),
                   ],
                 ),

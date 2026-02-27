@@ -127,6 +127,8 @@ class SshKeyService {
         publicKey: publicKeyStr,
         fingerprint: fingerprint,
       );
+    } on FormatException catch (e) {
+      throw KeyException('Invalid key format: ${e.message}', e);
     } catch (e) {
       if (e is AppException) rethrow;
       throw KeyException('Failed to import SSH key', e);
@@ -150,6 +152,8 @@ class SshKeyService {
 
     try {
       return SSHKeyPair.fromPem(privateKeyPem, passphrase);
+    } on FormatException catch (e) {
+      throw KeyException('Invalid key format: ${e.message}', e);
     } catch (e) {
       throw KeyException('Failed to load SSH key for authentication', e);
     }

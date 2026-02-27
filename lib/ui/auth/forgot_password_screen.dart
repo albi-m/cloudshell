@@ -252,7 +252,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(LucideIcons.shieldAlert,
+              const Icon(LucideIcons.shieldAlert,
                   size: 16, color: AppColors.accentOrange),
               const SizedBox(width: 8),
               Expanded(

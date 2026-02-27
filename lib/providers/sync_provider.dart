@@ -122,8 +122,8 @@ class SyncNotifier extends AsyncNotifier<SyncStatus> {
       ref.invalidate(lastSyncTimeProvider);
 
       return result;
-    } catch (e) {
-      _log.e('Sync error: $e');
+    } catch (e, stackTrace) {
+      _log.e('Sync error: $e', error: e, stackTrace: stackTrace);
       state = const AsyncValue.data(SyncStatus.error);
       return SyncResult(success: false, error: '$e');
     }

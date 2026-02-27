@@ -82,8 +82,8 @@ class _AwsImportScreenState extends ConsumerState<AwsImportScreen> {
         _isLoading = false;
         _step = 1;
       });
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -138,8 +138,8 @@ class _AwsImportScreenState extends ConsumerState<AwsImportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.awsImportResult(imported))),
       );
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (!mounted) return;
       setState(() {
         _isImporting = false;
@@ -189,7 +189,7 @@ class _AwsImportScreenState extends ConsumerState<AwsImportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(LucideIcons.cloud, size: 48, color: AppColors.accentOrange),
+        const Icon(LucideIcons.cloud, size: 48, color: AppColors.accentOrange),
         const SizedBox(height: 16),
         Text(l10n.awsConnectTitle, style: AppTypography.h2),
         const SizedBox(height: 8),
@@ -249,7 +249,7 @@ class _AwsImportScreenState extends ConsumerState<AwsImportScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(LucideIcons.info, size: 16, color: AppColors.accentCyan),
+              const Icon(LucideIcons.info, size: 16, color: AppColors.accentCyan),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -382,7 +382,7 @@ class _AwsImportScreenState extends ConsumerState<AwsImportScreen> {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Row(
                           children: [
-                            Icon(LucideIcons.server,
+                            const Icon(LucideIcons.server,
                                 size: 14,
                                 color: AppColors.accentOrange),
                             const SizedBox(width: 8),

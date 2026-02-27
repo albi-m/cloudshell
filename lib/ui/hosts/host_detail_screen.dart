@@ -318,8 +318,8 @@ class _HostDetailView extends ConsumerWidget {
       if (context.mounted) {
         Navigator.of(context).pop();
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -569,7 +569,7 @@ class _TagsRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(LucideIcons.tags, size: 16, color: AppColors.textTertiary),
+          const Icon(LucideIcons.tags, size: 16, color: AppColors.textTertiary),
           const SizedBox(width: 10),
           SizedBox(
             width: 110,

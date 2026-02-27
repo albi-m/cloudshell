@@ -214,8 +214,8 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
       if (mounted) {
         Navigator.of(context).pop(true);
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() => _isConnecting = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -277,7 +277,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
                 ),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.alertTriangle,
+                    const Icon(LucideIcons.alertTriangle,
                         size: 14, color: AppColors.accentOrange),
                     const SizedBox(width: 6),
                     Expanded(
