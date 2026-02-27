@@ -85,7 +85,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // _SettingsSection calls title.toUpperCase()
+      // SettingsSection calls title.toUpperCase()
       expect(find.text('APPEARANCE'), findsOneWidget);
     });
 
