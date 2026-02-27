@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/constants/route_names.dart';
+import '../../../core/errors/error_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
@@ -332,7 +333,8 @@ class SyncAccountTile extends ConsumerWidget {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

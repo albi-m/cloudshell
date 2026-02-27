@@ -8,7 +8,6 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/xterm.dart' as xterm;
@@ -24,6 +23,8 @@ import '../services/ssh/ssh_session.dart';
 import '../services/terminal/session_logger.dart';
 import 'connection_provider.dart';
 import 'settings_provider.dart';
+
+import '../core/errors/error_handler.dart';
 
 const _uuid = Uuid();
 
@@ -338,7 +339,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
           }
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       terminal.write('\r\n[Failed to start shell]\r\n');
       tab.isConnected = false;
     }
@@ -495,8 +497,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
         tab.terminal.write('[Reconnected]\r\n');
         _notifyStateChange();
         return;
-      } catch (e) {
-        debugPrint('Terminal reconnect failed: $e');
+      } catch (e, stackTrace) {
+        ErrorHandler.handle(e, stackTrace);
         tab.terminal.write('[Reconnect failed]\r\n');
       }
     }
@@ -690,7 +692,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       tab.splitRatio = 0.5;
 
       _notifyStateChange();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       tab.terminal.write('\r\n[Failed to split pane]\r\n');
       _notifyStateChange();
     }
@@ -735,7 +738,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       );
       tab.terminal.write('\r\n[Session logging started: ${tab.sessionLogger!.filePath}]\r\n');
       _notifyStateChange();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       tab.terminal.write('\r\n[Failed to start logging: $e]\r\n');
     }
   }
