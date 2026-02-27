@@ -89,7 +89,7 @@ class _CommandPaletteDialogState
     final snippetsAsync = ref.read(allSnippetsProvider);
 
     // RECENT — recently connected hosts
-    final hosts = hostsAsync.valueOrNull ?? <Host>[];
+    final hosts = hostsAsync.value ?? <Host>[];
     final recentHosts = hosts
         .where((h) => h.lastConnectedAt != null)
         .toList()
@@ -126,7 +126,7 @@ class _CommandPaletteDialogState
     }
 
     // SNIPPETS
-    final snippets = snippetsAsync.valueOrNull ?? <Snippet>[];
+    final snippets = snippetsAsync.value ?? <Snippet>[];
     for (final snippet in snippets) {
       entries.add(_PaletteEntry(
         title: snippet.name,

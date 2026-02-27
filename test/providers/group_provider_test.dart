@@ -25,6 +25,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allGroupsProvider, (_, _) {});
       final groups = await container.read(allGroupsProvider.future);
       expect(groups, isEmpty);
     });
@@ -44,6 +45,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allGroupsProvider, (_, _) {});
       final groups = await container.read(allGroupsProvider.future);
       expect(groups, hasLength(1));
       expect(groups.first.name, 'Production');
@@ -72,6 +74,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allGroupsProvider, (_, _) {});
       final groups = await container.read(allGroupsProvider.future);
       expect(groups, hasLength(2));
       // Ordered by sortOrder (both 0) then name alphabetically
@@ -103,6 +106,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(allGroupsProvider, (_, _) {});
       final groups = await container.read(allGroupsProvider.future);
       expect(groups, hasLength(1));
       expect(groups.first.name, 'Active');
@@ -134,6 +138,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(topLevelGroupsProvider, (_, _) {});
       final groups = await container.read(topLevelGroupsProvider.future);
       expect(groups, hasLength(1));
       expect(groups.first.name, 'Parent');
@@ -165,6 +170,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(topLevelGroupsProvider, (_, _) {});
       final groups = await container.read(topLevelGroupsProvider.future);
       // Child was reparented to top-level by softDeleteGroup
       expect(groups, hasLength(1));
@@ -206,6 +212,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(childGroupsProvider('g1'), (_, _) {});
       final children =
           await container.read(childGroupsProvider('g1').future);
       expect(children, hasLength(2));
@@ -226,6 +233,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(childGroupsProvider('g1'), (_, _) {});
       final children =
           await container.read(childGroupsProvider('g1').future);
       expect(children, isEmpty);
@@ -263,6 +271,7 @@ void main() {
       ]);
       addTearDown(container.dispose);
 
+      container.listen(childGroupsProvider('g1'), (_, _) {});
       final children =
           await container.read(childGroupsProvider('g1').future);
       expect(children, isEmpty);

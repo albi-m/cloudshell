@@ -235,10 +235,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       // Authenticate to confirm identity before enabling
       final authenticated = await localAuth.authenticate(
         localizedReason: 'Enable biometric unlock',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
+        persistAcrossBackgrounding: true,
       );
       if (!authenticated) return 'Biometric authentication failed.';
 
@@ -247,8 +244,8 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       await settings.set(VaultSettingsKeys.biometricVaultUnlock, 'true');
 
       return null; // success
-    } on PlatformException catch (e) {
-      return 'Failed to enable biometric unlock: ${e.message}';
+    } on LocalAuthException catch (e) {
+      return 'Failed to enable biometric unlock: ${e.description}';
     }
   }
 
@@ -281,10 +278,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
 
       final authenticated = await localAuth.authenticate(
         localizedReason: 'Unlock CloudShell vault',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
+        persistAcrossBackgrounding: true,
       );
       if (!authenticated) return 'Biometric authentication failed.';
 
@@ -702,7 +696,7 @@ final vaultProvider = AsyncNotifierProvider<VaultNotifier, VaultState>(
 /// Convenience provider that returns true when vault is unlocked.
 final isVaultUnlockedProvider = Provider<bool>((ref) {
   final vaultState = ref.watch(vaultProvider);
-  return vaultState.valueOrNull == VaultState.unlocked;
+  return vaultState.value == VaultState.unlocked;
 });
 
 /// Provides the auto-lock timeout setting (in seconds).

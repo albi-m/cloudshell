@@ -241,7 +241,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> _autoUnlockOrCreateVault(String password) async {
     try {
       final vaultNotifier = ref.read(vaultProvider.notifier);
-      final vaultState = ref.read(vaultProvider).valueOrNull;
+      final vaultState = ref.read(vaultProvider).value;
 
       if (vaultState == VaultState.noVault) {
         // No vault locally — try to fetch config from server
@@ -283,7 +283,7 @@ final authProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
 /// Convenience provider: true when authenticated with a sync account.
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final authState = ref.watch(authProvider);
-  return authState.valueOrNull == AuthState.authenticated;
+  return authState.value == AuthState.authenticated;
 });
 
 /// Provides the current user's email (null if not authenticated).
@@ -305,7 +305,7 @@ final currentUserEmailProvider = FutureProvider<String?>((ref) async {
 /// Provides the current auth mode as a string.
 final authModeProvider = Provider<String>((ref) {
   final authState = ref.watch(authProvider);
-  return switch (authState.valueOrNull) {
+  return switch (authState.value) {
     AuthState.authenticated => 'authenticated',
     AuthState.localOnly => 'local',
     _ => 'unauthenticated',

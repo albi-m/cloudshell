@@ -5,7 +5,7 @@
 /// to expanded on app restart.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 /// Whether the desktop sidebar is collapsed (icon-only mode).
 ///

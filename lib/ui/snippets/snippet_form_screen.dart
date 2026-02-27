@@ -145,7 +145,7 @@ class _SnippetFormScreenState extends ConsumerState<SnippetFormScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final categoriesAsync = ref.watch(snippetCategoriesProvider);
-    final existingCategories = categoriesAsync.valueOrNull ?? <String>[];
+    final existingCategories = categoriesAsync.value ?? <String>[];
 
     return Scaffold(
       backgroundColor: AppColors.bgDeepest,
