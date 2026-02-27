@@ -282,11 +282,12 @@ class _WorkspaceTabItemState extends State<_WorkspaceTabItem>
               if (showClose)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(4),
-                    onTap: widget.onClose,
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: widget.onClose,
                       child: Icon(
                         LucideIcons.x,
                         size: 12,
