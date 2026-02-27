@@ -1278,7 +1278,7 @@ class _GroupListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: EdgeInsets.only(left: depth * 24.0),
+      padding: EdgeInsets.only(left: depth * 16.0),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
