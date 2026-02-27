@@ -16,7 +16,7 @@ import '../../l10n/app_localizations.dart';
 void showShortcutReference(BuildContext context) {
   showDialog(
     context: context,
-    barrierColor: Colors.black54,
+    barrierColor: AppColors.barrierMedium,
     builder: (_) => const _ShortcutReferenceDialog(),
   );
 }

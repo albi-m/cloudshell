@@ -195,7 +195,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: QrImageView(

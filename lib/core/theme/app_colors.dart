@@ -143,6 +143,16 @@ abstract final class AppColors {
   static const Color warningGlow = Color(0x26F0B232);
 
   // ---------------------------------------------------------------------------
+  // Barrier / Scrim Colors (for dialog overlays)
+  // ---------------------------------------------------------------------------
+
+  /// Light barrier overlay (~38% black).
+  static const Color barrierLight = Color(0x61000000);
+
+  /// Medium barrier overlay (~54% black).
+  static const Color barrierMedium = Color(0x8A000000);
+
+  // ---------------------------------------------------------------------------
   // Brand Gradient (signature teal → blue)
   // ---------------------------------------------------------------------------
 

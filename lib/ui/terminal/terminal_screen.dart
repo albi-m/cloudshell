@@ -839,7 +839,7 @@ class _TerminalPaneViewState extends State<_TerminalPaneView>
                   ? Positioned.fill(
                       child: IgnorePointer(
                         child: ColoredBox(
-                          color: Colors.white
+                          color: AppColors.textPrimary
                               .withValues(alpha: _bellOpacity.value),
                         ),
                       ),
