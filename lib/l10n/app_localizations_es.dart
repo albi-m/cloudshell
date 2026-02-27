@@ -48,6 +48,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get search => 'Buscar';
 
   @override
+  String get clearSearch => 'Borrar búsqueda';
+
+  @override
+  String get togglePasswordVisibility => 'Alternar visibilidad de contraseña';
+
+  @override
+  String get togglePassphraseVisibility =>
+      'Alternar visibilidad de frase de contraseña';
+
+  @override
   String get ok => 'Aceptar';
 
   @override

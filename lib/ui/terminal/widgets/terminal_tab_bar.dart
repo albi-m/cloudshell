@@ -271,11 +271,12 @@ class _TabItemState extends State<_TabItem> {
               const SizedBox(width: 6),
               // Close button — visible on hover or active tab
               if (showClose)
-                InkWell(
-                  borderRadius: BorderRadius.circular(4),
-                  onTap: widget.onClose,
-                  child: Padding(
-                    padding: const EdgeInsets.all(2),
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: widget.onClose,
                     child: Icon(
                       LucideIcons.x,
                       size: 12,

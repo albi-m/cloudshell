@@ -150,6 +150,7 @@ class _RemoteTextEditorState extends State<RemoteTextEditor> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(LucideIcons.arrowLeft, size: 20),
+            tooltip: 'Back',
             onPressed: () async {
               if (_hasChanges) {
                 final shouldPop = await _onWillPop();

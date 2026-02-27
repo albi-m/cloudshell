@@ -111,6 +111,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
       appBar: AppBar(
         title: Text(l10n.totpSetupTitle),
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(LucideIcons.arrowLeft, size: 20),
           onPressed: _isVerifying ? null : () => Navigator.of(context).pop(),
         ),
@@ -195,7 +196,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: QrImageView(
@@ -236,6 +237,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                 ),
               ),
               IconButton(
+                tooltip: 'Copy secret key',
                 icon: const Icon(LucideIcons.copy, size: 18),
                 onPressed: () {
                   copyWithAutoClear(enrollment.secret);

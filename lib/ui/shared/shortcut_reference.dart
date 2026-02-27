@@ -16,7 +16,7 @@ import '../../l10n/app_localizations.dart';
 void showShortcutReference(BuildContext context) {
   showDialog(
     context: context,
-    barrierColor: Colors.black54,
+    barrierColor: AppColors.barrierMedium,
     builder: (_) => const _ShortcutReferenceDialog(),
   );
 }
@@ -50,6 +50,7 @@ class _ShortcutReferenceDialog extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(LucideIcons.x, size: 16),
+                    tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],

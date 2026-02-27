@@ -78,6 +78,7 @@ class _KnownHostsScreenState extends ConsumerState<KnownHostsScreen> {
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(LucideIcons.x, size: 16),
+                            tooltip: 'Clear search',
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');

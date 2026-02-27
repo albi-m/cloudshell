@@ -116,6 +116,7 @@ class _TotpVerifyScreenState extends ConsumerState<TotpVerifyScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
+            tooltip: 'Back',
             icon: const Icon(LucideIcons.arrowLeft, size: 20),
             onPressed: _isVerifying
                 ? null

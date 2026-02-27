@@ -688,6 +688,7 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
                             : LucideIcons.eye,
                         size: 18,
                       ),
+                      tooltip: l10n.togglePasswordVisibility,
                       onPressed: () =>
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),

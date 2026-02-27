@@ -177,6 +177,7 @@ class _VaultUnlockScreenState extends ConsumerState<VaultUnlockScreen> {
                     labelText: l10n.vaultUnlockPasswordLabel,
                     prefixIcon: const Icon(LucideIcons.lock, size: 18),
                     suffixIcon: IconButton(
+                      tooltip: 'Toggle password visibility',
                       icon: Icon(
                         _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
                         size: 18,

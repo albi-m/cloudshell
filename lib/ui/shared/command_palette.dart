@@ -27,7 +27,7 @@ import '../settings/workspace_manager_screen.dart';
 void showCommandPalette(BuildContext context) {
   showDialog(
     context: context,
-    barrierColor: Colors.black38,
+    barrierColor: AppColors.barrierLight,
     builder: (_) => const _CommandPaletteDialog(),
   );
 }

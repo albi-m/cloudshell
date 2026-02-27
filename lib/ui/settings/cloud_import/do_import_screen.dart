@@ -147,6 +147,7 @@ class _DoImportScreenState extends ConsumerState<DoImportScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(l10n.doImportTitle),
@@ -195,6 +196,7 @@ class _DoImportScreenState extends ConsumerState<DoImportScreen> {
                 _obscureToken ? LucideIcons.eyeOff : LucideIcons.eye,
                 size: 18,
               ),
+              tooltip: 'Toggle visibility',
               onPressed: () =>
                   setState(() => _obscureToken = !_obscureToken),
             ),

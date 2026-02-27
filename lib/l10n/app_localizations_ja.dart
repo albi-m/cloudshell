@@ -48,6 +48,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get search => '検索';
 
   @override
+  String get clearSearch => '検索をクリア';
+
+  @override
+  String get togglePasswordVisibility => 'パスワードの表示切替';
+
+  @override
+  String get togglePassphraseVisibility => 'パスフレーズの表示切替';
+
+  @override
   String get ok => 'OK';
 
   @override

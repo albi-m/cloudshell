@@ -180,11 +180,9 @@ class _SshConfigImportScreenState extends ConsumerState<SshConfigImportScreen> {
                   : const Icon(LucideIcons.download, size: 16),
               label: Text(
                 l10n.sshConfigImportButtonLabel(_selected.length),
-                style: TextStyle(
-                  color: _selected.isEmpty
-                      ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
-                      : null,
-                ),
+                style: _selected.isEmpty
+                    ? TextStyle(color: theme.disabledColor)
+                    : null,
               ),
             ),
         ],

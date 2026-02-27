@@ -48,6 +48,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get search => 'Search';
 
   @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String get togglePasswordVisibility => 'Toggle password visibility';
+
+  @override
+  String get togglePassphraseVisibility => 'Toggle passphrase visibility';
+
+  @override
   String get ok => 'OK';
 
   @override

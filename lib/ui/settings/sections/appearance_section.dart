@@ -332,10 +332,7 @@ class AppearanceSection extends ConsumerWidget {
                         width: 24,
                         child: Text(
                           entry.$3,
-                          style: const TextStyle(
-                            fontFamily: 'JetBrainsMono',
-                            fontSize: 18,
-                          ),
+                          style: AppTypography.terminal(fontSize: 18),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -550,7 +547,7 @@ class ThemeSwatches extends StatelessWidget {
                   color: c,
                   borderRadius: BorderRadius.circular(3),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: AppColors.textPrimary.withValues(alpha: 0.1),
                     width: 0.5,
                   ),
                 ),
@@ -609,12 +606,7 @@ class _FontSizePickerDialogState extends State<FontSizePickerDialog> {
             ),
             child: Text(
               l10n.fontSizePreviewText,
-              style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: _size,
-                color: AppColors.textPrimary,
-                height: 1.5,
-              ),
+              style: AppTypography.terminal(fontSize: _size),
             ),
           ),
           const SizedBox(height: 16),
@@ -676,10 +668,7 @@ class FontFamilyPickerDialog extends StatelessWidget {
 
   TextStyle _fontStyle(String family) {
     return switch (family) {
-      'JetBrainsMono' => const TextStyle(
-          fontFamily: 'JetBrainsMono',
-          fontSize: 14,
-        ),
+      'JetBrainsMono' => AppTypography.terminal(fontSize: 14),
       'Fira Code' => GoogleFonts.firaCode(fontSize: 14),
       'Source Code Pro' => GoogleFonts.sourceCodePro(fontSize: 14),
       'Roboto Mono' => GoogleFonts.robotoMono(fontSize: 14),
@@ -689,7 +678,7 @@ class FontFamilyPickerDialog extends StatelessWidget {
       'Cousine' => GoogleFonts.cousine(fontSize: 14),
       'Anonymous Pro' => GoogleFonts.anonymousPro(fontSize: 14),
       'PT Mono' => GoogleFonts.ptMono(fontSize: 14),
-      _ => TextStyle(fontFamily: family, fontSize: 14),
+      _ => AppTypography.terminal(fontSize: 14).copyWith(fontFamily: family),
     };
   }
 
