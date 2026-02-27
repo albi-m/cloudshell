@@ -171,10 +171,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
 
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Authenticate to unlock CloudShell',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false, // Allow PIN/password fallback
-        ),
+        persistAcrossBackgrounding: true,
       );
 
       if (authenticated) {
