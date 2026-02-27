@@ -39,15 +39,19 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Notifier that triggers GoRouter redirect re-evaluation.
+///
+/// Attached to GoRouter's [refreshListenable] so that calling [notify]
+/// forces all redirect guards to run again (e.g., after vault state changes).
 class _RouterRefreshNotifier extends ChangeNotifier {
+  /// Fires a change notification, causing GoRouter to re-run its redirect logic.
   void notify() => notifyListeners();
 }
 
-/// Riverpod provider for the GoRouter instance.
+/// Riverpod provider for the application's GoRouter instance.
 ///
-/// Uses [redirect] instead of a dynamic [initialLocation] so
-/// that the router is created only once and GlobalKeys are not
-/// duplicated when provider dependencies change.
+/// Created once and never rebuilt. Route guards handle onboarding,
+/// authentication, and vault-lock redirects. The router re-evaluates
+/// its redirect function when vault state changes via [_RouterRefreshNotifier].
 final appRouterProvider = Provider<GoRouter>((ref) {
   // Refresh router when vault state changes (e.g. auto-unlock completes)
   final refreshNotifier = _RouterRefreshNotifier();

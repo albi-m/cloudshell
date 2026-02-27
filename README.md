@@ -177,11 +177,13 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting and [docs/05-SECURITY
 
 | Document | Description |
 |----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | Layer architecture, state management, data model, security |
+| [Responsive Layout](docs/RESPONSIVE.md) | Breakpoints, adaptive scaffold, platform considerations |
+| [Testing](docs/TESTING.md) | Test strategy, patterns, CI pipeline |
 | [Feature List](docs/02-FEATURE-LIST.md) | 95 features across 12 categories |
 | [Development Plan](docs/04-DEVELOPMENT-PLAN.md) | 5-phase implementation roadmap |
 | [Security Plan](docs/05-SECURITY-PLAN.md) | Threat model, encryption spec |
 | [Design System](reference/design-system/DESIGN-SYSTEM.md) | Colors, typography, components |
-| [Architecture](reference/architecture/ARCHITECTURE.md) | Data models, system architecture |
 | [Wireframes](reference/wireframes/WIREFRAMES.md) | Screen layouts for all views |
 
 ## Contributing

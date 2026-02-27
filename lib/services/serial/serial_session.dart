@@ -1,8 +1,9 @@
-// Serial port connection session implementing ConnectionSession.
-//
-// Wraps flutter_libserialport for reading/writing to serial devices.
-// Terminal resize is a no-op since serial ports have no concept of
-// window dimensions.
+/// Serial port connection session implementing [ConnectionSession].
+///
+/// Wraps flutter_libserialport for reading/writing to serial devices.
+/// Terminal resize is a no-op since serial ports have no concept of
+/// window dimensions.
+library;
 
 import 'dart:async';
 import 'dart:io';
@@ -18,6 +19,10 @@ import '../connection/connection_session.dart';
 /// Opens a local serial port device and provides bidirectional
 /// data streaming compatible with the terminal tab provider.
 class SerialSession implements ConnectionSession {
+  /// Creates a serial session bound to the given [port].
+  ///
+  /// Serial parameters default to the most common configuration:
+  /// 115200 baud, 8 data bits, 1 stop bit, no parity, no flow control.
   SerialSession({
     required this.port,
     required String hostId,
@@ -29,13 +34,24 @@ class SerialSession implements ConnectionSession {
   })  : _hostId = hostId,
         _sessionId = const Uuid().v4();
 
+  /// The underlying serial port handle from flutter_libserialport.
   final SerialPort port;
   final String _hostId;
   final String _sessionId;
+
+  /// Communication speed in bits per second (e.g. 9600, 115200).
   final int baudRate;
+
+  /// Number of data bits per frame (typically 7 or 8).
   final int dataBits;
+
+  /// Number of stop bits per frame (typically 1 or 2).
   final int stopBits;
+
+  /// Parity checking mode (none, odd, even, mark, or space).
   final int parity;
+
+  /// Flow control mode (none, hardware RTS/CTS, or software XON/XOFF).
   final int flowControl;
 
   SerialPortReader? _reader;
@@ -52,12 +68,18 @@ class SerialSession implements ConnectionSession {
   @override
   bool get isConnected => _isConnected;
 
+  /// Stream of raw bytes read from the serial port.
   @override
   Stream<Uint8List> get output => _outputController.stream;
 
+  /// Completes when the serial port connection closes or encounters an error.
   @override
   Future<void> get done => _doneCompleter.future;
 
+  /// Opens the serial port with the configured parameters and begins reading.
+  ///
+  /// The [termWidth] and [termHeight] parameters are accepted for interface
+  /// compatibility but ignored — serial ports have no window size concept.
   @override
   Future<void> startSession({
     int termWidth = 80,
@@ -99,22 +121,26 @@ class SerialSession implements ConnectionSession {
     );
   }
 
+  /// Writes raw bytes to the serial port.
   @override
   void write(Uint8List data) {
     if (!_isConnected) return;
     port.write(data);
   }
 
+  /// Writes a string to the serial port using its code unit bytes.
   @override
   void writeString(String data) {
     write(Uint8List.fromList(data.codeUnits));
   }
 
+  /// No-op: serial ports have no concept of terminal window dimensions.
   @override
   void resize(int width, int height) {
     // No-op: serial ports don't support terminal window sizing.
   }
 
+  /// Closes the serial port and releases all resources.
   @override
   Future<void> close() async {
     _isConnected = false;

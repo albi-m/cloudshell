@@ -100,9 +100,11 @@ class SftpService {
         final modTime = item.attr.modifyTime;
         final mode = item.attr.mode;
 
-        // Determine read/write access from permission bits.
-        // We check user OR group OR other since we don't know
-        // which applies to the current SSH user.
+        // Why check all three permission classes (user/group/other): SFTP stat
+        // doesn't tell us which UID/GID the SSH user maps to on the remote host,
+        // so we conservatively assume readable/writable if *any* class grants it.
+        // This avoids false "permission denied" UI states for files the user can
+        // actually access.
         final canRead = mode == null ||
             mode.userRead || mode.groupRead || mode.otherRead;
         final canWrite = mode == null ||
@@ -157,9 +159,15 @@ class SftpService {
       final sink = localFile.openWrite();
       var bytesRead = 0;
 
+      // Why streamed chunked reads: dartssh2's file.read() yields data in
+      // SFTP-packet-sized chunks (~32 KB). Streaming to disk avoids buffering
+      // the entire file in memory, which matters for multi-GB transfers on
+      // mobile devices with limited RAM.
       await for (final chunk in file.read()) {
         sink.add(chunk);
         bytesRead += chunk.length;
+        // Why progress callback per chunk: lets the UI update a progress bar
+        // during long transfers instead of appearing frozen until completion.
         onProgress?.call(bytesRead, totalSize);
       }
 
@@ -192,6 +200,10 @@ class SftpService {
       );
 
       var bytesWritten = 0;
+      // Why streamed upload via .map(): reads the local file in OS-buffered
+      // chunks (~64 KB) and pipes them directly into the SFTP write stream.
+      // This avoids loading the entire file into a single Uint8List, keeping
+      // heap usage proportional to chunk size rather than file size.
       final stream = localFile.openRead().map((chunk) {
         bytesWritten += chunk.length;
         onProgress?.call(bytesWritten, totalSize);
@@ -306,6 +318,10 @@ class SftpService {
     try {
       final attrs = await _sftp!.stat(path);
       final size = attrs.size ?? 0;
+      // Why size guard: readFileContent loads the entire file into a String for
+      // the in-app text editor. Without a cap, opening a multi-GB log file
+      // would OOM the app. The 5 MB default is generous for config files but
+      // safe for mobile memory constraints.
       if (size > maxBytes) {
         throw SftpException(
             'File too large for editing '
@@ -371,13 +387,12 @@ class SftpService {
     }
   }
 
-  /// Normalizes a remote path to prevent path traversal via "..".
-  ///
-  /// Returns the POSIX-normalized path. Throws if the resulting path
-  /// would escape above the root directory.
+  // Why path normalization: a crafted entry name containing "../../../etc/passwd"
+  // could trick the UI into displaying or writing to unexpected paths. Normalizing
+  // and rejecting upward traversal provides defense-in-depth against malicious
+  // SFTP servers or symlink attacks.
   static String normalizePath(String inputPath) {
     final normalized = p.posix.normalize(inputPath);
-    // Reject paths that resolve to parent traversal above root
     if (normalized.startsWith('../') || normalized == '..') {
       throw SftpException(
           'Path traversal detected: $inputPath resolves to $normalized');
