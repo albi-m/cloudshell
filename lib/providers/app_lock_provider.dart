@@ -87,10 +87,22 @@ class AppLockNotifier extends Notifier<AppLockState> {
   /// Deadline until which authentication attempts are blocked.
   DateTime? _lockoutUntil;
 
+  /// Tracks whether the user has unlocked in this session.
+  /// Persists across Riverpod `build()` rebuilds (which re-run when
+  /// watched providers like biometricLockEnabledProvider re-emit).
+  /// Without this, provider rebuilds during window resize/minimize
+  /// would reset an unlocked session back to locked.
+  bool _sessionUnlocked = false;
+
   @override
   AppLockState build() {
     final biometricEnabled = ref.watch(biometricLockEnabledProvider);
-    if (!biometricEnabled) return AppLockState.unlocked;
+    if (!biometricEnabled) {
+      _sessionUnlocked = false;
+      return AppLockState.unlocked;
+    }
+    // Preserve unlocked state across provider rebuilds
+    if (_sessionUnlocked) return AppLockState.unlocked;
     return AppLockState.locked;
   }
 
@@ -165,6 +177,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
       if (!canAuthenticate) {
         // Device doesn't support biometrics — unlock anyway
         resetFailedAttempts();
+        _sessionUnlocked = true;
         state = AppLockState.unlocked;
         return true;
       }
@@ -182,6 +195,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
 
       if (authenticated) {
         resetFailedAttempts();
+        _sessionUnlocked = true;
         state = AppLockState.unlocked;
         return true;
       } else {
@@ -192,6 +206,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
     } on PlatformException {
       // Auth not available — unlock to avoid locking user out
       resetFailedAttempts();
+      _sessionUnlocked = true;
       state = AppLockState.unlocked;
       return true;
     }
@@ -225,6 +240,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
     _lockTimer = null;
     final biometricEnabled = ref.read(biometricLockEnabledProvider);
     if (biometricEnabled) {
+      _sessionUnlocked = false;
       state = AppLockState.locked;
     }
   }
@@ -232,6 +248,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
   /// Unlocks without authentication (for programmatic use).
   void unlock() {
     cancelScheduledLock();
+    _sessionUnlocked = true;
     state = AppLockState.unlocked;
   }
 
