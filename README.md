@@ -183,6 +183,8 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting and [docs/05-SECURITY
 | [Feature List](docs/02-FEATURE-LIST.md) | 95 features across 12 categories |
 | [Development Plan](docs/04-DEVELOPMENT-PLAN.md) | 5-phase implementation roadmap |
 | [Security Plan](docs/05-SECURITY-PLAN.md) | Threat model, encryption spec |
+| [Supabase Setup](docs/SUPABASE-SETUP.md) | Backend setup, E2E sync, self-hosting |
+| [Build & Release](docs/BUILD-RELEASE.md) | Code signing, CI/CD, release checklist |
 | [Design System](reference/design-system/DESIGN-SYSTEM.md) | Colors, typography, components |
 | [Wireframes](reference/wireframes/WIREFRAMES.md) | Screen layouts for all views |
 
