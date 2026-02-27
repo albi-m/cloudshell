@@ -270,9 +270,7 @@ class _LogViewerScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: SelectableText(
               snapshot.data ?? '',
-              style: const TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: 12,
+              style: AppTypography.terminal(fontSize: 12).copyWith(
                 height: 1.6,
               ),
             ),

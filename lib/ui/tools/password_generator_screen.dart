@@ -162,9 +162,9 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen>
                     children: [
                       SelectableText(
                         _password,
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
+                        style: AppTypography.terminal(
                           fontSize: _password.length > 32 ? 14 : 18,
+                        ).copyWith(
                           letterSpacing: 1.5,
                           color: theme.colorScheme.onSurface,
                         ),
@@ -339,10 +339,7 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen>
               return ListTile(
                 title: Text(
                   _history[index],
-                  style: const TextStyle(
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 12,
-                  ),
+                  style: AppTypography.code(fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
                 dense: true,

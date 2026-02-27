@@ -363,7 +363,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                     : const Icon(LucideIcons.download, size: 18),
                 label: Text(
                   _isImporting ? l10n.keyImportButtonImporting : l10n.keyImportButtonImportKey,
-                  style: const TextStyle(fontSize: 16),
+                  style: AppTypography.button.copyWith(fontSize: 16),
                 ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
