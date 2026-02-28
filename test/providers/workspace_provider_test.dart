@@ -246,11 +246,11 @@ void main() {
       expect(sftpTab.isSingleton, isFalse);
     });
 
-    test('hosts tab is not closable', () {
+    test('hosts tab is closable', () {
       const hostsTab = WorkspaceTab(
         id: 'h', type: WorkspaceTabType.hosts, label: 'H', icon: Icons.circle,
       );
-      expect(hostsTab.isClosable, isFalse);
+      expect(hostsTab.isClosable, isTrue);
     });
 
     test('keys tab is closable', () {
