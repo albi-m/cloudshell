@@ -75,9 +75,19 @@ class SyncService {
   /// Order: groups → sshKeys → hosts → snippets → portForwards
   /// (respects foreign key dependencies).
   ///
-  /// If HMAC verification fails (stale server data encrypted with
-  /// old keys), purges all server items and retries as a push-only sync.
+  /// If any decryption error occurs during pull (HMAC verification,
+  /// format mismatch, etc.), purges all server items and retries
+  /// as a push-only sync. This handles stale data encrypted with
+  /// old keys (e.g., after Argon2id param change across devices).
   Future<SyncResult> sync(VaultKeys keys) async {
+    // Pre-flight: verify we can decrypt server data before full sync.
+    // If ANY remote item fails decryption, purge and push-only.
+    final canDecrypt = await _verifyServerDecryptability(keys);
+    if (!canDecrypt) {
+      _log.w('Server data decryption check failed, purging and re-syncing');
+      return _purgeAndResync(keys);
+    }
+
     var totalPulled = 0;
     var totalPushed = 0;
 
@@ -93,18 +103,56 @@ class SyncService {
         pulled: totalPulled,
         pushed: totalPushed,
       );
-    } on FormatException catch (e, stackTrace) {
-      // HMAC verification failed — server has data encrypted with old keys.
-      // Purge stale server data and re-push local data as source of truth.
-      if (e.message.contains('HMAC')) {
-        _log.w('HMAC failure detected, purging stale server data and re-syncing');
+    } catch (e, stackTrace) {
+      // Any decryption error during sync → purge and retry
+      if (_isDecryptionError(e)) {
+        _log.w('Decryption error during sync, purging: $e');
         return _purgeAndResync(keys);
       }
       _log.e('Sync failed: $e', error: e, stackTrace: stackTrace);
       return SyncResult(success: false, error: '$e');
-    } catch (e, stackTrace) {
-      _log.e('Sync failed: $e', error: e, stackTrace: stackTrace);
-      return SyncResult(success: false, error: '$e');
+    }
+  }
+
+  /// Checks if the error is a decryption/crypto failure.
+  bool _isDecryptionError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('hmac') ||
+        msg.contains('tampered') ||
+        msg.contains('decrypt') ||
+        msg.contains('verification failed') ||
+        msg.contains('aes') ||
+        msg.contains('cipher') ||
+        (e is FormatException);
+  }
+
+  /// Tries to decrypt one remote item to verify key compatibility.
+  ///
+  /// Returns true if server has no data or data decrypts successfully.
+  /// Returns false if any item fails to decrypt (stale keys).
+  Future<bool> _verifyServerDecryptability(VaultKeys keys) async {
+    try {
+      // Check the first entity type that has remote data
+      for (final entityType in SyncEntityTypes.ordered) {
+        final remoteItems = await backend.pullChanges(entityType, -1);
+        for (final item in remoteItems) {
+          if (item.isDeleted) continue;
+          // Try to decrypt just this one item
+          try {
+            final encrypted = EncryptedItem.fromJson(item.encryptedData);
+            await crypto.decryptItem(encrypted, keys.encKey, keys.macKey);
+            return true; // At least one item decrypts — keys are compatible
+          } catch (e) {
+            _log.w('Pre-flight decryption check failed for '
+                '$entityType/${item.entityId}: $e');
+            return false; // Can't decrypt — keys are stale
+          }
+        }
+      }
+      return true; // No remote data at all — nothing to verify
+    } catch (e) {
+      _log.w('Pre-flight check error: $e');
+      return true; // Network error etc. — proceed with normal sync
     }
   }
 
