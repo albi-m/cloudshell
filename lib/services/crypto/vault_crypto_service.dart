@@ -17,7 +17,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -111,31 +110,20 @@ class VaultCryptoService {
   // Why Argon2id: memory-hard KDF that resists both GPU brute-force (via high
   // memory cost) and side-channel attacks (via data-dependent addressing from
   // the "id" hybrid mode). PBKDF2/bcrypt are far cheaper to attack on GPUs.
-  static const int _argon2MemoryRelease = 65536; // 64 MB in KB
-  static const int _argon2IterationsRelease = 3;
-  static const int _argon2ParallelismRelease = 4;
-
-  // Why reduced debug params: pure-Dart Argon2id without native acceleration
-  // is ~100x slower; 64 MB would freeze the UI for minutes during development.
-  static const int _argon2MemoryDebug = 1024; // 1 MB
-  static const int _argon2IterationsDebug = 1;
-  static const int _argon2ParallelismDebug = 1;
+  //
+  // Same params in debug and release to ensure cross-device compatibility.
+  // Different params would derive different keys from the same password,
+  // causing HMAC verification failures when syncing between devices.
+  static const int _argon2Memory = 65536; // 64 MB in KB
+  static const int _argon2Iterations = 3;
+  static const int _argon2Parallelism = 4;
 
   static const int _argon2HashLength = 32; // 256 bits
 
-  // Select parameters based on build mode
-  static int get _argon2Memory =>
-      kDebugMode ? _argon2MemoryDebug : _argon2MemoryRelease;
-  static int get _argon2Iterations =>
-      kDebugMode ? _argon2IterationsDebug : _argon2IterationsRelease;
-  static int get _argon2Parallelism =>
-      kDebugMode ? _argon2ParallelismDebug : _argon2ParallelismRelease;
-
   /// Public accessors for KDF params (used by vault config sync).
-  /// Always returns release params for server storage.
-  static int get argon2Memory => _argon2MemoryRelease;
-  static int get argon2Iterations => _argon2IterationsRelease;
-  static int get argon2Parallelism => _argon2ParallelismRelease;
+  static int get argon2Memory => _argon2Memory;
+  static int get argon2Iterations => _argon2Iterations;
+  static int get argon2Parallelism => _argon2Parallelism;
 
   static const int _saltLength = 16; // 128-bit salt
 

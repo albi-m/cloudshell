@@ -83,17 +83,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.uri.path == RouteNames.totpVerify;
       if (isAuthRoute) return null;
 
-      // Vault lock redirect — only force unlock when authenticated
-      // (vault is needed for sync). Local-only users don't need vault.
-      // VaultNotifier.build() tries auto-unlock from cached keys first,
-      // so this only triggers if there are no cached keys.
+      // Vault lock redirect — only for local-only users who set up a vault.
+      // Authenticated users never see vault screens — vault is auto-managed
+      // by the login flow (_autoUnlockOrCreateVault) and cached key auto-unlock.
       final vaultState = ref.read(vaultProvider).value;
       final isAuthenticated =
           ref.read(authProvider).value == AuthState.authenticated;
+      final isLocalOnly =
+          ref.read(authProvider).value == AuthState.localOnly;
       final isVaultRoute = state.uri.path == RouteNames.vaultUnlock ||
           state.uri.path == RouteNames.masterPasswordSetup;
       if (vaultState == VaultState.locked &&
-          isAuthenticated &&
+          isLocalOnly &&
           !isVaultRoute) {
         return RouteNames.vaultUnlock;
       }
@@ -101,8 +102,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (vaultState != VaultState.locked && isVaultRoute) {
         return RouteNames.hosts;
       }
-      // Not authenticated but stuck on vault route → go to hosts
-      if (!isAuthenticated && isVaultRoute) {
+      // Authenticated or unauthenticated but stuck on vault route → go to hosts
+      if ((isAuthenticated || !isLocalOnly) && isVaultRoute) {
         return RouteNames.hosts;
       }
 

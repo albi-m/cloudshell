@@ -18,6 +18,7 @@ import '../data/database/app_database.dart';
 import '../services/backend/sync_backend.dart';
 import '../services/crypto/secure_storage.dart';
 import '../services/crypto/vault_crypto_service.dart';
+import 'auth_provider.dart';
 import 'backend_provider.dart';
 import 'settings_provider.dart';
 
@@ -353,7 +354,27 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
   }
 
   /// Locks the vault — clears keys from memory.
+  ///
+  /// When authenticated, the vault is auto-managed and should only
+  /// be locked on logout. Use [forceLock] for logout scenarios.
   void lock() {
+    // When authenticated, refuse auto-lock — vault stays unlocked
+    // for the session. Only forceLock() (called by logout) can lock it.
+    final isAuth = ref.read(authProvider).value == AuthState.authenticated;
+    if (isAuth) {
+      _log.i('Vault lock skipped — user is authenticated');
+      return;
+    }
+    _forceLock();
+  }
+
+  /// Force-locks the vault regardless of auth state.
+  /// Used by logout flow to clear keys.
+  void forceLock() {
+    _forceLock();
+  }
+
+  void _forceLock() {
     _keys?.destroy();
     _keys = null;
     _autoLockTimer?.cancel();
@@ -622,6 +643,12 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
 
   void _startAutoLockTimer() {
     _autoLockTimer?.cancel();
+
+    // When authenticated, vault stays unlocked for the session.
+    // Only biometric app lock provides idle protection.
+    final isAuth = ref.read(authProvider).value == AuthState.authenticated;
+    if (isAuth) return;
+
     // Read timeout asynchronously
     _getSetting(VaultSettingsKeys.autoLockTimeout).then((value) {
       final timeoutSeconds = int.tryParse(value ?? '') ?? 300;

@@ -25,12 +25,13 @@ import '../known_hosts_screen.dart';
 import '../widgets/settings_section.dart';
 
 /// Security section of the settings screen.
-class SecuritySection extends StatelessWidget {
+class SecuritySection extends ConsumerWidget {
   const SecuritySection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final isAuth = ref.watch(isAuthenticatedProvider);
 
     return SettingsSection(
       title: l10n.sectionSecurity,
@@ -39,7 +40,9 @@ class SecuritySection extends StatelessWidget {
         if (PlatformUtils.supportsBiometrics) const BiometricLockTile(),
         if (PlatformUtils.supportsBiometrics)
           const AppLockGracePeriodTile(),
-        const AutoLockTile(),
+        // Auto-lock only for local-only users with a manual vault.
+        // Authenticated users have vault auto-managed (no auto-lock).
+        if (!isAuth) const AutoLockTile(),
         const TotpTile(),
         SettingsTile(
           icon: LucideIcons.shieldCheck,
@@ -67,7 +70,21 @@ class VaultTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final vaultState = ref.watch(vaultProvider);
+    final isAuth = ref.watch(isAuthenticatedProvider);
 
+    // When authenticated, vault is auto-managed — show read-only status
+    if (isAuth) {
+      final isUnlocked = vaultState.value == VaultState.unlocked;
+      return SettingsTile(
+        icon: isUnlocked ? LucideIcons.shieldCheck : LucideIcons.shield,
+        title: l10n.vaultEncryptionTitle,
+        subtitle: isUnlocked
+            ? l10n.vaultEncryptedUnlockedSubtitle
+            : l10n.vaultLockedSubtitle,
+      );
+    }
+
+    // Local-only users get full vault management controls
     return vaultState.when(
       data: (state) {
         switch (state) {

@@ -192,8 +192,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final authService = ref.read(authServiceProvider);
     await authService.logOut();
 
-    // Lock vault and clear cached keys on logout
-    ref.read(vaultProvider.notifier).lock();
+    // Force-lock vault and clear cached keys on logout
+    ref.read(vaultProvider.notifier).forceLock();
 
     final settings = ref.read(settingsNotifierProvider.notifier);
     await settings.delete(SettingsKeys.authMode);
