@@ -125,4 +125,12 @@ class SupabaseSyncBackend implements SyncBackend {
         .eq('entity_type', entityType)
         .eq('entity_id', entityId);
   }
+
+  @override
+  Future<void> purgeAllItems() async {
+    await _client
+        .from('sync_items')
+        .delete()
+        .eq('user_id', _userId);
+  }
 }

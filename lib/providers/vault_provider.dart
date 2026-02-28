@@ -385,6 +385,9 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
   ///
   /// WARNING: This destroys all encrypted data that cannot
   /// be recovered without the master password.
+  ///
+  /// When authenticated, also purges server-side encrypted items
+  /// and vault config so stale data doesn't cause HMAC failures.
   Future<void> resetVault() async {
     _keys?.destroy();
     _keys = null;
@@ -396,6 +399,26 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       await storage.delete(StorageKeys.biometricMasterKey);
     } catch (_) {
       // Best-effort cleanup
+    }
+
+    // Purge server-side encrypted data (prevents HMAC failures on re-sync)
+    try {
+      final syncBackend = ref.read(syncBackendProvider);
+      if (syncBackend != null) {
+        await syncBackend.purgeAllItems();
+        _log.i('Purged server-side sync items');
+      }
+    } catch (e) {
+      _log.w('Failed to purge server sync items: $e');
+    }
+
+    // Reset local sync metadata so next sync starts fresh
+    try {
+      final db = ref.read(databaseProvider);
+      await db.syncMetadataDao.resetAll();
+      _log.i('Reset local sync metadata');
+    } catch (e) {
+      _log.w('Failed to reset sync metadata: $e');
     }
 
     final settings = ref.read(settingsNotifierProvider.notifier);
