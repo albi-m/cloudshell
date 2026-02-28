@@ -31,7 +31,6 @@ import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
 import '../settings/ssh_config_import_screen.dart';
 import 'group_form_dialog.dart';
-import 'host_form_screen.dart';
 import 'quick_connect_dialog.dart';
 
 /// Main hosts list screen showing all saved SSH connections.
@@ -595,15 +594,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
   }
 
   void _openHostForm(BuildContext context, {Host? host}) {
-    if (host != null) {
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (_) => HostFormScreen(host: host),
-        ),
-      );
-    } else {
-      context.push(RouteNames.hostForm);
-    }
+    context.push(RouteNames.hostForm, extra: host);
   }
 
   void _importSshConfig(BuildContext context) {
@@ -652,6 +643,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
         ref.read(workspaceProvider.notifier).openTerminalTab(
               session.sessionId,
               host.label,
+              replaceActiveTab: true,
             );
       }
     } catch (e, stackTrace) {

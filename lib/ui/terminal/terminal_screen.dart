@@ -483,6 +483,7 @@ class _SingleTerminalView extends ConsumerWidget {
             onCancel: () => ref
                 .read(terminalTabsProvider.notifier)
                 .cancelReconnect(tab.id),
+            chromeBg: terminalChromeBg(theme.background),
           ),
 
         // Tab-level retry banner when disconnected and not reconnecting
@@ -493,6 +494,7 @@ class _SingleTerminalView extends ConsumerWidget {
             onRetry: () => ref
                 .read(terminalTabsProvider.notifier)
                 .retryReconnect(tab.id),
+            chromeBg: terminalChromeBg(theme.background),
           ),
 
         // Main content area
@@ -504,6 +506,7 @@ class _SingleTerminalView extends ConsumerWidget {
                   fontSize: effectiveFontSize,
                   fontFamily: fontFamily,
                   cursorType: cursorType,
+                  themeBg: theme.background,
                   onSwitchPane: (paneId) {
                     if (tab.activePaneId != paneId) {
                       ref
@@ -543,6 +546,10 @@ class _SingleTerminalView extends ConsumerWidget {
                 tab.session.writeString(data);
               }
             },
+            chromeBg: terminalChromeBg(theme.background),
+            chromeBorder: terminalChromeBorder(theme.background),
+            chromeSurface: terminalChromeSurface(theme.background),
+            foreground: theme.foreground,
           ),
 
         // Status bar
@@ -570,6 +577,9 @@ class _SingleTerminalView extends ConsumerWidget {
           onShowConnectionInfo: () {
             _showConnectionHealthSheet(context, ref, tab);
           },
+          chromeBg: terminalChromeBg(theme.background),
+          chromeBorder: terminalChromeBorder(theme.background),
+          foreground: theme.foreground,
         ),
       ],
     );
@@ -589,6 +599,7 @@ class _SplitPaneLayout extends StatefulWidget {
     required this.cursorType,
     required this.onSwitchPane,
     required this.onCloseSplit,
+    required this.themeBg,
   });
 
   final TerminalTab tab;
@@ -598,6 +609,7 @@ class _SplitPaneLayout extends StatefulWidget {
   final xterm.TerminalCursorType cursorType;
   final ValueChanged<String> onSwitchPane;
   final VoidCallback onCloseSplit;
+  final Color themeBg;
 
   @override
   State<_SplitPaneLayout> createState() => _SplitPaneLayoutState();
@@ -664,6 +676,8 @@ class _SplitPaneLayoutState extends State<_SplitPaneLayout> {
             isHorizontal: isHorizontal,
             onDrag: (delta) => _onDrag(delta, totalSize),
             onCloseSplit: widget.onCloseSplit,
+            chromeBorder: terminalChromeBorder(widget.themeBg),
+            chromeSurface: terminalChromeSurface(widget.themeBg),
           ),
 
           // Pane 1
@@ -812,7 +826,7 @@ class _TerminalPaneViewState extends State<_TerminalPaneView>
               controller: widget.controller,
               theme: widget.xtermTheme,
               cursorType: widget.cursorType,
-              padding: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               textStyle: xterm.TerminalStyle(
                 fontFamily: widget.fontFamily,
                 fontSize: widget.fontSize,
@@ -820,26 +834,6 @@ class _TerminalPaneViewState extends State<_TerminalPaneView>
               autofocus: widget.isActive,
               keyboardAppearance: Brightness.dark,
               onTapUp: _handleTapUp,
-            ),
-            // Faint teal wash at top
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.accentPrimary.withValues(alpha: 0.03),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.3],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ),
             // Visual bell flash overlay
             AnimatedBuilder(
@@ -1021,11 +1015,15 @@ class _SplitDragHandle extends StatefulWidget {
     required this.isHorizontal,
     required this.onDrag,
     required this.onCloseSplit,
+    required this.chromeBorder,
+    required this.chromeSurface,
   });
 
   final bool isHorizontal;
   final ValueChanged<double> onDrag;
   final VoidCallback onCloseSplit;
+  final Color chromeBorder;
+  final Color chromeSurface;
 
   @override
   State<_SplitDragHandle> createState() => _SplitDragHandleState();
@@ -1056,7 +1054,7 @@ class _SplitDragHandleState extends State<_SplitDragHandle> {
           height: widget.isHorizontal ? double.infinity : 6,
           color: _isHovered
               ? AppColors.accentPrimary.withValues(alpha: 0.3)
-              : AppColors.borderSubtle,
+              : widget.chromeBorder,
           child: Center(
             child: Container(
               width: widget.isHorizontal ? 2 : 32,
@@ -1064,7 +1062,7 @@ class _SplitDragHandleState extends State<_SplitDragHandle> {
               decoration: BoxDecoration(
                 color: _isHovered
                     ? AppColors.accentPrimary
-                    : AppColors.borderDefault,
+                    : widget.chromeSurface,
                 borderRadius: BorderRadius.circular(1),
               ),
             ),
@@ -1081,18 +1079,23 @@ class _ReconnectBanner extends StatelessWidget {
     required this.attempt,
     required this.maxAttempts,
     required this.onCancel,
+    required this.chromeBg,
   });
 
   final int attempt;
   final int maxAttempts;
   final VoidCallback onCancel;
+  final Color chromeBg;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      color: AppColors.accentOrange.withValues(alpha: 0.15),
+      color: Color.alphaBlend(
+        AppColors.accentOrange.withValues(alpha: 0.15),
+        chromeBg,
+      ),
       child: Row(
         children: [
           const SizedBox(
@@ -1134,16 +1137,23 @@ class _ReconnectBanner extends StatelessWidget {
 
 /// Banner shown after reconnection fails, offering a manual retry.
 class _RetryBanner extends StatelessWidget {
-  const _RetryBanner({required this.onRetry});
+  const _RetryBanner({
+    required this.onRetry,
+    required this.chromeBg,
+  });
 
   final VoidCallback onRetry;
+  final Color chromeBg;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      color: AppColors.accentRed.withValues(alpha: 0.12),
+      color: Color.alphaBlend(
+        AppColors.accentRed.withValues(alpha: 0.12),
+        chromeBg,
+      ),
       child: Row(
         children: [
           const Icon(LucideIcons.wifiOff, size: 14, color: AppColors.accentRed),
@@ -1370,6 +1380,9 @@ class _InfoRow extends StatelessWidget {
 class _StatusBar extends StatefulWidget {
   const _StatusBar({
     required this.isConnected,
+    required this.chromeBg,
+    required this.chromeBorder,
+    required this.foreground,
     this.isReconnecting = false,
     this.connectedAt,
     this.isLogging = false,
@@ -1391,6 +1404,9 @@ class _StatusBar extends StatefulWidget {
   final VoidCallback? onToggleBroadcast;
   final VoidCallback? onLongPressBroadcast;
   final VoidCallback? onShowConnectionInfo;
+  final Color chromeBg;
+  final Color chromeBorder;
+  final Color foreground;
 
   @override
   State<_StatusBar> createState() => _StatusBarState();
@@ -1416,13 +1432,16 @@ class _StatusBarState extends State<_StatusBar> {
             ? LucideIcons.wifi
             : LucideIcons.wifiOff;
 
+    // Derive a muted text color from the theme foreground
+    final mutedFg = widget.foreground.withValues(alpha: 0.5);
+
     return Container(
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: const BoxDecoration(
-        color: AppColors.bgDeep,
+      decoration: BoxDecoration(
+        color: widget.chromeBg,
         border: Border(
-          top: BorderSide(color: AppColors.borderSubtle),
+          top: BorderSide(color: widget.chromeBorder),
         ),
       ),
       child: Row(
@@ -1449,10 +1468,16 @@ class _StatusBarState extends State<_StatusBar> {
                     const SizedBox(width: 4),
                     Text(
                       '\u2022',
-                      style: AppTypography.caption.copyWith(fontSize: 11),
+                      style: AppTypography.caption.copyWith(
+                        fontSize: 11,
+                        color: mutedFg,
+                      ),
                     ),
                     const SizedBox(width: 4),
-                    _DurationCounter(connectedAt: widget.connectedAt),
+                    _DurationCounter(
+                      connectedAt: widget.connectedAt,
+                      foreground: mutedFg,
+                    ),
                   ],
                 ],
               ),
@@ -1475,7 +1500,7 @@ class _StatusBarState extends State<_StatusBar> {
                     size: 11,
                     color: widget.isLogging
                         ? AppColors.accentGreen
-                        : AppColors.textTertiary,
+                        : mutedFg,
                   ),
                   const SizedBox(width: 3),
                   Text(
@@ -1486,7 +1511,7 @@ class _StatusBarState extends State<_StatusBar> {
                           widget.isLogging ? FontWeight.w700 : FontWeight.w400,
                       color: widget.isLogging
                           ? AppColors.accentGreen
-                          : AppColors.textTertiary,
+                          : mutedFg,
                     ),
                   ),
                 ],
@@ -1518,7 +1543,7 @@ class _StatusBarState extends State<_StatusBar> {
                         size: 11,
                         color: widget.isBroadcasting
                             ? AppColors.accentOrange
-                            : AppColors.textTertiary,
+                            : mutedFg,
                       ),
                       const SizedBox(width: 3),
                       Text(
@@ -1534,7 +1559,7 @@ class _StatusBarState extends State<_StatusBar> {
                               : FontWeight.w400,
                           color: widget.isBroadcasting
                               ? AppColors.accentOrange
-                              : AppColors.textTertiary,
+                              : mutedFg,
                         ),
                       ),
                     ],
@@ -1547,7 +1572,10 @@ class _StatusBarState extends State<_StatusBar> {
           // Encoding
           Text(
             AppConstants.defaultEncoding,
-            style: AppTypography.caption.copyWith(fontSize: 11),
+            style: AppTypography.caption.copyWith(
+              fontSize: 11,
+              color: mutedFg,
+            ),
           ),
         ],
       ),
@@ -1560,8 +1588,12 @@ class _StatusBarState extends State<_StatusBar> {
 /// Extracted from _StatusBarState so the timer-driven rebuild is isolated
 /// to just the duration text, not the entire status bar.
 class _DurationCounter extends StatefulWidget {
-  const _DurationCounter({required this.connectedAt});
+  const _DurationCounter({
+    required this.connectedAt,
+    required this.foreground,
+  });
   final DateTime? connectedAt;
+  final Color foreground;
 
   @override
   State<_DurationCounter> createState() => _DurationCounterState();
@@ -1587,12 +1619,19 @@ class _DurationCounterState extends State<_DurationCounter> {
   @override
   Widget build(BuildContext context) {
     if (widget.connectedAt == null) {
-      return Text('0:00', style: AppTypography.code(fontSize: 11));
+      return Text(
+        '0:00',
+        style: AppTypography.code(fontSize: 11).copyWith(
+          color: widget.foreground,
+        ),
+      );
     }
     final elapsed = DateTime.now().difference(widget.connectedAt!);
     return Text(
       Formatters.duration(elapsed),
-      style: AppTypography.code(fontSize: 11),
+      style: AppTypography.code(fontSize: 11).copyWith(
+        color: widget.foreground,
+      ),
     );
   }
 }

@@ -30,10 +30,26 @@ class ExtraKeysBar extends StatefulWidget {
   const ExtraKeysBar({
     super.key,
     required this.onKeyInput,
+    required this.chromeBg,
+    required this.chromeBorder,
+    required this.chromeSurface,
+    required this.foreground,
   });
 
   /// Called when a key or key combination should be sent to the terminal.
   final ExtraKeyCallback onKeyInput;
+
+  /// Background color derived from the terminal theme.
+  final Color chromeBg;
+
+  /// Border color derived from the terminal theme.
+  final Color chromeBorder;
+
+  /// Surface color for key buttons derived from the terminal theme.
+  final Color chromeSurface;
+
+  /// Foreground (text) color from the terminal theme.
+  final Color foreground;
 
   @override
   State<ExtraKeysBar> createState() => _ExtraKeysBarState();
@@ -82,11 +98,11 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: const BoxDecoration(
-        color: AppColors.bgDeep,
+      decoration: BoxDecoration(
+        color: widget.chromeBg,
         border: Border(
-          top: BorderSide(color: AppColors.borderSubtle),
-          bottom: BorderSide(color: AppColors.borderSubtle),
+          top: BorderSide(color: widget.chromeBorder),
+          bottom: BorderSide(color: widget.chromeBorder),
         ),
       ),
       child: Row(
@@ -95,11 +111,15 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
           _ExtraKey(
             label: l10n.extraKeyEsc,
             onTap: () => _sendKey('\x1B'),
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
           // TAB
           _ExtraKey(
             label: l10n.extraKeyTab,
             onTap: () => _sendKey('\t'),
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
           // CTL (toggle)
           _ExtraKey(
@@ -112,6 +132,8 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
                 if (_ctrlActive) _altActive = false;
               });
             },
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
           // ALT (toggle)
           _ExtraKey(
@@ -124,6 +146,8 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
                 if (_altActive) _ctrlActive = false;
               });
             },
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
 
           const SizedBox(width: 4),
@@ -132,18 +156,26 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
           _ExtraKey(
             label: '\u2190',
             onTap: () => _sendKey('\x1B[D'),
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
           _ExtraKey(
             label: '\u2191',
             onTap: () => _sendKey('\x1B[A'),
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
           _ExtraKey(
             label: '\u2193',
             onTap: () => _sendKey('\x1B[B'),
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
           _ExtraKey(
             label: '\u2192',
             onTap: () => _sendKey('\x1B[C'),
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
           ),
         ],
       ),
@@ -156,12 +188,16 @@ class _ExtraKey extends StatelessWidget {
   const _ExtraKey({
     required this.label,
     required this.onTap,
+    required this.surfaceColor,
+    required this.foreground,
     this.isActive = false,
   });
 
   final String label;
   final VoidCallback onTap;
   final bool isActive;
+  final Color surfaceColor;
+  final Color foreground;
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +205,7 @@ class _ExtraKey extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
         child: Material(
-          color: isActive ? AppColors.accentPrimary : AppColors.bgSurface,
+          color: isActive ? AppColors.accentPrimary : surfaceColor,
           borderRadius: BorderRadius.circular(6),
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
@@ -182,7 +218,7 @@ class _ExtraKey extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: isActive
                       ? AppColors.textInverse
-                      : AppColors.textPrimary,
+                      : foreground,
                 ),
               ),
             ),

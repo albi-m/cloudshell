@@ -6,6 +6,8 @@
 /// Restores the last active workspace on startup.
 library;
 
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,19 +60,33 @@ class _CloudShellAppState extends ConsumerState<CloudShellApp>
     super.dispose();
   }
 
+  static final _isDesktop =
+      Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
     final notifier = ref.read(appLockProvider.notifier);
 
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden) {
-      // App went to background — schedule lock after grace period
+    // On desktop, skip ALL auto-lock scheduling. macOS fires 'hidden'
+    // and 'paused' for minimize, fullscreen, and app switch — all normal
+    // desktop operations that shouldn't require re-authentication.
+    // On mobile, both 'hidden' and 'paused' schedule a lock.
+    if (_isDesktop) {
+      if (state == AppLifecycleState.resumed) {
+        notifier.cancelScheduledLock();
+      }
+      return;
+    }
+
+    final shouldScheduleLock = state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden;
+
+    if (shouldScheduleLock) {
       final gracePeriodSeconds = ref.read(appLockGracePeriodProvider);
       notifier.scheduleLock(Duration(seconds: gracePeriodSeconds));
     } else if (state == AppLifecycleState.resumed) {
-      // App returned to foreground — cancel pending lock
       notifier.cancelScheduledLock();
     }
   }

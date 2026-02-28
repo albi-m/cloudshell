@@ -12,6 +12,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../core/constants/route_names.dart';
 import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -31,7 +34,6 @@ import '../../services/ssh/ssh_session.dart';
 import '../shared/confirmation_dialog.dart';
 import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
-import 'host_form_screen.dart';
 
 /// Detail view for a single SSH host.
 ///
@@ -273,8 +275,8 @@ class _HostDetailView extends ConsumerWidget {
       ref.read(workspaceProvider.notifier).openTerminalTab(
             existingTab.id,
             existingTab.hostLabel,
+            replaceActiveTab: true,
           );
-      if (context.mounted) Navigator.of(context).pop();
       return;
     }
 
@@ -312,12 +314,8 @@ class _HostDetailView extends ConsumerWidget {
       ref.read(workspaceProvider.notifier).openTerminalTab(
             session.sessionId,
             host.label,
+            replaceActiveTab: true,
           );
-
-      // Navigate back to the shell (workspace tab bar will show the terminal)
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
     } catch (e, stackTrace) {
       ErrorHandler.handle(e, stackTrace);
       if (context.mounted) {
@@ -332,11 +330,7 @@ class _HostDetailView extends ConsumerWidget {
   }
 
   void _edit(BuildContext context) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => HostFormScreen(host: host),
-      ),
-    );
+    context.push(RouteNames.hostForm, extra: host);
   }
 
   Future<void> _toggleFavorite(WidgetRef ref) async {

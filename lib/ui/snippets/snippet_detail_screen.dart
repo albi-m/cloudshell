@@ -8,8 +8,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/constants/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/clipboard_helper.dart';
@@ -19,7 +21,6 @@ import '../../l10n/app_localizations.dart';
 import '../shared/confirmation_dialog.dart';
 import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
-import 'snippet_form_screen.dart';
 
 /// Provider to fetch a single snippet by ID.
 final _snippetByIdProvider =
@@ -222,11 +223,7 @@ class _SnippetDetailView extends ConsumerWidget {
   }
 
   void _edit(BuildContext context) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => SnippetFormScreen(snippet: snippet),
-      ),
-    );
+    context.push(RouteNames.snippetForm, extra: snippet);
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
