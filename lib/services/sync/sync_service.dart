@@ -174,9 +174,11 @@ class SyncService {
       _log.i('Reset local sync metadata');
 
       // 3. Push-only sync: re-encrypt and push all local data
+      // All items get version starting at 1 so other devices can pull them.
       var totalPushed = 0;
       for (final entityType in SyncEntityTypes.ordered) {
         final localChanges = await _getLocalChanges(entityType, -1);
+        var nextVersion = 1;
         for (final item in localChanges) {
           final json = await _serializeEntity(entityType, item);
           final plaintext = jsonEncode(json);
@@ -186,10 +188,19 @@ class SyncService {
             keys.macKey,
           );
 
-          final syncVersion = _getSyncVersion(entityType, item);
+          var syncVersion = _getSyncVersion(entityType, item);
+          final entityId = _getEntityId(entityType, item);
+          if (syncVersion < 1) {
+            syncVersion = nextVersion;
+            await _updateLocalSyncVersion(entityType, entityId, syncVersion);
+          }
+          if (syncVersion >= nextVersion) {
+            nextVersion = syncVersion + 1;
+          }
+
           await backend.pushItem(RemoteSyncItem(
             entityType: entityType,
-            entityId: _getEntityId(entityType, item),
+            entityId: entityId,
             encryptedData: encrypted.toJson(),
             syncVersion: syncVersion,
             isDeleted: _getIsDeleted(entityType, item),
@@ -202,7 +213,7 @@ class SyncService {
           final maxVersion = await _getMaxSyncVersion(entityType);
           await db.syncMetadataDao.upsertMetadata(
             entityType,
-            maxVersion < 1 ? 1 : maxVersion,
+            maxVersion,
             DateTime.now(),
           );
         }
@@ -273,6 +284,19 @@ class SyncService {
     }
     var pushed = 0;
 
+    // Compute the push version for new items (syncVersion 0).
+    // Other devices pull with `sync_version > lastVersion`, so items
+    // pushed at version 0 are invisible if lastVersion >= 0. We must
+    // assign a version higher than what any device has already seen.
+    final maxRemoteVersion = remoteItems.isEmpty
+        ? lastVersion
+        : remoteItems
+            .map((e) => e.syncVersion)
+            .reduce((a, b) => a > b ? a : b);
+    final maxLocalVersion = await _getMaxSyncVersion(entityType);
+    var nextVersion =
+        (maxRemoteVersion > maxLocalVersion ? maxRemoteVersion : maxLocalVersion) + 1;
+
     for (final item in localChanges) {
       final json = await _serializeEntity(entityType, item);
       final plaintext = jsonEncode(json);
@@ -282,10 +306,18 @@ class SyncService {
         keys.macKey,
       );
 
-      final syncVersion = _getSyncVersion(entityType, item);
+      var syncVersion = _getSyncVersion(entityType, item);
+      final entityId = _getEntityId(entityType, item);
+
+      // Bump version 0 items so other devices can see them
+      if (syncVersion == 0) {
+        syncVersion = nextVersion++;
+        await _updateLocalSyncVersion(entityType, entityId, syncVersion);
+      }
+
       await backend.pushItem(RemoteSyncItem(
         entityType: entityType,
-        entityId: _getEntityId(entityType, item),
+        entityId: entityId,
         encryptedData: encrypted.toJson(),
         syncVersion: syncVersion,
         isDeleted: _getIsDeleted(entityType, item),
@@ -294,24 +326,9 @@ class SyncService {
     }
 
     // 4. Update sync metadata
-    // Use the highest version seen from either remote or local.
-    // If items were pushed at version 0 (initial sync), save version
-    // as max+1 so those items aren't re-queried on the next sync.
-    final maxRemoteVersion = remoteItems.isEmpty
-        ? lastVersion
-        : remoteItems
-            .map((e) => e.syncVersion)
-            .reduce((a, b) => a > b ? a : b);
-    final maxLocalVersion = await _getMaxSyncVersion(entityType);
+    final newMaxLocalVersion = await _getMaxSyncVersion(entityType);
     var newVersion =
-        maxRemoteVersion > maxLocalVersion ? maxRemoteVersion : maxLocalVersion;
-
-    // Ensure metadata advances past pushed items so they aren't re-pushed.
-    // Items at version 0 would be missed by `> 0` on the next sync,
-    // so we save metadata as at least 1 when items were pushed.
-    if (pushed > 0 && newVersion < 1) {
-      newVersion = 1;
-    }
+        maxRemoteVersion > newMaxLocalVersion ? maxRemoteVersion : newMaxLocalVersion;
 
     if (pulled > 0 || pushed > 0 || lastVersion < 0) {
       await db.syncMetadataDao.upsertMetadata(
@@ -521,6 +538,30 @@ class SyncService {
       SyncEntityTypes.portForward => db.portForwardDao.getMaxSyncVersion(),
       _ => 0,
     };
+  }
+
+  /// Updates a local entity's syncVersion after pushing to the backend.
+  ///
+  /// Ensures the local record's version matches what was pushed, so
+  /// it won't be re-pushed on the next sync cycle.
+  Future<void> _updateLocalSyncVersion(
+    String entityType,
+    String entityId,
+    int version,
+  ) async {
+    final table = switch (entityType) {
+      SyncEntityTypes.host => 'hosts',
+      SyncEntityTypes.sshKey => 'ssh_keys',
+      SyncEntityTypes.group => 'host_groups',
+      SyncEntityTypes.snippet => 'snippets',
+      SyncEntityTypes.portForward => 'port_forwards',
+      _ => null,
+    };
+    if (table == null) return;
+    await db.customStatement(
+      'UPDATE $table SET sync_version = ? WHERE id = ?',
+      [version, entityId],
+    );
   }
 }
 
