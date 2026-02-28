@@ -469,7 +469,7 @@ class TerminalThemePickerDialog extends ConsumerWidget {
       },
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: isSelected
             ? BoxDecoration(
                 color: AppColors.accentPrimary.withValues(alpha: 0.08),
@@ -478,7 +478,8 @@ class TerminalThemePickerDialog extends ConsumerWidget {
             : null,
         child: Row(
           children: [
-            ThemeSwatches(theme: theme),
+            // Mini terminal preview
+            MiniTerminalPreview(theme: theme),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -519,40 +520,61 @@ class TerminalThemePickerDialog extends ConsumerWidget {
   }
 }
 
-/// Row of color swatches showing a theme's palette.
-class ThemeSwatches extends StatelessWidget {
-  const ThemeSwatches({super.key, required this.theme});
+/// Mini terminal preview showing simulated colored output.
+class MiniTerminalPreview extends StatelessWidget {
+  const MiniTerminalPreview({super.key, required this.theme});
 
   final TerminalTheme theme;
 
+  static const _previewFontFamily = 'JetBrainsMono';
+  static const _previewFontSize = 9.0;
+
   @override
   Widget build(BuildContext context) {
-    final colors = [
-      theme.background,
-      theme.foreground,
-      theme.red,
-      theme.green,
-      theme.blue,
-      theme.cyan,
-    ];
+    final style = TextStyle(
+      fontFamily: _previewFontFamily,
+      fontSize: _previewFontSize,
+      height: 1.3,
+    );
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: colors
-          .map((c) => Container(
-                width: 16,
-                height: 16,
-                margin: const EdgeInsets.only(right: 2),
-                decoration: BoxDecoration(
-                  color: c,
-                  borderRadius: BorderRadius.circular(3),
-                  border: Border.all(
-                    color: AppColors.textPrimary.withValues(alpha: 0.1),
-                    width: 0.5,
-                  ),
-                ),
-              ))
-          .toList(),
+    return Container(
+      width: 120,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: theme.background,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: AppColors.textPrimary.withValues(alpha: 0.08),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Simulated prompt line
+          Row(
+            children: [
+              Text('user', style: style.copyWith(color: theme.green)),
+              Text('@', style: style.copyWith(color: theme.foreground)),
+              Text('host', style: style.copyWith(color: theme.magenta)),
+              Text(':', style: style.copyWith(color: theme.foreground)),
+              Text('~', style: style.copyWith(color: theme.blue)),
+              Text('\$ ', style: style.copyWith(color: theme.foreground)),
+            ],
+          ),
+          const SizedBox(height: 1),
+          // Simulated ls output
+          Row(
+            children: [
+              Text('src ', style: style.copyWith(color: theme.blue)),
+              Text('app ', style: style.copyWith(color: theme.cyan)),
+              Text('err ', style: style.copyWith(color: theme.red)),
+              Text('ok', style: style.copyWith(color: theme.green)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

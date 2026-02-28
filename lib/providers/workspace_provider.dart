@@ -74,7 +74,7 @@ class WorkspaceTab {
       };
 
   /// Whether this tab can be closed.
-  bool get isClosable => !isSingleton || type != WorkspaceTabType.hosts;
+  bool get isClosable => true;
 }
 
 /// State of all workspace tabs.
@@ -172,7 +172,12 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   }
 
   /// Opens a terminal session tab.
-  void openTerminalTab(String terminalTabId, String hostLabel) {
+  ///
+  /// When [replaceActiveTab] is true and the currently active tab is a page
+  /// tab (e.g. hosts), it is replaced at the same position — giving the
+  /// visual effect of the hosts tab "transforming" into a terminal.
+  void openTerminalTab(String terminalTabId, String hostLabel,
+      {bool replaceActiveTab = false}) {
     // Check if already open
     final existing = state.tabs
         .where((t) =>
@@ -180,8 +185,19 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
             t.terminalTabId == terminalTabId)
         .firstOrNull;
     if (existing != null) {
+      List<WorkspaceTab> newTabs = state.tabs;
+      if (replaceActiveTab && state.activeTabId != existing.id) {
+        final activeIndex =
+            state.tabs.indexWhere((t) => t.id == state.activeTabId);
+        final activeTab =
+            activeIndex >= 0 ? state.tabs[activeIndex] : null;
+        if (activeTab != null && activeTab.isSingleton) {
+          newTabs = List<WorkspaceTab>.from(state.tabs)
+            ..removeAt(activeIndex);
+        }
+      }
       state = WorkspaceState(
-        tabs: state.tabs,
+        tabs: newTabs,
         activeTabId: existing.id,
       );
       _scheduleAutoSave();
@@ -196,8 +212,25 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       terminalTabId: terminalTabId,
     );
 
+    List<WorkspaceTab> newTabs;
+    if (replaceActiveTab && state.activeTabId != null) {
+      final activeIndex =
+          state.tabs.indexWhere((t) => t.id == state.activeTabId);
+      final activeTab =
+          activeIndex >= 0 ? state.tabs[activeIndex] : null;
+      if (activeTab != null && activeTab.isSingleton) {
+        // Replace the active page tab at the same position
+        newTabs = List<WorkspaceTab>.from(state.tabs);
+        newTabs[activeIndex] = tab;
+      } else {
+        newTabs = [...state.tabs, tab];
+      }
+    } else {
+      newTabs = [...state.tabs, tab];
+    }
+
     state = WorkspaceState(
-      tabs: [...state.tabs, tab],
+      tabs: newTabs,
       activeTabId: tab.id,
     );
     _scheduleAutoSave();

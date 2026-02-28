@@ -280,9 +280,18 @@ class _DesktopLayoutState extends ConsumerState<_DesktopLayout> {
             width: sidebarWidth,
             curve: Curves.easeInOut,
             child: ClipRect(
-              child: _Sidebar(
-                selectedIndex: widget.selectedIndex,
-                isCollapsed: isCollapsed,
+              child: OverflowBox(
+                minWidth: 0,
+                maxWidth: double.infinity,
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: sidebarWidth,
+                  child: _Sidebar(
+                    selectedIndex: widget.selectedIndex,
+                    isCollapsed: isCollapsed,
+                    forceCollapsed: widget.forceCollapsed,
+                  ),
+                ),
               ),
             ),
           ),
@@ -298,11 +307,13 @@ class _DesktopLayoutState extends ConsumerState<_DesktopLayout> {
                   onNewConnection: () => _handleNewConnection(context, ref),
                 ),
                 Expanded(
-                  child: isTerminalActive
-                      ? const TerminalScreen()
-                      : isSftpActive
-                          ? const SftpScreen()
-                          : widget.routerChild,
+                  child: ClipRect(
+                    child: isTerminalActive
+                        ? const TerminalScreen()
+                        : isSftpActive
+                            ? const SftpScreen()
+                            : widget.routerChild,
+                  ),
                 ),
               ],
             ),
@@ -363,11 +374,13 @@ class _MobileLayoutState extends ConsumerState<_MobileLayout> {
             ),
           ),
           Expanded(
-            child: isTerminalActive
-                ? const TerminalScreen()
-                : isSftpActive
-                    ? const SftpScreen()
-                    : widget.routerChild,
+            child: ClipRect(
+              child: isTerminalActive
+                  ? const TerminalScreen()
+                  : isSftpActive
+                      ? const SftpScreen()
+                      : widget.routerChild,
+            ),
           ),
         ],
       ),
@@ -449,10 +462,12 @@ class _Sidebar extends ConsumerWidget {
   const _Sidebar({
     required this.selectedIndex,
     required this.isCollapsed,
+    this.forceCollapsed = false,
   });
 
   final int selectedIndex;
   final bool isCollapsed;
+  final bool forceCollapsed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -580,11 +595,13 @@ class _Sidebar extends ConsumerWidget {
               context.go(_sidebarDestinations.last.path);
             },
           ),
-          _CollapseToggle(
-            isCollapsed: true,
-            onTap: () =>
-                ref.read(sidebarCollapsedProvider.notifier).state = false,
-          ),
+          if (!forceCollapsed)
+            _CollapseToggle(
+              isCollapsed: true,
+              onTap: () {
+                ref.read(sidebarCollapsedProvider.notifier).state = false;
+              },
+            ),
         ],
       ),
     ),
@@ -972,17 +989,18 @@ class _CollapseToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          hoverColor: AppColors.bgHover,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
           child: Container(
             height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+            ),
             alignment: Alignment.center,
             child: isCollapsed
                 ? const Icon(

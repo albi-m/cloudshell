@@ -34,13 +34,13 @@ final biometricLockEnabledProvider = Provider<bool>((ref) {
 /// Grace period in seconds before locking when app goes to background.
 ///
 /// Options: 0 (immediate), 30, 60, 300 (5m), 900 (15m).
-/// Default: 0 (lock immediately for backward compatibility).
+/// Default: 60 (1 minute — allows quick app switches without re-auth).
 final appLockGracePeriodProvider = Provider<int>((ref) {
   final setting = ref.watch(settingProvider(_appLockGracePeriodKey));
   return setting.when(
-    data: (value) => int.tryParse(value ?? '') ?? 0,
-    loading: () => 0,
-    error: (_, _) => 0,
+    data: (value) => int.tryParse(value ?? '') ?? 60,
+    loading: () => 60,
+    error: (_, _) => 60,
   );
 });
 
@@ -87,10 +87,22 @@ class AppLockNotifier extends Notifier<AppLockState> {
   /// Deadline until which authentication attempts are blocked.
   DateTime? _lockoutUntil;
 
+  /// Tracks whether the user has unlocked in this session.
+  /// Persists across Riverpod `build()` rebuilds (which re-run when
+  /// watched providers like biometricLockEnabledProvider re-emit).
+  /// Without this, provider rebuilds during window resize/minimize
+  /// would reset an unlocked session back to locked.
+  bool _sessionUnlocked = false;
+
   @override
   AppLockState build() {
     final biometricEnabled = ref.watch(biometricLockEnabledProvider);
-    if (!biometricEnabled) return AppLockState.unlocked;
+    if (!biometricEnabled) {
+      _sessionUnlocked = false;
+      return AppLockState.unlocked;
+    }
+    // Preserve unlocked state across provider rebuilds
+    if (_sessionUnlocked) return AppLockState.unlocked;
     return AppLockState.locked;
   }
 
@@ -165,27 +177,36 @@ class AppLockNotifier extends Notifier<AppLockState> {
       if (!canAuthenticate) {
         // Device doesn't support biometrics — unlock anyway
         resetFailedAttempts();
+        _sessionUnlocked = true;
         state = AppLockState.unlocked;
         return true;
       }
 
-      final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Authenticate to unlock CloudShell',
-        persistAcrossBackgrounding: true,
-      );
+      // Timeout prevents hanging if macOS Touch ID dialog doesn't appear
+      // (e.g. right after screen unlock)
+      final authenticated = await _localAuth
+          .authenticate(
+            localizedReason: 'Authenticate to unlock CloudShell',
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => false,
+          );
 
       if (authenticated) {
         resetFailedAttempts();
+        _sessionUnlocked = true;
         state = AppLockState.unlocked;
         return true;
       } else {
-        recordFailedAttempt();
+        // Don't count timeout/cancel as a failed attempt
         state = AppLockState.locked;
         return false;
       }
     } on PlatformException {
       // Auth not available — unlock to avoid locking user out
       resetFailedAttempts();
+      _sessionUnlocked = true;
       state = AppLockState.unlocked;
       return true;
     }
@@ -219,6 +240,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
     _lockTimer = null;
     final biometricEnabled = ref.read(biometricLockEnabledProvider);
     if (biometricEnabled) {
+      _sessionUnlocked = false;
       state = AppLockState.locked;
     }
   }
@@ -226,6 +248,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
   /// Unlocks without authentication (for programmatic use).
   void unlock() {
     cancelScheduledLock();
+    _sessionUnlocked = true;
     state = AppLockState.unlocked;
   }
 

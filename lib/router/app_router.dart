@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/constants/route_names.dart';
+import '../data/database/app_database.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/vault_provider.dart';
@@ -183,87 +184,92 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Host form for new hosts (full-screen, outside shell)
-      // MUST be before /hosts/:id so GoRouter doesn't match "form" as an id
-      GoRoute(
-        path: RouteNames.hostForm,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => const MaterialPage(
-          child: HostFormScreen(),
-        ),
-      ),
-
-      // Snippet form for new snippets (full-screen, outside shell)
-      // MUST be before /snippets/:id so GoRouter doesn't match "form" as an id
-      GoRoute(
-        path: RouteNames.snippetForm,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => const MaterialPage(
-          child: SnippetFormScreen(),
-        ),
-      ),
-
-      // Host detail (full-screen, outside shell)
-      GoRoute(
-        path: '/hosts/:id',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return MaterialPage(
-            child: HostDetailScreen(hostId: id),
-          );
-        },
-      ),
-
-      // Key detail (full-screen, outside shell)
-      GoRoute(
-        path: '/keys/:id',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return MaterialPage(
-            child: KeyDetailScreen(keyId: id),
-          );
-        },
-      ),
-
-      // Snippet detail (full-screen, outside shell)
-      GoRoute(
-        path: '/snippets/:id',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return MaterialPage(
-            child: SnippetDetailScreen(snippetId: id),
-          );
-        },
-      ),
-
-      // Shell route wraps all main screens in the adaptive scaffold
+      // Shell route wraps all main screens in the adaptive scaffold.
+      // Detail/form routes are inside the shell so the sidebar stays
+      // visible (master-detail layout). Use context.push() to navigate
+      // to detail/form routes — this pushes within the shell navigator,
+      // keeping the sidebar and enabling the AppBar back button.
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
           return AdaptiveScaffold(child: child);
         },
         routes: [
+          // --- Hosts ---
           GoRoute(
             path: RouteNames.hosts,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: HostsScreen(),
             ),
           ),
+          // Host form (add/edit) — MUST be before /hosts/:id
+          GoRoute(
+            path: RouteNames.hostForm,
+            pageBuilder: (context, state) {
+              final host = state.extra as Host?;
+              return MaterialPage(
+                child: HostFormScreen(host: host),
+              );
+            },
+          ),
+          // Host detail
+          GoRoute(
+            path: '/hosts/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return MaterialPage(
+                child: HostDetailScreen(hostId: id),
+              );
+            },
+          ),
+
+          // --- Keys ---
           GoRoute(
             path: RouteNames.keys,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: KeysScreen(),
             ),
           ),
+          // Key detail
+          GoRoute(
+            path: '/keys/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return MaterialPage(
+                child: KeyDetailScreen(keyId: id),
+              );
+            },
+          ),
+
+          // --- Snippets ---
           GoRoute(
             path: RouteNames.snippets,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: SnippetsScreen(),
             ),
           ),
+          // Snippet form (add/edit) — MUST be before /snippets/:id
+          GoRoute(
+            path: RouteNames.snippetForm,
+            pageBuilder: (context, state) {
+              final snippet = state.extra as Snippet?;
+              return MaterialPage(
+                child: SnippetFormScreen(snippet: snippet),
+              );
+            },
+          ),
+          // Snippet detail
+          GoRoute(
+            path: '/snippets/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return MaterialPage(
+                child: SnippetDetailScreen(snippetId: id),
+              );
+            },
+          ),
+
+          // --- Other ---
           GoRoute(
             path: RouteNames.portForwarding,
             pageBuilder: (context, state) => const NoTransitionPage(

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/constants/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/clipboard_helper.dart';
@@ -19,7 +20,6 @@ import '../shared/confirmation_dialog.dart';
 import '../shared/empty_state.dart';
 import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
-import 'snippet_form_screen.dart';
 
 /// Snippets list screen with search, category grouping, and CRUD.
 class SnippetsScreen extends ConsumerStatefulWidget {
@@ -191,11 +191,7 @@ class _SnippetsScreenState extends ConsumerState<SnippetsScreen> {
   }
 
   void _navigateToForm(BuildContext context, {Snippet? snippet}) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => SnippetFormScreen(snippet: snippet),
-      ),
-    );
+    context.push(RouteNames.snippetForm, extra: snippet);
   }
 
   void _copySnippet(BuildContext context, Snippet snippet) {
