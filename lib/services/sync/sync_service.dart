@@ -74,6 +74,9 @@ class SyncService {
   ///
   /// Order: groups → sshKeys → hosts → snippets → portForwards
   /// (respects foreign key dependencies).
+  ///
+  /// If HMAC verification fails (stale server data encrypted with
+  /// old keys), purges all server items and retries as a push-only sync.
   Future<SyncResult> sync(VaultKeys keys) async {
     var totalPulled = 0;
     var totalPushed = 0;
@@ -90,8 +93,78 @@ class SyncService {
         pulled: totalPulled,
         pushed: totalPushed,
       );
+    } on FormatException catch (e, stackTrace) {
+      // HMAC verification failed — server has data encrypted with old keys.
+      // Purge stale server data and re-push local data as source of truth.
+      if (e.message.contains('HMAC')) {
+        _log.w('HMAC failure detected, purging stale server data and re-syncing');
+        return _purgeAndResync(keys);
+      }
+      _log.e('Sync failed: $e', error: e, stackTrace: stackTrace);
+      return SyncResult(success: false, error: '$e');
     } catch (e, stackTrace) {
       _log.e('Sync failed: $e', error: e, stackTrace: stackTrace);
+      return SyncResult(success: false, error: '$e');
+    }
+  }
+
+  /// Purges all server-side sync items and performs a push-only sync.
+  ///
+  /// Called when HMAC verification fails, indicating server data was
+  /// encrypted with different keys (e.g., after Argon2id param change).
+  Future<SyncResult> _purgeAndResync(VaultKeys keys) async {
+    try {
+      // 1. Delete all server items
+      await backend.purgeAllItems();
+      _log.i('Purged all server sync items');
+
+      // 2. Reset local sync metadata
+      await db.syncMetadataDao.resetAll();
+      _log.i('Reset local sync metadata');
+
+      // 3. Push-only sync: re-encrypt and push all local data
+      var totalPushed = 0;
+      for (final entityType in SyncEntityTypes.ordered) {
+        final localChanges = await _getLocalChanges(entityType, -1);
+        for (final item in localChanges) {
+          final json = _serializeEntity(entityType, item);
+          final plaintext = jsonEncode(json);
+          final encrypted = await crypto.encryptItem(
+            plaintext,
+            keys.encKey,
+            keys.macKey,
+          );
+
+          final syncVersion = _getSyncVersion(entityType, item);
+          await backend.pushItem(RemoteSyncItem(
+            entityType: entityType,
+            entityId: _getEntityId(entityType, item),
+            encryptedData: encrypted.toJson(),
+            syncVersion: syncVersion,
+            isDeleted: _getIsDeleted(entityType, item),
+          ));
+          totalPushed++;
+        }
+
+        // Update sync metadata
+        if (localChanges.isNotEmpty) {
+          final maxVersion = await _getMaxSyncVersion(entityType);
+          await db.syncMetadataDao.upsertMetadata(
+            entityType,
+            maxVersion < 1 ? 1 : maxVersion,
+            DateTime.now(),
+          );
+        }
+      }
+
+      _log.i('Re-synced $totalPushed items after purge');
+      return SyncResult(
+        success: true,
+        pulled: 0,
+        pushed: totalPushed,
+      );
+    } catch (e, stackTrace) {
+      _log.e('Purge and re-sync failed: $e', error: e, stackTrace: stackTrace);
       return SyncResult(success: false, error: '$e');
     }
   }
