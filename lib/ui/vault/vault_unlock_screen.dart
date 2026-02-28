@@ -121,7 +121,7 @@ class _VaultUnlockScreenState extends ConsumerState<VaultUnlockScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await ref.read(vaultProvider.notifier).resetVault();
+      await ref.read(vaultProvider.notifier).resetVault(purgeServer: true);
       if (mounted) {
         GoRouter.of(context).go(RouteNames.hosts);
       }

@@ -772,6 +772,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get extraKeyAlt => 'ALT';
 
   @override
+  String get extraKeyBksp => 'BKSP';
+
+  @override
   String get broadcastPanelTitle => 'Diffusion d\'entrée';
 
   @override
@@ -2373,6 +2376,38 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get forgotPasswordTryAgain => 'Vous ne l\'avez pas reçu ? Réessayez';
+
+  @override
+  String get resetPasswordTitle => 'Set New Password';
+
+  @override
+  String get resetPasswordInstructions =>
+      'Enter your new password below. This will also reset your encryption vault.';
+
+  @override
+  String get resetPasswordNewLabel => 'New Password';
+
+  @override
+  String get resetPasswordConfirmLabel => 'Confirm Password';
+
+  @override
+  String get resetPasswordSubmit => 'Set New Password';
+
+  @override
+  String get resetPasswordUpdating => 'Updating...';
+
+  @override
+  String get resetPasswordVaultWarning =>
+      'Setting a new password will reset your encryption vault. Data encrypted with your old password cannot be recovered.';
+
+  @override
+  String get resetPasswordSuccess => 'Password updated successfully';
+
+  @override
+  String get resetPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get resetPasswordTooShort => 'Password must be at least 10 characters';
 
   @override
   String get totpSetupTitle => 'Configurer la 2FA';

@@ -5,6 +5,9 @@
 /// the app widget tree.
 library;
 
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,8 +23,24 @@ import 'services/backend/supabase/supabase_config.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Capture uncaught Flutter framework errors
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exception}\n${details.stack}');
+  };
+
+  // Capture uncaught async errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('PlatformDispatcher error: $error\n$stack');
+    return true;
+  };
+
   // Initialize Supabase (no-op if --dart-define not set)
-  await SupabaseConfig.initialize();
+  try {
+    await SupabaseConfig.initialize();
+  } catch (e, stack) {
+    debugPrint('Supabase init failed: $e\n$stack');
+  }
 
   runApp(
     const ProviderScope(

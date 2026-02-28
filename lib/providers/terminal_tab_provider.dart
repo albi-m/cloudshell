@@ -194,6 +194,14 @@ class TerminalTab {
   /// Split ratio between panes (0.25–0.75).
   double splitRatio = 0.5;
 
+  // --- Mobile modifier key state ---
+
+  /// Whether Ctrl modifier is active (set by ExtraKeysBar, consumed on next keypress).
+  bool ctrlActive = false;
+
+  /// Whether Alt modifier is active (set by ExtraKeysBar, consumed on next keypress).
+  bool altActive = false;
+
   /// Whether this tab is currently split.
   bool get isSplit => splitDirection != null && panes.length == 2;
 
@@ -355,10 +363,30 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
   /// Wires terminal output/resize callbacks to the session.
   ///
   /// Output includes broadcast to other tabs when broadcast mode is enabled.
+  /// Applies Ctrl/Alt modifiers from the mobile ExtraKeysBar when active.
   void _wireTerminalIO(TerminalTab tab, ConnectionSession session) {
     tab.terminal.onOutput = (data) {
+      var output = data;
+
+      // Apply mobile Ctrl/Alt modifiers to system keyboard input
+      if (tab.ctrlActive && output.length == 1) {
+        final code = output.codeUnitAt(0);
+        if (code >= 97 && code <= 122) {
+          // lowercase a-z → Ctrl+A-Z (1-26)
+          output = String.fromCharCode(code - 96);
+        } else if (code >= 65 && code <= 90) {
+          // uppercase A-Z → Ctrl+A-Z (1-26)
+          output = String.fromCharCode(code - 64);
+        }
+        tab.ctrlActive = false;
+      } else if (tab.altActive && output.length == 1) {
+        // Alt+key: ESC prefix followed by the key
+        output = '\x1B$output';
+        tab.altActive = false;
+      }
+
       if (tab.isConnected) {
-        session.writeString(data);
+        session.writeString(output);
       }
       if (_broadcastEnabled && tab.id == state.activeTabId) {
         for (final other in state.tabs) {
@@ -367,7 +395,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
               !_broadcastGroup.contains(other.id)) {
             continue;
           }
-          other.session.writeString(data);
+          other.session.writeString(output);
         }
       }
     };
@@ -559,7 +587,9 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     }
     tab.panes.clear();
 
-    // Cleanup primary
+    // Cleanup primary — set isConnected false BEFORE closing session
+    // to prevent _onDisconnected from re-adding the connection to the map.
+    tab.isConnected = false;
     tab.reconnectCancelled = true;
     tab.commandDoneTimer?.cancel();
     tab.outputSubscription?.cancel();
@@ -567,6 +597,11 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     await tab.sessionLogger?.close();
     tab.controller.dispose();
     await tab.session.close();
+
+    // Clear connection status so host tile reverts to disconnected
+    ref
+        .read(activeConnectionsProvider.notifier)
+        .removeConnection(tab.session.sessionId);
 
     final newTabs = List<TerminalTab>.from(state.tabs)..removeAt(tabIndex);
 
@@ -600,6 +635,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
         }
       }
       tab.panes.clear();
+      tab.isConnected = false;
       tab.reconnectCancelled = true;
       tab.commandDoneTimer?.cancel();
       tab.outputSubscription?.cancel();
@@ -607,6 +643,9 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       await tab.sessionLogger?.close();
       tab.controller.dispose();
       await tab.session.close();
+      ref
+          .read(activeConnectionsProvider.notifier)
+          .removeConnection(tab.session.sessionId);
     }
     state = const TerminalTabsState();
   }

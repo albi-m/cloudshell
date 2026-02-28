@@ -83,6 +83,9 @@ abstract class AuthBackend {
   /// Requests a password reset email.
   Future<AuthResult> resetPassword(String email);
 
+  /// Updates the user's password (called during password recovery).
+  Future<AuthResult> updatePassword(String newPassword);
+
   /// Deletes the user's account and all associated data.
   Future<AuthResult> deleteAccount();
 
