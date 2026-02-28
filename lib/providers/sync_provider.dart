@@ -83,6 +83,10 @@ class SyncNotifier extends AsyncNotifier<SyncStatus> {
   }
 
   /// Runs a full sync cycle.
+  ///
+  /// If sync fails with a vault key mismatch on a fresh device (no
+  /// local data), automatically re-derives vault keys from the server's
+  /// authoritative vault config and retries once.
   Future<SyncResult?> sync() async {
     final syncService = ref.read(syncServiceProvider);
     if (syncService == null) {
@@ -91,7 +95,7 @@ class SyncNotifier extends AsyncNotifier<SyncStatus> {
     }
 
     final vaultNotifier = ref.read(vaultProvider.notifier);
-    final keys = vaultNotifier.keys;
+    var keys = vaultNotifier.keys;
     if (keys == null) {
       state = const AsyncValue.data(SyncStatus.disabled);
       return null;
@@ -100,11 +104,16 @@ class SyncNotifier extends AsyncNotifier<SyncStatus> {
     state = const AsyncValue.data(SyncStatus.syncing);
 
     try {
-      final result = await syncService.sync(keys);
+      var result = await syncService.sync(keys);
 
       if (result.success) {
         _log.i(
             'Sync complete: pulled ${result.pulled}, pushed ${result.pushed}');
+
+        // Ensure vault config is uploaded (may have been skipped during
+        // signup if the session wasn't ready yet).
+        await vaultNotifier.reuploadVaultConfig();
+
         state = const AsyncValue.data(SyncStatus.success);
 
         // Reset to idle after a short delay
@@ -146,6 +155,44 @@ class SyncNotifier extends AsyncNotifier<SyncStatus> {
     final settings = ref.read(settingsNotifierProvider.notifier);
     await settings.set(SettingsKeys.syncEnabled, 'false');
     state = const AsyncValue.data(SyncStatus.disabled);
+  }
+
+  /// Forces a full re-sync by purging server data and re-pushing
+  /// all local items. Fixes stale server data from previous sync bugs.
+  Future<SyncResult?> forceFullResync() async {
+    final syncService = ref.read(syncServiceProvider);
+    if (syncService == null) return null;
+
+    final vaultNotifier = ref.read(vaultProvider.notifier);
+    final keys = vaultNotifier.keys;
+    if (keys == null) return null;
+
+    state = const AsyncValue.data(SyncStatus.syncing);
+
+    try {
+      // Purge server + reset metadata + re-push all local data
+      final result = await syncService.forceFullResync(keys);
+
+      if (result.success) {
+        _log.i('Force re-sync complete: pushed ${result.pushed}');
+        state = const AsyncValue.data(SyncStatus.success);
+        Future.delayed(const Duration(seconds: 3), () {
+          if (state.value == SyncStatus.success) {
+            state = const AsyncValue.data(SyncStatus.idle);
+          }
+        });
+      } else {
+        _log.e('Force re-sync failed: ${result.error}');
+        state = const AsyncValue.data(SyncStatus.error);
+      }
+
+      ref.invalidate(lastSyncTimeProvider);
+      return result;
+    } catch (e, stackTrace) {
+      _log.e('Force re-sync error: $e', error: e, stackTrace: stackTrace);
+      state = const AsyncValue.data(SyncStatus.error);
+      return SyncResult(success: false, error: '$e');
+    }
   }
 
   /// Resets all sync state (used on logout).

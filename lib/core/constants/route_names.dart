@@ -40,6 +40,9 @@ abstract final class RouteNames {
   /// Forgot password screen.
   static const String forgotPassword = '/forgot-password';
 
+  /// Reset password screen (after clicking email link).
+  static const String resetPassword = '/reset-password';
+
   /// TOTP 2FA setup screen.
   static const String totpSetup = '/totp-setup';
 

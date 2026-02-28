@@ -157,10 +157,15 @@ class HostDao extends DatabaseAccessor<AppDatabase> with _$HostDaoMixin {
     return into(hosts).insertOnConflictUpdate(companion);
   }
 
-  /// Bumps the syncVersion for a host after a local change.
+  /// Resets syncVersion to 0 so the sync engine re-pushes the item.
+  ///
+  /// Using `sync_version + 1` would fail when the metadata lastVersion
+  /// is already higher (e.g., item at v3, metadata at v5 → bump to v4
+  /// is still below v5 and never gets picked up). Resetting to 0
+  /// lets the sync engine assign a proper version via `nextVersion++`.
   Future<void> _bumpSyncVersion(String id) async {
     await customStatement(
-      'UPDATE hosts SET sync_version = sync_version + 1 WHERE id = ?',
+      'UPDATE hosts SET sync_version = 0 WHERE id = ?',
       [id],
     );
   }

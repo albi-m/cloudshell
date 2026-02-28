@@ -142,10 +142,10 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
     return into(hostGroups).insertOnConflictUpdate(companion);
   }
 
-  /// Bumps the syncVersion for a group after a local change.
+  /// Resets syncVersion to 0 so the sync engine re-pushes the item.
   Future<void> _bumpSyncVersion(String id) async {
     await customStatement(
-      'UPDATE host_groups SET sync_version = sync_version + 1 WHERE id = ?',
+      'UPDATE host_groups SET sync_version = 0 WHERE id = ?',
       [id],
     );
   }

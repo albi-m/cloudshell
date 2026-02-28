@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -34,10 +35,20 @@ class ExtraKeysBar extends StatefulWidget {
     required this.chromeBorder,
     required this.chromeSurface,
     required this.foreground,
+    this.onCtrlChanged,
+    this.onAltChanged,
   });
 
   /// Called when a key or key combination should be sent to the terminal.
   final ExtraKeyCallback onKeyInput;
+
+  /// Called when the Ctrl modifier toggle changes.
+  /// Used to apply Ctrl to the next system keyboard keypress.
+  final ValueChanged<bool>? onCtrlChanged;
+
+  /// Called when the Alt modifier toggle changes.
+  /// Used to apply Alt to the next system keyboard keypress.
+  final ValueChanged<bool>? onAltChanged;
 
   /// Background color derived from the terminal theme.
   final Color chromeBg;
@@ -78,14 +89,20 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
       } else {
         widget.onKeyInput(sequence);
       }
-      setState(() => _ctrlActive = false);
+      setState(() {
+        _ctrlActive = false;
+        widget.onCtrlChanged?.call(false);
+      });
       return;
     }
 
     if (_altActive) {
       // Alt+key: send ESC prefix followed by the key
       widget.onKeyInput('\x1B$sequence');
-      setState(() => _altActive = false);
+      setState(() {
+        _altActive = false;
+        widget.onAltChanged?.call(false);
+      });
       return;
     }
 
@@ -131,6 +148,8 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
                 _ctrlActive = !_ctrlActive;
                 if (_ctrlActive) _altActive = false;
               });
+              widget.onCtrlChanged?.call(_ctrlActive);
+              if (_ctrlActive) widget.onAltChanged?.call(false);
             },
             surfaceColor: widget.chromeSurface,
             foreground: widget.foreground,
@@ -145,6 +164,8 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
                 _altActive = !_altActive;
                 if (_altActive) _ctrlActive = false;
               });
+              widget.onAltChanged?.call(_altActive);
+              if (_altActive) widget.onCtrlChanged?.call(false);
             },
             surfaceColor: widget.chromeSurface,
             foreground: widget.foreground,
@@ -177,13 +198,34 @@ class _ExtraKeysBarState extends State<ExtraKeysBar> {
             surfaceColor: widget.chromeSurface,
             foreground: widget.foreground,
           ),
+
+          const SizedBox(width: 4),
+
+          // Backspace
+          _ExtraKey(
+            label: l10n.extraKeyBksp,
+            onTap: () => _sendKey('\x7F'),
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
+          ),
+
+          // Keyboard dismiss
+          _ExtraIconKey(
+            icon: LucideIcons.chevronDown,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              FocusScope.of(context).unfocus();
+            },
+            surfaceColor: widget.chromeSurface,
+            foreground: widget.foreground,
+          ),
         ],
       ),
     );
   }
 }
 
-/// A single extra key button.
+/// A single extra key button with a text label.
 class _ExtraKey extends StatelessWidget {
   const _ExtraKey({
     required this.label,
@@ -221,6 +263,42 @@ class _ExtraKey extends StatelessWidget {
                       : foreground,
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A single extra key button with an icon instead of text.
+class _ExtraIconKey extends StatelessWidget {
+  const _ExtraIconKey({
+    required this.icon,
+    required this.onTap,
+    required this.surfaceColor,
+    required this.foreground,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color surfaceColor;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      child: Material(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Center(
+              child: Icon(icon, size: 16, color: foreground),
             ),
           ),
         ),

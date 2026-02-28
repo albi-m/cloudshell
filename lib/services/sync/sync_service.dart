@@ -13,6 +13,7 @@ import 'package:logger/logger.dart';
 import '../../data/database/app_database.dart';
 import '../../providers/backend_provider.dart';
 import '../backend/sync_backend.dart';
+import '../crypto/secure_storage.dart';
 import '../crypto/vault_crypto_service.dart';
 import 'sync_serializer.dart';
 
@@ -54,6 +55,9 @@ class SyncResult {
   final int pushed;
 }
 
+/// Pre-flight check result.
+enum _PreFlightResult { ok, serverEmptyLocalExists, decryptionFailed }
+
 /// Orchestrates sync operations for all entity types.
 ///
 /// Uses SyncBackend (abstract) for remote operations and
@@ -64,17 +68,54 @@ class SyncService {
     required this.backend,
     required this.db,
     required this.crypto,
+    required this.secureStorage,
   });
 
   final SyncBackend backend;
   final AppDatabase db;
   final VaultCryptoService crypto;
+  final SecureStorageService secureStorage;
 
   /// Runs a full sync cycle for all entity types.
   ///
   /// Order: groups → sshKeys → hosts → snippets → portForwards
   /// (respects foreign key dependencies).
+  ///
+  /// If any decryption error occurs during pull (HMAC verification,
+  /// format mismatch, etc.), purges all server items and retries
+  /// as a push-only sync. This handles stale data encrypted with
+  /// old keys (e.g., after Argon2id param change across devices).
   Future<SyncResult> sync(VaultKeys keys) async {
+    // Pre-flight: verify we can decrypt server data before full sync.
+    final preFlightResult = await _preFlightCheck(keys);
+    if (preFlightResult == _PreFlightResult.decryptionFailed) {
+      // SAFETY: Only purge server if THIS device has local data to re-push.
+      // A fresh device with no data must NEVER wipe the server — that would
+      // destroy data from other devices.
+      final hasLocal = await _hasAnyLocalData();
+      if (!hasLocal) {
+        _log.e('Server data cannot be decrypted and this device has no '
+            'local data. Vault keys likely don\'t match the encrypting '
+            'device. Skipping sync — fix vault keys first.');
+        return SyncResult(
+          success: false,
+          error: 'Vault key mismatch: cannot decrypt server data. '
+              'Try logging out and back in to re-derive vault keys.',
+        );
+      }
+      _log.w('Server data decryption failed but local data exists — '
+          'purging server and re-pushing');
+      return _purgeAndResync(keys);
+    }
+
+    // If server is empty but we have local data with metadata that
+    // thinks it's synced, force a full re-push (server was purged
+    // but local metadata still has old versions).
+    if (preFlightResult == _PreFlightResult.serverEmptyLocalExists) {
+      _log.i('Server empty but local data exists — forcing full push');
+      return _purgeAndResync(keys);
+    }
+
     var totalPulled = 0;
     var totalPushed = 0;
 
@@ -91,7 +132,168 @@ class SyncService {
         pushed: totalPushed,
       );
     } catch (e, stackTrace) {
+      // Any decryption error during sync — only purge if we have data
+      if (_isDecryptionError(e)) {
+        final hasLocal = await _hasAnyLocalData();
+        if (!hasLocal) {
+          _log.e('Decryption error and no local data — refusing to purge: $e');
+          return SyncResult(
+            success: false,
+            error: 'Vault key mismatch: $e',
+          );
+        }
+        _log.w('Decryption error during sync, purging: $e');
+        return _purgeAndResync(keys);
+      }
       _log.e('Sync failed: $e', error: e, stackTrace: stackTrace);
+      return SyncResult(success: false, error: '$e');
+    }
+  }
+
+  /// Returns true if this device has any local entities to sync.
+  Future<bool> _hasAnyLocalData() async {
+    for (final entityType in SyncEntityTypes.ordered) {
+      final items = await _getLocalChanges(entityType, -1);
+      if (items.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  /// Checks if the error is a decryption/crypto failure.
+  bool _isDecryptionError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('hmac') ||
+        msg.contains('tampered') ||
+        msg.contains('decrypt') ||
+        msg.contains('verification failed') ||
+        msg.contains('aes') ||
+        msg.contains('cipher') ||
+        (e is FormatException);
+  }
+
+  /// Pre-flight check: verifies server state and key compatibility.
+  ///
+  /// Returns:
+  /// - [_PreFlightResult.ok] if server data decrypts or server is empty
+  ///   with no local data (nothing to do).
+  /// - [_PreFlightResult.serverEmptyLocalExists] if server is empty but
+  ///   local data exists with non-zero metadata (needs re-push).
+  /// - [_PreFlightResult.decryptionFailed] if server data can't be
+  ///   decrypted (stale keys).
+  Future<_PreFlightResult> _preFlightCheck(VaultKeys keys) async {
+    try {
+      // Check if server has ANY data
+      for (final entityType in SyncEntityTypes.ordered) {
+        final remoteItems = await backend.pullChanges(entityType, -1);
+        for (final item in remoteItems) {
+          if (item.isDeleted) continue;
+          // Server has data — try to decrypt it
+          try {
+            final encrypted = EncryptedItem.fromJson(item.encryptedData);
+            await crypto.decryptItem(encrypted, keys.encKey, keys.macKey);
+            return _PreFlightResult.ok; // Keys work
+          } catch (e) {
+            _log.w('Pre-flight decryption failed for '
+                '$entityType/${item.entityId}: $e');
+            return _PreFlightResult.decryptionFailed;
+          }
+        }
+      }
+
+      // Server is completely empty — check if we have local data
+      // that should be pushed (metadata thinks it's synced but server
+      // was purged).
+      for (final entityType in SyncEntityTypes.ordered) {
+        final localItems = await _getLocalChanges(entityType, -1);
+        if (localItems.isNotEmpty) {
+          final lastVersion =
+              await db.syncMetadataDao.getLastSyncVersion(entityType);
+          if (lastVersion > 0) {
+            _log.i('Server empty, but $entityType has '
+                '${localItems.length} local items at metadata v$lastVersion');
+            return _PreFlightResult.serverEmptyLocalExists;
+          }
+        }
+      }
+      return _PreFlightResult.ok; // Server empty, no local data
+    } catch (e) {
+      _log.w('Pre-flight check error: $e');
+      return _PreFlightResult.ok; // Network error — proceed normally
+    }
+  }
+
+  /// Public method to force a full re-sync.
+  ///
+  /// Purges server data, resets metadata, and re-pushes all local
+  /// items. Use when server has stale data from previous sync bugs.
+  Future<SyncResult> forceFullResync(VaultKeys keys) {
+    return _purgeAndResync(keys);
+  }
+
+  /// Purges all server-side sync items and performs a push-only sync.
+  ///
+  /// Called when HMAC verification fails, indicating server data was
+  /// encrypted with different keys (e.g., after Argon2id param change).
+  Future<SyncResult> _purgeAndResync(VaultKeys keys) async {
+    try {
+      // 1. Delete all server items
+      await backend.purgeAllItems();
+      _log.i('Purged all server sync items');
+
+      // 2. Reset local sync metadata
+      await db.syncMetadataDao.resetAll();
+      _log.i('Reset local sync metadata');
+
+      // 3. Push-only sync: re-encrypt and push all local data.
+      // Assign ALL items fresh sequential versions starting at 1.
+      // Don't reuse old syncVersions — other devices may have metadata
+      // at those old versions and would miss items.
+      var totalPushed = 0;
+      for (final entityType in SyncEntityTypes.ordered) {
+        final localChanges = await _getLocalChanges(entityType, -1);
+        var nextVersion = 1;
+        for (final item in localChanges) {
+          final json = await _serializeEntity(entityType, item);
+          final plaintext = jsonEncode(json);
+          final encrypted = await crypto.encryptItem(
+            plaintext,
+            keys.encKey,
+            keys.macKey,
+          );
+
+          final entityId = _getEntityId(entityType, item);
+          final syncVersion = nextVersion++;
+          await _updateLocalSyncVersion(entityType, entityId, syncVersion);
+
+          await backend.pushItem(RemoteSyncItem(
+            entityType: entityType,
+            entityId: entityId,
+            encryptedData: encrypted.toJson(),
+            syncVersion: syncVersion,
+            isDeleted: _getIsDeleted(entityType, item),
+          ));
+          totalPushed++;
+        }
+
+        // Update sync metadata
+        if (localChanges.isNotEmpty) {
+          final maxVersion = await _getMaxSyncVersion(entityType);
+          await db.syncMetadataDao.upsertMetadata(
+            entityType,
+            maxVersion,
+            DateTime.now(),
+          );
+        }
+      }
+
+      _log.i('Re-synced $totalPushed items after purge');
+      return SyncResult(
+        success: true,
+        pulled: 0,
+        pushed: totalPushed,
+      );
+    } catch (e, stackTrace) {
+      _log.e('Purge and re-sync failed: $e', error: e, stackTrace: stackTrace);
       return SyncResult(success: false, error: '$e');
     }
   }
@@ -120,20 +322,81 @@ class SyncService {
     }
 
     // 2. Pull remote changes
-    final remoteItems = await backend.pullChanges(entityType, lastVersion);
+    var remoteItems = await backend.pullChanges(entityType, lastVersion);
+
+    // Detect version regression: another device did a force re-sync and
+    // pushed items with versions lower than our metadata. Our pull sees
+    // nothing new, but the server actually has data we're missing.
+    if (remoteItems.isEmpty && lastVersion > 0) {
+      final allRemote = await backend.pullChanges(entityType, -1);
+      if (allRemote.isNotEmpty) {
+        _log.i('Version regression detected for $entityType: '
+            'metadata at v$lastVersion but server max is '
+            'v${allRemote.map((e) => e.syncVersion).reduce((a, b) => a > b ? a : b)}. '
+            'Resetting metadata and re-pulling.');
+        lastVersion = -1;
+        await db.syncMetadataDao.upsertMetadata(
+          entityType,
+          -1,
+          DateTime.now(),
+        );
+        remoteItems = allRemote;
+      }
+    }
+
     var pulled = 0;
+
+    // Track entity IDs we pulled so we don't re-push them back.
+    final pulledEntityIds = <String>{};
 
     for (final item in remoteItems) {
       await _applyRemoteItem(entityType, item, keys);
+      pulledEntityIds.add(item.entityId);
       pulled++;
     }
 
     // 3. Push local changes
-    final localChanges = await _getLocalChanges(entityType, lastVersion);
+    // Get items changed since last sync version, excluding items
+    // we just pulled from the server (prevents wasteful re-push).
+    var localChanges = (await _getLocalChanges(entityType, lastVersion))
+        .where(
+            (item) => !pulledEntityIds.contains(_getEntityId(entityType, item)))
+        .toList();
+    // Also include newly created items (syncVersion 0) that were added
+    // after the initial sync — getChangedSince(1+) would miss them.
+    if (lastVersion > 0) {
+      final newItems = (await _getLocalChanges(entityType, -1))
+          .where((item) =>
+              _getSyncVersion(entityType, item) == 0 &&
+              !pulledEntityIds.contains(_getEntityId(entityType, item)))
+          .toList();
+      if (newItems.isNotEmpty) {
+        final existingIds =
+            localChanges.map((e) => _getEntityId(entityType, e)).toSet();
+        final uniqueNew = newItems
+            .where((item) =>
+                !existingIds.contains(_getEntityId(entityType, item)))
+            .toList();
+        localChanges = [...localChanges, ...uniqueNew];
+      }
+    }
     var pushed = 0;
 
+    // Compute the push version for new items (syncVersion 0).
+    // Other devices pull with `sync_version > lastVersion`, so items
+    // pushed at version 0 are invisible if lastVersion >= 0. We must
+    // assign a version higher than what any device has already seen.
+    final maxRemoteVersion = remoteItems.isEmpty
+        ? lastVersion
+        : remoteItems
+            .map((e) => e.syncVersion)
+            .reduce((a, b) => a > b ? a : b);
+    final maxLocalVersion = await _getMaxSyncVersion(entityType);
+    var nextVersion =
+        (maxRemoteVersion > maxLocalVersion ? maxRemoteVersion : maxLocalVersion) + 1;
+
     for (final item in localChanges) {
-      final json = _serializeEntity(entityType, item);
+      final json = await _serializeEntity(entityType, item);
       final plaintext = jsonEncode(json);
       final encrypted = await crypto.encryptItem(
         plaintext,
@@ -141,10 +404,18 @@ class SyncService {
         keys.macKey,
       );
 
-      final syncVersion = _getSyncVersion(entityType, item);
+      var syncVersion = _getSyncVersion(entityType, item);
+      final entityId = _getEntityId(entityType, item);
+
+      // Bump version 0 items so other devices can see them
+      if (syncVersion == 0) {
+        syncVersion = nextVersion++;
+        await _updateLocalSyncVersion(entityType, entityId, syncVersion);
+      }
+
       await backend.pushItem(RemoteSyncItem(
         entityType: entityType,
-        entityId: _getEntityId(entityType, item),
+        entityId: entityId,
         encryptedData: encrypted.toJson(),
         syncVersion: syncVersion,
         isDeleted: _getIsDeleted(entityType, item),
@@ -153,24 +424,9 @@ class SyncService {
     }
 
     // 4. Update sync metadata
-    // Use the highest version seen from either remote or local.
-    // If items were pushed at version 0 (initial sync), save version
-    // as max+1 so those items aren't re-queried on the next sync.
-    final maxRemoteVersion = remoteItems.isEmpty
-        ? lastVersion
-        : remoteItems
-            .map((e) => e.syncVersion)
-            .reduce((a, b) => a > b ? a : b);
-    final maxLocalVersion = await _getMaxSyncVersion(entityType);
+    final newMaxLocalVersion = await _getMaxSyncVersion(entityType);
     var newVersion =
-        maxRemoteVersion > maxLocalVersion ? maxRemoteVersion : maxLocalVersion;
-
-    // Ensure metadata advances past pushed items so they aren't re-pushed.
-    // Items at version 0 would be missed by `> 0` on the next sync,
-    // so we save metadata as at least 1 when items were pushed.
-    if (pushed > 0 && newVersion < 1) {
-      newVersion = 1;
-    }
+        maxRemoteVersion > newMaxLocalVersion ? maxRemoteVersion : newMaxLocalVersion;
 
     if (pulled > 0 || pushed > 0 || lastVersion < 0) {
       await db.syncMetadataDao.upsertMetadata(
@@ -246,6 +502,8 @@ class SyncService {
         await db.hostDao.upsertFromRemote(SyncSerializer.hostFromJson(json));
       case SyncEntityTypes.sshKey:
         await db.keyDao.upsertFromRemote(SyncSerializer.keyFromJson(json));
+        // Store private key material in secure storage (from sync payload)
+        await _storePrivateKeyFromSync(json);
       case SyncEntityTypes.group:
         await db.groupDao.upsertFromRemote(SyncSerializer.groupFromJson(json));
       case SyncEntityTypes.snippet:
@@ -272,8 +530,9 @@ class SyncService {
     };
   }
 
-  Map<String, dynamic> _serializeEntity(String entityType, dynamic entity) {
-    return switch (entityType) {
+  Future<Map<String, dynamic>> _serializeEntity(
+      String entityType, dynamic entity) async {
+    final json = switch (entityType) {
       SyncEntityTypes.host => SyncSerializer.hostToJson(entity as Host),
       SyncEntityTypes.sshKey => SyncSerializer.keyToJson(entity as SshKey),
       SyncEntityTypes.group =>
@@ -284,6 +543,37 @@ class SyncService {
         SyncSerializer.portForwardToJson(entity as PortForward),
       _ => <String, dynamic>{},
     };
+
+    // Include private key material for SSH keys (E2E encrypted in sync payload)
+    if (entityType == SyncEntityTypes.sshKey) {
+      final keyId = (entity as SshKey).privateKeyRef;
+      final privateKey = await secureStorage.getSshPrivateKey(keyId);
+      if (privateKey != null) {
+        json['_privateKeyPem'] = privateKey;
+      }
+      final passphrase = await secureStorage.getSshPassphrase(keyId);
+      if (passphrase != null) {
+        json['_passphrase'] = passphrase;
+      }
+    }
+
+    return json;
+  }
+
+  /// Stores private key material from a synced SSH key payload.
+  Future<void> _storePrivateKeyFromSync(Map<String, dynamic> json) async {
+    final keyId = json['id'] as String?;
+    if (keyId == null) return;
+
+    final privateKeyPem = json['_privateKeyPem'] as String?;
+    if (privateKeyPem != null) {
+      await secureStorage.storeSshPrivateKey(keyId, privateKeyPem);
+    }
+
+    final passphrase = json['_passphrase'] as String?;
+    if (passphrase != null) {
+      await secureStorage.storeSshPassphrase(keyId, passphrase);
+    }
   }
 
   String _getEntityId(String entityType, dynamic entity) {
@@ -347,6 +637,30 @@ class SyncService {
       _ => 0,
     };
   }
+
+  /// Updates a local entity's syncVersion after pushing to the backend.
+  ///
+  /// Ensures the local record's version matches what was pushed, so
+  /// it won't be re-pushed on the next sync cycle.
+  Future<void> _updateLocalSyncVersion(
+    String entityType,
+    String entityId,
+    int version,
+  ) async {
+    final table = switch (entityType) {
+      SyncEntityTypes.host => 'hosts',
+      SyncEntityTypes.sshKey => 'ssh_keys',
+      SyncEntityTypes.group => 'host_groups',
+      SyncEntityTypes.snippet => 'snippets',
+      SyncEntityTypes.portForward => 'port_forwards',
+      _ => null,
+    };
+    if (table == null) return;
+    await db.customStatement(
+      'UPDATE $table SET sync_version = ? WHERE id = ?',
+      [version, entityId],
+    );
+  }
 }
 
 /// Riverpod provider for the sync service.
@@ -362,5 +676,6 @@ final syncServiceProvider = Provider<SyncService?>((ref) {
     backend: backend,
     db: ref.watch(databaseProvider),
     crypto: ref.watch(vaultCryptoServiceProvider),
+    secureStorage: ref.watch(secureStorageProvider),
   );
 });

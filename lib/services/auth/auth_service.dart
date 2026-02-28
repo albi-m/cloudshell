@@ -79,6 +79,14 @@ class AuthService {
     return backend!.resetPassword(normalizedEmail);
   }
 
+  /// Updates the user's password (during password recovery flow).
+  Future<AuthResult> updatePassword(String newPassword) async {
+    if (backend == null) {
+      return const AuthResult.failure('Backend not configured');
+    }
+    return backend!.updatePassword(newPassword);
+  }
+
   /// Deletes the user's account.
   Future<AuthResult> deleteAccount() async {
     if (backend == null) {

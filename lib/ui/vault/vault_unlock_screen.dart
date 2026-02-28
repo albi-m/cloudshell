@@ -14,6 +14,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/platform_utils.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/vault_provider.dart';
 
 /// Full-screen vault unlock screen.
@@ -120,7 +121,7 @@ class _VaultUnlockScreenState extends ConsumerState<VaultUnlockScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await ref.read(vaultProvider.notifier).resetVault();
+      await ref.read(vaultProvider.notifier).resetVault(purgeServer: true);
       if (mounted) {
         GoRouter.of(context).go(RouteNames.hosts);
       }
@@ -131,6 +132,18 @@ class _VaultUnlockScreenState extends ConsumerState<VaultUnlockScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final isAuth =
+        ref.watch(authProvider).value == AuthState.authenticated;
+
+    // Context-aware labels: authenticated users see "account password",
+    // local-only users see "master password" (traditional vault terms).
+    final title = isAuth
+        ? l10n.vaultUnlockTitle // Reuse existing — "Verify Password" if l10n has it
+        : l10n.vaultUnlockTitle;
+    final subtitle = isAuth
+        ? l10n.vaultUnlockPasswordLabel // "Enter your password"
+        : l10n.vaultUnlockSubtitle;
+    final passwordLabel = l10n.vaultUnlockPasswordLabel;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -157,10 +170,10 @@ class _VaultUnlockScreenState extends ConsumerState<VaultUnlockScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text(l10n.vaultUnlockTitle, style: AppTypography.h2),
+                Text(title, style: AppTypography.h2),
                 const SizedBox(height: 6),
                 Text(
-                  l10n.vaultUnlockSubtitle,
+                  subtitle,
                   style: AppTypography.body.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
@@ -174,7 +187,7 @@ class _VaultUnlockScreenState extends ConsumerState<VaultUnlockScreen> {
                   obscureText: _obscure,
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: l10n.vaultUnlockPasswordLabel,
+                    labelText: passwordLabel,
                     prefixIcon: const Icon(LucideIcons.lock, size: 18),
                     suffixIcon: IconButton(
                       tooltip: 'Toggle password visibility',
@@ -234,16 +247,18 @@ class _VaultUnlockScreenState extends ConsumerState<VaultUnlockScreen> {
 
                 const SizedBox(height: 24),
 
-                // Forgot password link
-                TextButton(
-                  onPressed: _isUnlocking ? null : _forgotPassword,
-                  child: Text(
-                    l10n.vaultUnlockForgotPassword,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.accentRed.withValues(alpha: 0.8),
+                // Forgot password link — only for local-only users.
+                // Authenticated users should use account password reset.
+                if (!isAuth)
+                  TextButton(
+                    onPressed: _isUnlocking ? null : _forgotPassword,
+                    child: Text(
+                      l10n.vaultUnlockForgotPassword,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.accentRed.withValues(alpha: 0.8),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

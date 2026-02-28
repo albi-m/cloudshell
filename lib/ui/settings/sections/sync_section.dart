@@ -34,6 +34,7 @@ class SyncSection extends StatelessWidget {
         SyncAccountTile(),
         SyncToggleTile(),
         SyncNowTile(),
+        ForceResyncTile(),
       ],
     );
   }
@@ -90,6 +91,7 @@ class SyncAccountTile extends ConsumerWidget {
 
           case AuthState.unauthenticated:
           case AuthState.authenticating:
+          case AuthState.passwordRecovery:
             return SettingsTile(
               icon: LucideIcons.cloud,
               title: l10n.syncCloudSyncTitle,
@@ -199,7 +201,8 @@ class SyncAccountTile extends ConsumerWidget {
             return AlertDialog(
               title: Text(l10n.deleteAccountTitle,
                   style: AppTypography.h2),
-              content: Column(
+              content: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -267,10 +270,10 @@ class SyncAccountTile extends ConsumerWidget {
                   ),
                 ],
               ),
+              ),
               actions: [
                 TextButton(
                   onPressed: () {
-                    controller.dispose();
                     Navigator.of(dialogContext).pop();
                   },
                   child: Text(l10n.cancel),
@@ -282,7 +285,6 @@ class SyncAccountTile extends ConsumerWidget {
                   onPressed: canDelete
                       ? () async {
                           Navigator.of(dialogContext).pop();
-                          controller.dispose();
                           await _performAccountDeletion(
                               context, ref);
                         }
@@ -468,6 +470,77 @@ class SyncNowTile extends ConsumerWidget {
                 );
               }
             },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Force Re-sync Tile
+// ---------------------------------------------------------------------------
+
+/// Purges server data and re-pushes all local items.
+class ForceResyncTile extends ConsumerWidget {
+  const ForceResyncTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncReady = ref.watch(syncReadyProvider);
+    if (!syncReady) return const SizedBox.shrink();
+
+    final syncStatus = ref.watch(syncProvider);
+    final isSyncing =
+        syncStatus.value == SyncStatus.syncing;
+
+    return SettingsTile(
+      icon: LucideIcons.refreshCcw,
+      title: 'Force Full Re-sync',
+      subtitle:
+          'Purge server data and re-push from this device',
+      onTap: isSyncing
+          ? null
+          : () => _confirmForceResync(context, ref),
+    );
+  }
+
+  void _confirmForceResync(
+      BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Force Full Re-sync',
+            style: AppTypography.h2),
+        content: const Text(
+          'This will delete all server sync data and '
+          're-push everything from this device. Use this '
+          'to fix duplicate or stale entries.\n\n'
+          'Other devices will pull fresh data on their '
+          'next sync.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final result = await ref
+                  .read(syncProvider.notifier)
+                  .forceFullResync();
+              if (result != null && context.mounted) {
+                final msg = result.success
+                    ? 'Re-synced: pushed ${result.pushed} items'
+                    : 'Re-sync failed: ${result.error}';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(msg)),
+                );
+              }
+            },
+            child: const Text('Re-sync'),
+          ),
+        ],
+      ),
     );
   }
 }

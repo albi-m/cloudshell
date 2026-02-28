@@ -102,10 +102,10 @@ class SnippetDao extends DatabaseAccessor<AppDatabase> with _$SnippetDaoMixin {
     return into(snippets).insertOnConflictUpdate(companion);
   }
 
-  /// Bumps the syncVersion for a snippet after a local change.
+  /// Resets syncVersion to 0 so the sync engine re-pushes the item.
   Future<void> _bumpSyncVersion(String id) async {
     await customStatement(
-      'UPDATE snippets SET sync_version = sync_version + 1 WHERE id = ?',
+      'UPDATE snippets SET sync_version = 0 WHERE id = ?',
       [id],
     );
   }

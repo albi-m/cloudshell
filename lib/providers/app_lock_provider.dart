@@ -81,6 +81,13 @@ class AppLockNotifier extends Notifier<AppLockState> {
   /// Timer for the grace period before locking.
   Timer? _lockTimer;
 
+  /// When the app went to background. Used to check elapsed time on resume
+  /// because iOS suspends timers when the app is in the background.
+  DateTime? _backgroundedAt;
+
+  /// Grace period that was active when the app went to background.
+  Duration? _gracePeriod;
+
   /// Consecutive failed biometric attempts.
   int _failedAttempts = 0;
 
@@ -214,11 +221,16 @@ class AppLockNotifier extends Notifier<AppLockState> {
 
   /// Schedules locking after a grace period.
   ///
-  /// Called when the app goes to background. If the user returns
-  /// before the timer fires, [cancelScheduledLock] prevents locking.
+  /// Called when the app goes to background. Records the background
+  /// timestamp so [cancelScheduledLock] can check elapsed time on resume
+  /// (iOS suspends timers when the app is in the background).
   void scheduleLock(Duration gracePeriod) {
     final biometricEnabled = ref.read(biometricLockEnabledProvider);
     if (!biometricEnabled) return;
+
+    // Record when we went to background and the grace period
+    _backgroundedAt = DateTime.now();
+    _gracePeriod = gracePeriod;
 
     // Cancel any existing timer
     _lockTimer?.cancel();
@@ -229,7 +241,24 @@ class AppLockNotifier extends Notifier<AppLockState> {
   }
 
   /// Cancels a pending lock timer (called when app returns to foreground).
+  ///
+  /// Before cancelling, checks if the grace period has already elapsed
+  /// while the app was suspended (iOS freezes timers in the background).
+  /// If so, locks immediately instead of cancelling.
   void cancelScheduledLock() {
+    if (_backgroundedAt != null && _gracePeriod != null) {
+      final elapsed = DateTime.now().difference(_backgroundedAt!);
+      if (elapsed >= _gracePeriod!) {
+        // Grace period expired while app was suspended — lock now
+        _backgroundedAt = null;
+        _gracePeriod = null;
+        lock();
+        return;
+      }
+    }
+
+    _backgroundedAt = null;
+    _gracePeriod = null;
     _lockTimer?.cancel();
     _lockTimer = null;
   }

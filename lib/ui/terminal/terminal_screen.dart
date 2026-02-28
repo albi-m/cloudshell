@@ -546,6 +546,8 @@ class _SingleTerminalView extends ConsumerWidget {
                 tab.session.writeString(data);
               }
             },
+            onCtrlChanged: (active) => tab.ctrlActive = active,
+            onAltChanged: (active) => tab.altActive = active,
             chromeBg: terminalChromeBg(theme.background),
             chromeBorder: terminalChromeBorder(theme.background),
             chromeSurface: terminalChromeSurface(theme.background),

@@ -14,6 +14,7 @@ import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/vault_provider.dart';
 import '../ui/auth/forgot_password_screen.dart';
+import '../ui/auth/reset_password_screen.dart';
 import '../ui/auth/login_screen.dart';
 import '../ui/auth/sign_up_screen.dart';
 import '../ui/auth/totp_setup_screen.dart';
@@ -54,9 +55,10 @@ class _RouterRefreshNotifier extends ChangeNotifier {
 /// authentication, and vault-lock redirects. The router re-evaluates
 /// its redirect function when vault state changes via [_RouterRefreshNotifier].
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // Refresh router when vault state changes (e.g. auto-unlock completes)
+  // Refresh router when vault or auth state changes
   final refreshNotifier = _RouterRefreshNotifier();
   ref.listen(vaultProvider, (_, _) => refreshNotifier.notify());
+  ref.listen(authProvider, (_, _) => refreshNotifier.notify());
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -75,25 +77,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return RouteNames.hosts;
       }
 
+      // Password recovery redirect — deep link opened the app
+      final isPasswordRecovery =
+          ref.read(authProvider).value == AuthState.passwordRecovery;
+      final isResetRoute = state.uri.path == RouteNames.resetPassword;
+      if (isPasswordRecovery && !isResetRoute) {
+        return RouteNames.resetPassword;
+      }
+
       // Auth routes are always accessible — no forced redirects
       final isAuthRoute = state.uri.path == RouteNames.login ||
           state.uri.path == RouteNames.signUp ||
           state.uri.path == RouteNames.forgotPassword ||
           state.uri.path == RouteNames.totpSetup ||
-          state.uri.path == RouteNames.totpVerify;
+          state.uri.path == RouteNames.totpVerify ||
+          isResetRoute;
       if (isAuthRoute) return null;
 
-      // Vault lock redirect — only force unlock when authenticated
-      // (vault is needed for sync). Local-only users don't need vault.
-      // VaultNotifier.build() tries auto-unlock from cached keys first,
-      // so this only triggers if there are no cached keys.
+      // Vault lock redirect — only for local-only users who set up a vault.
+      // Authenticated users never see vault screens — vault is auto-managed
+      // by the login flow (_autoUnlockOrCreateVault) and cached key auto-unlock.
       final vaultState = ref.read(vaultProvider).value;
       final isAuthenticated =
           ref.read(authProvider).value == AuthState.authenticated;
+      final isLocalOnly =
+          ref.read(authProvider).value == AuthState.localOnly;
       final isVaultRoute = state.uri.path == RouteNames.vaultUnlock ||
           state.uri.path == RouteNames.masterPasswordSetup;
       if (vaultState == VaultState.locked &&
-          isAuthenticated &&
+          isLocalOnly &&
           !isVaultRoute) {
         return RouteNames.vaultUnlock;
       }
@@ -101,8 +113,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (vaultState != VaultState.locked && isVaultRoute) {
         return RouteNames.hosts;
       }
-      // Not authenticated but stuck on vault route → go to hosts
-      if (!isAuthenticated && isVaultRoute) {
+      // Authenticated or unauthenticated but stuck on vault route → go to hosts
+      if ((isAuthenticated || !isLocalOnly) && isVaultRoute) {
         return RouteNames.hosts;
       }
 
@@ -160,6 +172,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => const MaterialPage(
           child: ForgotPasswordScreen(),
+        ),
+      ),
+
+      // Reset password — shown after user clicks email reset link
+      GoRoute(
+        path: RouteNames.resetPassword,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => const MaterialPage(
+          child: ResetPasswordScreen(),
         ),
       ),
 
