@@ -13,6 +13,7 @@ import 'package:logger/logger.dart';
 import '../../data/database/app_database.dart';
 import '../../providers/backend_provider.dart';
 import '../backend/sync_backend.dart';
+import '../crypto/secure_storage.dart';
 import '../crypto/vault_crypto_service.dart';
 import 'sync_serializer.dart';
 
@@ -64,11 +65,13 @@ class SyncService {
     required this.backend,
     required this.db,
     required this.crypto,
+    required this.secureStorage,
   });
 
   final SyncBackend backend;
   final AppDatabase db;
   final VaultCryptoService crypto;
+  final SecureStorageService secureStorage;
 
   /// Runs a full sync cycle for all entity types.
   ///
@@ -175,7 +178,7 @@ class SyncService {
       for (final entityType in SyncEntityTypes.ordered) {
         final localChanges = await _getLocalChanges(entityType, -1);
         for (final item in localChanges) {
-          final json = _serializeEntity(entityType, item);
+          final json = await _serializeEntity(entityType, item);
           final plaintext = jsonEncode(json);
           final encrypted = await crypto.encryptItem(
             plaintext,
@@ -250,11 +253,28 @@ class SyncService {
     }
 
     // 3. Push local changes
-    final localChanges = await _getLocalChanges(entityType, lastVersion);
+    // Get items changed since last sync version
+    var localChanges = await _getLocalChanges(entityType, lastVersion);
+    // Also include newly created items (syncVersion 0) that were added
+    // after the initial sync — getChangedSince(1+) would miss them.
+    if (lastVersion > 0) {
+      final newItems = (await _getLocalChanges(entityType, -1))
+          .where((item) => _getSyncVersion(entityType, item) == 0)
+          .toList();
+      if (newItems.isNotEmpty) {
+        final existingIds =
+            localChanges.map((e) => _getEntityId(entityType, e)).toSet();
+        final uniqueNew = newItems
+            .where((item) =>
+                !existingIds.contains(_getEntityId(entityType, item)))
+            .toList();
+        localChanges = [...localChanges, ...uniqueNew];
+      }
+    }
     var pushed = 0;
 
     for (final item in localChanges) {
-      final json = _serializeEntity(entityType, item);
+      final json = await _serializeEntity(entityType, item);
       final plaintext = jsonEncode(json);
       final encrypted = await crypto.encryptItem(
         plaintext,
@@ -367,6 +387,8 @@ class SyncService {
         await db.hostDao.upsertFromRemote(SyncSerializer.hostFromJson(json));
       case SyncEntityTypes.sshKey:
         await db.keyDao.upsertFromRemote(SyncSerializer.keyFromJson(json));
+        // Store private key material in secure storage (from sync payload)
+        await _storePrivateKeyFromSync(json);
       case SyncEntityTypes.group:
         await db.groupDao.upsertFromRemote(SyncSerializer.groupFromJson(json));
       case SyncEntityTypes.snippet:
@@ -393,8 +415,9 @@ class SyncService {
     };
   }
 
-  Map<String, dynamic> _serializeEntity(String entityType, dynamic entity) {
-    return switch (entityType) {
+  Future<Map<String, dynamic>> _serializeEntity(
+      String entityType, dynamic entity) async {
+    final json = switch (entityType) {
       SyncEntityTypes.host => SyncSerializer.hostToJson(entity as Host),
       SyncEntityTypes.sshKey => SyncSerializer.keyToJson(entity as SshKey),
       SyncEntityTypes.group =>
@@ -405,6 +428,37 @@ class SyncService {
         SyncSerializer.portForwardToJson(entity as PortForward),
       _ => <String, dynamic>{},
     };
+
+    // Include private key material for SSH keys (E2E encrypted in sync payload)
+    if (entityType == SyncEntityTypes.sshKey) {
+      final keyId = (entity as SshKey).privateKeyRef;
+      final privateKey = await secureStorage.getSshPrivateKey(keyId);
+      if (privateKey != null) {
+        json['_privateKeyPem'] = privateKey;
+      }
+      final passphrase = await secureStorage.getSshPassphrase(keyId);
+      if (passphrase != null) {
+        json['_passphrase'] = passphrase;
+      }
+    }
+
+    return json;
+  }
+
+  /// Stores private key material from a synced SSH key payload.
+  Future<void> _storePrivateKeyFromSync(Map<String, dynamic> json) async {
+    final keyId = json['id'] as String?;
+    if (keyId == null) return;
+
+    final privateKeyPem = json['_privateKeyPem'] as String?;
+    if (privateKeyPem != null) {
+      await secureStorage.storeSshPrivateKey(keyId, privateKeyPem);
+    }
+
+    final passphrase = json['_passphrase'] as String?;
+    if (passphrase != null) {
+      await secureStorage.storeSshPassphrase(keyId, passphrase);
+    }
   }
 
   String _getEntityId(String entityType, dynamic entity) {
@@ -483,5 +537,6 @@ final syncServiceProvider = Provider<SyncService?>((ref) {
     backend: backend,
     db: ref.watch(databaseProvider),
     crypto: ref.watch(vaultCryptoServiceProvider),
+    secureStorage: ref.watch(secureStorageProvider),
   );
 });
