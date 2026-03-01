@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/constants/app_constants.dart';
 import '../core/theme/terminal_themes.dart';
@@ -59,31 +60,70 @@ class SettingsNotifier extends AsyncNotifier<void> {
   }
 }
 
-/// Settings key constants.
+/// Key constants for the settings key-value store.
+///
+/// Each constant maps to a row key in the [Settings] database table.
+/// Values are stored as strings and converted to typed values by
+/// the corresponding Riverpod providers.
 abstract final class SettingsKeys {
+  /// Light, dark, or system theme mode preference.
   static const String themeMode = 'theme_mode';
+
+  /// Whether the user has completed the onboarding flow.
   static const String onboardingComplete = 'onboarding_complete';
+
+  /// Active terminal color scheme identifier (e.g. 'dracula', 'monokai').
   static const String terminalTheme = 'terminal_theme';
+
+  /// Terminal font size in logical pixels.
   static const String terminalFontSize = 'terminal_font_size';
+
+  /// Terminal font family name (e.g. 'JetBrainsMono', 'Fira Code').
   static const String terminalFontFamily = 'terminal_font_family';
+
+  /// Terminal cursor style: 'block', 'underline', or 'bar'.
   static const String terminalCursorStyle = 'terminal_cursor_style';
+
+  /// Whether font ligatures are enabled in the terminal.
   static const String terminalLigatures = 'terminal_ligatures';
+
+  /// Default SSH port for new host connections.
   static const String defaultSshPort = 'default_ssh_port';
+
+  /// Default connection timeout in seconds.
   static const String defaultTimeout = 'default_timeout';
+
+  /// Default keep-alive interval in seconds.
   static const String defaultKeepAlive = 'default_keep_alive';
+
+  /// Whether long-running command completion notifications are enabled.
   static const String commandNotifyEnabled = 'command_notify_enabled';
+
+  /// Threshold in seconds before a command triggers a completion notification.
   static const String commandNotifyThreshold = 'command_notify_threshold';
 
-  // Auth & Sync
+  // --- Auth & Sync ---
+
+  /// Authentication mode ('local', 'cloud', etc.).
   static const String authMode = 'auth_mode';
+
+  /// Email address of the authenticated user.
   static const String userEmail = 'user_email';
+
+  /// URL of the remote sync server.
   static const String syncServerUrl = 'sync_server_url';
+
+  /// Whether cloud sync is enabled.
   static const String syncEnabled = 'sync_enabled';
 
-  // Localization
+  // --- Localization ---
+
+  /// UI language code ('en', 'es', 'de', etc.) or 'system' for platform default.
   static const String language = 'language';
 
-  // Security
+  // --- Security ---
+
+  /// Grace period in seconds before app lock re-engages after backgrounding.
   static const String appLockGracePeriod = 'app_lock_grace_period';
 }
 

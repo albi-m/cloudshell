@@ -12,11 +12,14 @@ import '../../core/theme/app_typography.dart';
 import '../../core/utils/platform_utils.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Shows the keyboard shortcut reference overlay.
+/// Shows the keyboard shortcut reference overlay as a modal dialog.
+///
+/// Displays all available shortcuts grouped by context (General, Terminal,
+/// Navigation), adapting modifier key labels for macOS vs other platforms.
 void showShortcutReference(BuildContext context) {
   showDialog(
     context: context,
-    barrierColor: Colors.black54,
+    barrierColor: AppColors.barrierMedium,
     builder: (_) => const _ShortcutReferenceDialog(),
   );
 }
@@ -50,6 +53,7 @@ class _ShortcutReferenceDialog extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(LucideIcons.x, size: 16),
+                    tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],

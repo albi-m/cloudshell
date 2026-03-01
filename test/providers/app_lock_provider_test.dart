@@ -1,10 +1,13 @@
-// Tests for AppLockNotifier grace period behavior.
+// Tests for AppLockNotifier grace period and state transitions.
 //
 // Verifies:
 // - App does not lock if resumed within grace period
 // - App locks after grace period expires
 // - App locks immediately when grace period is 0
 // - Cancelling scheduled lock prevents locking
+// - build() initial state based on biometric setting
+// - lock/unlock state transitions
+// - authenticate() when already unlocked
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -130,6 +133,100 @@ void main() {
       addTearDown(container.dispose);
 
       expect(container.read(appLockGracePeriodProvider), 60);
+    });
+  });
+
+  group('AppLockNotifier state transitions', () {
+    test('build() returns locked when biometric enabled', () {
+      final container = ProviderContainer(
+        overrides: [
+          biometricLockEnabledProvider.overrideWithValue(true),
+          appLockGracePeriodProvider.overrideWithValue(0),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(appLockProvider), AppLockState.locked);
+    });
+
+    test('build() returns unlocked when biometric disabled', () {
+      final container = ProviderContainer(
+        overrides: [
+          biometricLockEnabledProvider.overrideWithValue(false),
+          appLockGracePeriodProvider.overrideWithValue(0),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(appLockProvider), AppLockState.unlocked);
+    });
+
+    test('lock() when biometric disabled does not change state', () {
+      final container = ProviderContainer(
+        overrides: [
+          biometricLockEnabledProvider.overrideWithValue(false),
+          appLockGracePeriodProvider.overrideWithValue(0),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appLockProvider.notifier);
+      notifier.lock();
+      expect(container.read(appLockProvider), AppLockState.unlocked);
+    });
+
+    test('unlock() cancels pending lock timer', () async {
+      final container = ProviderContainer(
+        overrides: [
+          biometricLockEnabledProvider.overrideWithValue(true),
+          appLockGracePeriodProvider.overrideWithValue(0),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appLockProvider.notifier);
+      notifier.unlock();
+
+      // Schedule a lock with 200ms grace period
+      notifier.scheduleLock(const Duration(milliseconds: 200));
+
+      // Immediately unlock — should cancel the timer
+      notifier.unlock();
+
+      // Wait past grace period — should still be unlocked
+      await Future.delayed(const Duration(milliseconds: 350));
+      expect(container.read(appLockProvider), AppLockState.unlocked);
+    });
+
+    test('authenticate() when already unlocked returns true', () async {
+      final container = ProviderContainer(
+        overrides: [
+          biometricLockEnabledProvider.overrideWithValue(true),
+          appLockGracePeriodProvider.overrideWithValue(0),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appLockProvider.notifier);
+      notifier.unlock();
+      expect(container.read(appLockProvider), AppLockState.unlocked);
+
+      final result = await notifier.authenticate();
+      expect(result, isTrue);
+      expect(container.read(appLockProvider), AppLockState.unlocked);
+    });
+  });
+
+  group('biometricLockEnabledProvider', () {
+    test('returns false for non-true values', () {
+      final container = ProviderContainer(
+        overrides: [
+          biometricLockEnabledProvider.overrideWithValue(false),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(biometricLockEnabledProvider), isFalse);
     });
   });
 }

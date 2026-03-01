@@ -164,8 +164,8 @@ class _SftpScreenState extends ConsumerState<SftpScreen>
           _isConnecting = false;
         });
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() => _isConnecting = false);
         final l10n = AppLocalizations.of(context);
@@ -216,8 +216,8 @@ class _SftpScreenState extends ConsumerState<SftpScreen>
           setState(() {});
           _remotePaneKey.currentState?.refresh();
         }
-      } catch (e) {
-        ErrorHandler.handle(e);
+      } catch (e, stackTrace) {
+        ErrorHandler.handle(e, stackTrace);
         transfer.error = ErrorHandler.userMessage(e);
         if (mounted) setState(() {});
       }
@@ -262,8 +262,8 @@ class _SftpScreenState extends ConsumerState<SftpScreen>
           setState(() {});
           _localPaneKey.currentState?.refresh();
         }
-      } catch (e) {
-        ErrorHandler.handle(e);
+      } catch (e, stackTrace) {
+        ErrorHandler.handle(e, stackTrace);
         transfer.error = ErrorHandler.userMessage(e);
         if (mounted) setState(() {});
       }
@@ -313,8 +313,8 @@ class _SftpScreenState extends ConsumerState<SftpScreen>
           setState(() {});
           _remotePaneKey.currentState?.refresh();
         }
-      } catch (e) {
-        ErrorHandler.handle(e);
+      } catch (e, stackTrace) {
+        ErrorHandler.handle(e, stackTrace);
         transfer.error = ErrorHandler.userMessage(e);
         if (mounted) setState(() {});
       }
@@ -441,7 +441,7 @@ class _SftpScreenState extends ConsumerState<SftpScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.upload,
+                            const Icon(LucideIcons.upload,
                                 size: 36, color: AppColors.accentPrimary),
                             const SizedBox(height: 8),
                             Text(
@@ -545,7 +545,7 @@ class _SftpToolbar extends StatelessWidget {
       child: Row(
         children: [
           // Host selector
-          Icon(LucideIcons.server, size: 16, color: AppColors.textSecondary),
+          const Icon(LucideIcons.server, size: 16, color: AppColors.textSecondary),
           const SizedBox(width: 8),
           if (hosts.isEmpty)
             Text(l10n.sftpNoSavedHostsTitle,
@@ -752,8 +752,8 @@ class _LocalFilePaneState extends State<_LocalFilePane> {
             size: stat.type == FileSystemEntityType.file ? stat.size : null,
             modifiedAt: stat.modified,
           ));
-        } catch (e) {
-          debugPrint('SFTP stat failed for ${entity.path}: $e');
+        } catch (e, stackTrace) {
+          ErrorHandler.handle(e, stackTrace);
           // Skip entries we can't stat (permission denied)
         }
       }
@@ -772,7 +772,8 @@ class _LocalFilePaneState extends State<_LocalFilePane> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() {
           _error = e.toString();
@@ -964,8 +965,8 @@ class _RemoteFilePaneState extends State<_RemoteFilePane> {
     try {
       final homePath = await widget.sftp!.absolutePath('.');
       _currentPath = homePath;
-    } catch (e) {
-      debugPrint('SFTP default path resolution failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       _currentPath = '/';
     }
     _loadDirectory();
@@ -989,8 +990,8 @@ class _RemoteFilePaneState extends State<_RemoteFilePane> {
           _isLoading = false;
         });
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() {
           _error = ErrorHandler.userMessage(e);
@@ -1077,8 +1078,8 @@ class _RemoteFilePaneState extends State<_RemoteFilePane> {
     try {
       await widget.sftp!.createDirectory(p.posix.join(_currentPath, name));
       _loadDirectory();
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1098,8 +1099,8 @@ class _RemoteFilePaneState extends State<_RemoteFilePane> {
         await widget.sftp!.deleteFile(entry.path);
       }
       _loadDirectory();
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1124,8 +1125,8 @@ class _RemoteFilePaneState extends State<_RemoteFilePane> {
       final octalInt = int.parse(result, radix: 8);
       await widget.sftp!.setPermissions(entry.path, octalInt);
       _loadDirectory();
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1174,7 +1175,7 @@ class _RemoteFilePaneState extends State<_RemoteFilePane> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.server,
+            const Icon(LucideIcons.server,
                 size: 40, color: AppColors.textTertiary),
             const SizedBox(height: 12),
             Text(l10n.sftpRemoteSelectHost,
@@ -1619,11 +1620,11 @@ class _FileListItem extends StatelessWidget {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.trash2,
+                            const Icon(LucideIcons.trash2,
                                 size: 14, color: AppColors.accentRed),
                             const SizedBox(width: 8),
                             Text(l10n.sftpFileMenuDelete,
-                                style: TextStyle(color: AppColors.accentRed)),
+                                style: const TextStyle(color: AppColors.accentRed)),
                           ],
                         ),
                       ),

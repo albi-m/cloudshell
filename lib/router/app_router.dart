@@ -9,10 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/constants/route_names.dart';
+import '../data/database/app_database.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/vault_provider.dart';
 import '../ui/auth/forgot_password_screen.dart';
+import '../ui/auth/reset_password_screen.dart';
 import '../ui/auth/login_screen.dart';
 import '../ui/auth/sign_up_screen.dart';
 import '../ui/auth/totp_setup_screen.dart';
@@ -39,19 +41,24 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Notifier that triggers GoRouter redirect re-evaluation.
+///
+/// Attached to GoRouter's [refreshListenable] so that calling [notify]
+/// forces all redirect guards to run again (e.g., after vault state changes).
 class _RouterRefreshNotifier extends ChangeNotifier {
+  /// Fires a change notification, causing GoRouter to re-run its redirect logic.
   void notify() => notifyListeners();
 }
 
-/// Riverpod provider for the GoRouter instance.
+/// Riverpod provider for the application's GoRouter instance.
 ///
-/// Uses [redirect] instead of a dynamic [initialLocation] so
-/// that the router is created only once and GlobalKeys are not
-/// duplicated when provider dependencies change.
+/// Created once and never rebuilt. Route guards handle onboarding,
+/// authentication, and vault-lock redirects. The router re-evaluates
+/// its redirect function when vault state changes via [_RouterRefreshNotifier].
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // Refresh router when vault state changes (e.g. auto-unlock completes)
+  // Refresh router when vault or auth state changes
   final refreshNotifier = _RouterRefreshNotifier();
   ref.listen(vaultProvider, (_, _) => refreshNotifier.notify());
+  ref.listen(authProvider, (_, _) => refreshNotifier.notify());
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -70,25 +77,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return RouteNames.hosts;
       }
 
+      // Password recovery redirect — deep link opened the app
+      final isPasswordRecovery =
+          ref.read(authProvider).value == AuthState.passwordRecovery;
+      final isResetRoute = state.uri.path == RouteNames.resetPassword;
+      if (isPasswordRecovery && !isResetRoute) {
+        return RouteNames.resetPassword;
+      }
+
       // Auth routes are always accessible — no forced redirects
       final isAuthRoute = state.uri.path == RouteNames.login ||
           state.uri.path == RouteNames.signUp ||
           state.uri.path == RouteNames.forgotPassword ||
           state.uri.path == RouteNames.totpSetup ||
-          state.uri.path == RouteNames.totpVerify;
+          state.uri.path == RouteNames.totpVerify ||
+          isResetRoute;
       if (isAuthRoute) return null;
 
-      // Vault lock redirect — only force unlock when authenticated
-      // (vault is needed for sync). Local-only users don't need vault.
-      // VaultNotifier.build() tries auto-unlock from cached keys first,
-      // so this only triggers if there are no cached keys.
-      final vaultState = ref.read(vaultProvider).valueOrNull;
+      // Vault lock redirect — only for local-only users who set up a vault.
+      // Authenticated users never see vault screens — vault is auto-managed
+      // by the login flow (_autoUnlockOrCreateVault) and cached key auto-unlock.
+      final vaultState = ref.read(vaultProvider).value;
       final isAuthenticated =
-          ref.read(authProvider).valueOrNull == AuthState.authenticated;
+          ref.read(authProvider).value == AuthState.authenticated;
+      final isLocalOnly =
+          ref.read(authProvider).value == AuthState.localOnly;
       final isVaultRoute = state.uri.path == RouteNames.vaultUnlock ||
           state.uri.path == RouteNames.masterPasswordSetup;
       if (vaultState == VaultState.locked &&
-          isAuthenticated &&
+          isLocalOnly &&
           !isVaultRoute) {
         return RouteNames.vaultUnlock;
       }
@@ -96,8 +113,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (vaultState != VaultState.locked && isVaultRoute) {
         return RouteNames.hosts;
       }
-      // Not authenticated but stuck on vault route → go to hosts
-      if (!isAuthenticated && isVaultRoute) {
+      // Authenticated or unauthenticated but stuck on vault route → go to hosts
+      if ((isAuthenticated || !isLocalOnly) && isVaultRoute) {
         return RouteNames.hosts;
       }
 
@@ -158,6 +175,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      // Reset password — shown after user clicks email reset link
+      GoRoute(
+        path: RouteNames.resetPassword,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => const MaterialPage(
+          child: ResetPasswordScreen(),
+        ),
+      ),
+
       // TOTP 2FA setup (full-screen, outside shell)
       GoRoute(
         path: RouteNames.totpSetup,
@@ -179,87 +205,92 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Host form for new hosts (full-screen, outside shell)
-      // MUST be before /hosts/:id so GoRouter doesn't match "form" as an id
-      GoRoute(
-        path: RouteNames.hostForm,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => const MaterialPage(
-          child: HostFormScreen(),
-        ),
-      ),
-
-      // Snippet form for new snippets (full-screen, outside shell)
-      // MUST be before /snippets/:id so GoRouter doesn't match "form" as an id
-      GoRoute(
-        path: RouteNames.snippetForm,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => const MaterialPage(
-          child: SnippetFormScreen(),
-        ),
-      ),
-
-      // Host detail (full-screen, outside shell)
-      GoRoute(
-        path: '/hosts/:id',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return MaterialPage(
-            child: HostDetailScreen(hostId: id),
-          );
-        },
-      ),
-
-      // Key detail (full-screen, outside shell)
-      GoRoute(
-        path: '/keys/:id',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return MaterialPage(
-            child: KeyDetailScreen(keyId: id),
-          );
-        },
-      ),
-
-      // Snippet detail (full-screen, outside shell)
-      GoRoute(
-        path: '/snippets/:id',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return MaterialPage(
-            child: SnippetDetailScreen(snippetId: id),
-          );
-        },
-      ),
-
-      // Shell route wraps all main screens in the adaptive scaffold
+      // Shell route wraps all main screens in the adaptive scaffold.
+      // Detail/form routes are inside the shell so the sidebar stays
+      // visible (master-detail layout). Use context.push() to navigate
+      // to detail/form routes — this pushes within the shell navigator,
+      // keeping the sidebar and enabling the AppBar back button.
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
           return AdaptiveScaffold(child: child);
         },
         routes: [
+          // --- Hosts ---
           GoRoute(
             path: RouteNames.hosts,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: HostsScreen(),
             ),
           ),
+          // Host form (add/edit) — MUST be before /hosts/:id
+          GoRoute(
+            path: RouteNames.hostForm,
+            pageBuilder: (context, state) {
+              final host = state.extra as Host?;
+              return MaterialPage(
+                child: HostFormScreen(host: host),
+              );
+            },
+          ),
+          // Host detail
+          GoRoute(
+            path: '/hosts/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return MaterialPage(
+                child: HostDetailScreen(hostId: id),
+              );
+            },
+          ),
+
+          // --- Keys ---
           GoRoute(
             path: RouteNames.keys,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: KeysScreen(),
             ),
           ),
+          // Key detail
+          GoRoute(
+            path: '/keys/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return MaterialPage(
+                child: KeyDetailScreen(keyId: id),
+              );
+            },
+          ),
+
+          // --- Snippets ---
           GoRoute(
             path: RouteNames.snippets,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: SnippetsScreen(),
             ),
           ),
+          // Snippet form (add/edit) — MUST be before /snippets/:id
+          GoRoute(
+            path: RouteNames.snippetForm,
+            pageBuilder: (context, state) {
+              final snippet = state.extra as Snippet?;
+              return MaterialPage(
+                child: SnippetFormScreen(snippet: snippet),
+              );
+            },
+          ),
+          // Snippet detail
+          GoRoute(
+            path: '/snippets/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return MaterialPage(
+                child: SnippetDetailScreen(snippetId: id),
+              );
+            },
+          ),
+
+          // --- Other ---
           GoRoute(
             path: RouteNames.portForwarding,
             pageBuilder: (context, state) => const NoTransitionPage(

@@ -186,6 +186,24 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get search;
 
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @togglePasswordVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle password visibility'**
+  String get togglePasswordVisibility;
+
+  /// No description provided for @togglePassphraseVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle passphrase visibility'**
+  String get togglePassphraseVisibility;
+
   /// No description provided for @ok.
   ///
   /// In en, this message translates to:
@@ -1523,6 +1541,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ALT'**
   String get extraKeyAlt;
+
+  /// No description provided for @extraKeyBksp.
+  ///
+  /// In en, this message translates to:
+  /// **'BKSP'**
+  String get extraKeyBksp;
 
   /// No description provided for @broadcastPanelTitle.
   ///
@@ -4425,7 +4449,7 @@ abstract class AppLocalizations {
   /// No description provided for @forgotPasswordVaultWarning.
   ///
   /// In en, this message translates to:
-  /// **'Remember: We use zero-knowledge encryption. If you reset your account password, your vault master password remains unchanged.'**
+  /// **'Remember: Resetting your password will also reset your encryption vault. Data encrypted with your old password cannot be recovered.'**
   String get forgotPasswordVaultWarning;
 
   /// No description provided for @forgotPasswordTryAgain.
@@ -4433,6 +4457,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Didn\'t receive it? Try again'**
   String get forgotPasswordTryAgain;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set New Password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your new password below. This will also reset your encryption vault.'**
+  String get resetPasswordInstructions;
+
+  /// No description provided for @resetPasswordNewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get resetPasswordNewLabel;
+
+  /// No description provided for @resetPasswordConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get resetPasswordConfirmLabel;
+
+  /// No description provided for @resetPasswordSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Set New Password'**
+  String get resetPasswordSubmit;
+
+  /// No description provided for @resetPasswordUpdating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating...'**
+  String get resetPasswordUpdating;
+
+  /// No description provided for @resetPasswordVaultWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting a new password will reset your encryption vault. Data encrypted with your old password cannot be recovered.'**
+  String get resetPasswordVaultWarning;
+
+  /// No description provided for @resetPasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated successfully'**
+  String get resetPasswordSuccess;
+
+  /// No description provided for @resetPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get resetPasswordMismatch;
+
+  /// No description provided for @resetPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 10 characters'**
+  String get resetPasswordTooShort;
 
   /// No description provided for @totpSetupTitle.
   ///

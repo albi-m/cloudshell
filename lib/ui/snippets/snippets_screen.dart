@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/constants/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/clipboard_helper.dart';
@@ -19,7 +20,6 @@ import '../shared/confirmation_dialog.dart';
 import '../shared/empty_state.dart';
 import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
-import 'snippet_form_screen.dart';
 
 /// Snippets list screen with search, category grouping, and CRUD.
 class SnippetsScreen extends ConsumerStatefulWidget {
@@ -104,6 +104,7 @@ class _SnippetsScreenState extends ConsumerState<SnippetsScreen> {
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(LucideIcons.x, size: 16),
+                            tooltip: l10n.clearSearch,
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
@@ -190,11 +191,7 @@ class _SnippetsScreenState extends ConsumerState<SnippetsScreen> {
   }
 
   void _navigateToForm(BuildContext context, {Snippet? snippet}) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => SnippetFormScreen(snippet: snippet),
-      ),
-    );
+    context.push(RouteNames.snippetForm, extra: snippet);
   }
 
   void _copySnippet(BuildContext context, Snippet snippet) {
@@ -297,14 +294,14 @@ class _SnippetListItemState extends State<_SnippetListItem> {
                 : AppColors.borderSubtle,
           ),
           boxShadow: _isHovered
-              ? [
+              ? const [
                   BoxShadow(
                     color: AppColors.accentGlow,
                     blurRadius: 12,
                     spreadRadius: -2,
                   ),
                 ]
-              : [],
+              : const [],
         ),
         child: Material(
           color: Colors.transparent,
@@ -389,8 +386,8 @@ class _SnippetListItemState extends State<_SnippetListItem> {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.pencil, size: 16),
-                            SizedBox(width: 8),
+                            const Icon(LucideIcons.pencil, size: 16),
+                            const SizedBox(width: 8),
                             Text(l10n.snippetsMenuEdit),
                           ],
                         ),
@@ -399,9 +396,9 @@ class _SnippetListItemState extends State<_SnippetListItem> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.trash2,
+                            const Icon(LucideIcons.trash2,
                                 size: 16, color: AppColors.accentRed),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(l10n.snippetsMenuDelete),
                           ],
                         ),

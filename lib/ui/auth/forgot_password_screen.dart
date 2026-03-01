@@ -76,6 +76,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(LucideIcons.arrowLeft, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -251,7 +252,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(LucideIcons.shieldAlert,
+              const Icon(LucideIcons.shieldAlert,
                   size: 16, color: AppColors.accentOrange),
               const SizedBox(width: 8),
               Expanded(

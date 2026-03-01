@@ -23,8 +23,11 @@ import '../../providers/terminal_tab_provider.dart';
 import '../../services/ssh/ssh_service.dart';
 import '../../services/telnet/telnet_service.dart';
 
-/// Shows the quick connect dialog and returns true if a connection
-/// was established.
+/// Shows the quick connect dialog and returns `true` if a connection was
+/// established, `false` if the user cancelled.
+///
+/// The dialog accepts a connection string in `user@hostname:port` format and
+/// supports SSH and Telnet protocols with optional key-based authentication.
 Future<bool> showQuickConnectDialog(BuildContext context) async {
   final result = await showDialog<bool>(
     context: context,
@@ -211,8 +214,8 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
       if (mounted) {
         Navigator.of(context).pop(true);
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() => _isConnecting = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -274,7 +277,7 @@ class _QuickConnectDialogState extends ConsumerState<_QuickConnectDialog> {
                 ),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.alertTriangle,
+                    const Icon(LucideIcons.alertTriangle,
                         size: 14, color: AppColors.accentOrange),
                     const SizedBox(width: 6),
                     Expanded(

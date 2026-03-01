@@ -24,6 +24,9 @@ class SupabaseSyncBackend implements SyncBackend {
     return user.id;
   }
 
+  /// Exposes user ID for debug logging only.
+  String get debugUserId => _userId;
+
   // ---------------------------------------------------------------------------
   // Vault Config
   // ---------------------------------------------------------------------------
@@ -124,5 +127,13 @@ class SupabaseSyncBackend implements SyncBackend {
         .eq('user_id', _userId)
         .eq('entity_type', entityType)
         .eq('entity_id', entityId);
+  }
+
+  @override
+  Future<void> purgeAllItems() async {
+    await _client
+        .from('sync_items')
+        .delete()
+        .eq('user_id', _userId);
   }
 }

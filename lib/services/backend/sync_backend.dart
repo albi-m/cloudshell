@@ -110,4 +110,10 @@ abstract class SyncBackend {
     String entityId,
     int syncVersion,
   );
+
+  /// Deletes all sync items for the current user.
+  ///
+  /// Used during vault reset to purge server-side data encrypted
+  /// with old keys that can no longer be decrypted.
+  Future<void> purgeAllItems();
 }

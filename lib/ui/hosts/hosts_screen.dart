@@ -24,17 +24,13 @@ import '../../providers/group_provider.dart';
 import '../../providers/host_provider.dart';
 import '../../providers/terminal_tab_provider.dart';
 import '../../providers/workspace_provider.dart';
-import '../../data/database/tables/hosts_table.dart';
-import '../../services/serial/serial_service.dart';
-import '../../services/ssh/ssh_service.dart';
-import '../../services/telnet/telnet_service.dart';
+import '../../services/connection/protocol_connector.dart';
 import '../shared/confirmation_dialog.dart';
 import '../shared/empty_state.dart';
 import '../shared/error_display.dart';
 import '../shared/loading_indicator.dart';
 import '../settings/ssh_config_import_screen.dart';
 import 'group_form_dialog.dart';
-import 'host_form_screen.dart';
 import 'quick_connect_dialog.dart';
 
 /// Main hosts list screen showing all saved SSH connections.
@@ -141,7 +137,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
                   icon: const Icon(LucideIcons.checkSquare),
                   tooltip: l10n.hostsAllHostsHeader,
                   onPressed: () {
-                    final hosts = ref.read(allHostsProvider).valueOrNull ?? [];
+                    final hosts = ref.read(allHostsProvider).value ?? [];
                     _selectAll(hosts);
                   },
                 ),
@@ -271,6 +267,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(LucideIcons.x, size: 16),
+                            tooltip: l10n.clearSearch,
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
@@ -597,15 +594,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
   }
 
   void _openHostForm(BuildContext context, {Host? host}) {
-    if (host != null) {
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (_) => HostFormScreen(host: host),
-        ),
-      );
-    } else {
-      context.push(RouteNames.hostForm);
-    }
+    context.push(RouteNames.hostForm, extra: host);
   }
 
   void _importSshConfig(BuildContext context) {
@@ -637,12 +626,7 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
         ),
       );
 
-      // Create session based on protocol type.
-      final session = switch (host.protocol) {
-        ProtocolType.ssh => await ref.read(sshServiceProvider).connect(host: host),
-        ProtocolType.telnet => await ref.read(telnetServiceProvider).connect(host: host),
-        ProtocolType.serial => await ref.read(serialServiceProvider).connect(host: host),
-      };
+      final session = await connectByProtocol(ref.read, host);
 
       connections.addConnection(session.sessionId, host.id);
       connections.updateStatus(session.sessionId, ConnectionStatus.connected);
@@ -659,10 +643,11 @@ class _HostsScreenState extends ConsumerState<HostsScreen> {
         ref.read(workspaceProvider.notifier).openTerminalTab(
               session.sessionId,
               host.label,
+              replaceActiveTab: true,
             );
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -847,7 +832,7 @@ class _GroupHeader extends StatelessWidget {
           if (depth > 0)
             Padding(
               padding: const EdgeInsets.only(right: 6),
-              child: Icon(
+              child: const Icon(
                 LucideIcons.cornerDownRight,
                 size: 14,
                 color: AppColors.textTertiary,
@@ -936,7 +921,7 @@ class _HostListItemState extends State<_HostListItem> {
                     : AppColors.borderSubtle,
           ),
           boxShadow: _isHovered
-              ? [
+              ? const [
                   BoxShadow(
                     color: AppColors.accentGlow,
                     blurRadius: 12,
@@ -1285,7 +1270,7 @@ class _GroupListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: EdgeInsets.only(left: depth * 24.0),
+      padding: EdgeInsets.only(left: depth * 16.0),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -33,6 +33,9 @@ enum AuthState {
 
   /// User explicitly chose to use the app without an account.
   localOnly,
+
+  /// Password recovery flow — user clicked reset link in email.
+  passwordRecovery,
 }
 
 /// Manages authentication state.
@@ -77,7 +80,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         case BackendAuthState.signedOut:
           state = const AsyncValue.data(AuthState.unauthenticated);
         case BackendAuthState.passwordRecovery:
-          break; // handled by UI
+          state = const AsyncValue.data(AuthState.passwordRecovery);
       }
     });
 
@@ -192,8 +195,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final authService = ref.read(authServiceProvider);
     await authService.logOut();
 
-    // Lock vault and clear cached keys on logout
-    ref.read(vaultProvider.notifier).lock();
+    // Force-lock vault and clear cached keys on logout
+    ref.read(vaultProvider.notifier).forceLock();
 
     final settings = ref.read(settingsNotifierProvider.notifier);
     await settings.delete(SettingsKeys.authMode);
@@ -208,6 +211,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     await settings.set(SettingsKeys.authMode, 'local');
 
     state = const AsyncValue.data(AuthState.localOnly);
+  }
+
+  /// Marks password recovery as complete and sets state to authenticated.
+  void completePasswordRecovery() {
+    state = const AsyncValue.data(AuthState.authenticated);
   }
 
   /// Switches from local-only back to unauthenticated (allows sign-in).
@@ -228,49 +236,51 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final vaultNotifier = ref.read(vaultProvider.notifier);
       await vaultNotifier.setupVault(password);
       _log.i('Vault auto-created with account password');
-    } catch (e) {
-      _log.w('Failed to auto-create vault: $e');
+    } catch (e, stackTrace) {
+      _log.w('Failed to auto-create vault: $e', error: e, stackTrace: stackTrace);
     }
   }
 
-  /// Unlocks an existing vault or creates one on a new device.
+  /// Unlocks (or creates) the vault using the account password.
   ///
-  /// If the vault was created with a different password (e.g. old
-  /// master password from before unification), resets and recreates
-  /// it with the account password.
+  /// **Server vault config is authoritative.** On login, always fetch
+  /// the server's vault config first and overwrite any local vault
+  /// settings with it. This ensures all devices derive the same keys
+  /// from the same salt — one vault per user, server is source of truth.
   Future<void> _autoUnlockOrCreateVault(String password) async {
     try {
       final vaultNotifier = ref.read(vaultProvider.notifier);
-      final vaultState = ref.read(vaultProvider).valueOrNull;
+
+      // Step 1: Always try to fetch vault config from server.
+      // This is the authoritative source — overwrite any local config.
+      final serverHasVault = await vaultNotifier.rederiveFromServer(password);
+
+      if (serverHasVault != null) {
+        _log.i('Vault unlocked from server config — keys match');
+        return;
+      }
+
+      // Step 2: Server has no vault config — check local state.
+      final vaultState = ref.read(vaultProvider).value;
+      _log.i('No vault on server, local state=$vaultState');
 
       if (vaultState == VaultState.noVault) {
-        // No vault locally — try to fetch config from server
-        final fetched = await vaultNotifier.fetchVaultConfigFromServer();
-        if (fetched) {
-          final error = await vaultNotifier.unlock(password);
-          if (error != null) {
-            // Password mismatch — reset and recreate
-            _log.i('Server vault password mismatch, recreating');
-            await vaultNotifier.resetVault();
-            await vaultNotifier.setupVault(password);
-          }
-        } else {
-          // No vault anywhere — create a new one
-          await vaultNotifier.setupVault(password);
-        }
+        // First device ever — create a new vault and upload it.
+        _log.i('Creating new vault (first device)');
+        await vaultNotifier.setupVault(password);
       } else if (vaultState == VaultState.locked) {
-        // Try account password on existing vault
+        // Local vault exists but server has no config — try to unlock
+        // with account password, then upload config to server.
         final error = await vaultNotifier.unlock(password);
         if (error != null) {
-          // Old vault had different password — reset and recreate
-          _log.i('Old vault password mismatch, recreating with account password');
+          _log.w('Local vault unlock failed: $error — resetting');
           await vaultNotifier.resetVault();
           await vaultNotifier.setupVault(password);
         }
       }
-      // If already unlocked (e.g. auto-unlock from cached key), nothing to do
-    } catch (e) {
-      _log.w('Failed to auto-unlock vault: $e');
+      // If already unlocked, nothing to do.
+    } catch (e, stackTrace) {
+      _log.w('Failed to auto-unlock vault: $e', error: e, stackTrace: stackTrace);
     }
   }
 }
@@ -283,7 +293,7 @@ final authProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
 /// Convenience provider: true when authenticated with a sync account.
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final authState = ref.watch(authProvider);
-  return authState.valueOrNull == AuthState.authenticated;
+  return authState.value == AuthState.authenticated;
 });
 
 /// Provides the current user's email (null if not authenticated).
@@ -305,7 +315,7 @@ final currentUserEmailProvider = FutureProvider<String?>((ref) async {
 /// Provides the current auth mode as a string.
 final authModeProvider = Provider<String>((ref) {
   final authState = ref.watch(authProvider);
-  return switch (authState.valueOrNull) {
+  return switch (authState.value) {
     AuthState.authenticated => 'authenticated',
     AuthState.localOnly => 'local',
     _ => 'unauthenticated',

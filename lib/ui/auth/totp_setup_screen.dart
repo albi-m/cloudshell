@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/clipboard_helper.dart';
@@ -53,11 +54,12 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
           _isEnrolling = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() {
           _isEnrolling = false;
-          _error = '${AppLocalizations.of(context).totpSetupFailed}: $e';
+          _error = ErrorHandler.userMessage(e);
         });
       }
     }
@@ -91,7 +93,8 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
         );
         Navigator.of(context).pop(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() {
           _isVerifying = false;
@@ -111,6 +114,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
       appBar: AppBar(
         title: Text(l10n.totpSetupTitle),
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(LucideIcons.arrowLeft, size: 20),
           onPressed: _isVerifying ? null : () => Navigator.of(context).pop(),
         ),
@@ -195,7 +199,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: QrImageView(
@@ -236,6 +240,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                 ),
               ),
               IconButton(
+                tooltip: 'Copy secret key',
                 icon: const Icon(LucideIcons.copy, size: 18),
                 onPressed: () {
                   copyWithAutoClear(enrollment.secret);

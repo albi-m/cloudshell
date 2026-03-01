@@ -8,7 +8,9 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/errors/error_handler.dart';
 import '../auth_backend.dart';
+import 'supabase_config.dart';
 
 /// Supabase-backed authentication.
 ///
@@ -27,6 +29,7 @@ class SupabaseAuthBackend implements AuthBackend {
       final response = await _auth.signUp(
         email: email.toLowerCase().trim(),
         password: password,
+        emailRedirectTo: SupabaseConfig.redirectUrl,
       );
 
       if (response.user == null) {
@@ -39,8 +42,9 @@ class SupabaseAuthBackend implements AuthBackend {
       );
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Sign up failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -76,8 +80,9 @@ class SupabaseAuthBackend implements AuthBackend {
       );
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Sign in failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -98,8 +103,9 @@ class SupabaseAuthBackend implements AuthBackend {
       );
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Verification failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -111,12 +117,29 @@ class SupabaseAuthBackend implements AuthBackend {
   @override
   Future<AuthResult> resetPassword(String email) async {
     try {
-      await _auth.resetPasswordForEmail(email.toLowerCase().trim());
+      await _auth.resetPasswordForEmail(
+        email.toLowerCase().trim(),
+        redirectTo: SupabaseConfig.redirectUrl,
+      );
       return const AuthResult.success();
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Password reset failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
+    }
+  }
+
+  @override
+  Future<AuthResult> updatePassword(String newPassword) async {
+    try {
+      await _auth.updateUser(UserAttributes(password: newPassword));
+      return const AuthResult.success();
+    } on AuthException catch (e) {
+      return AuthResult.failure(_mapAuthError(e));
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 
@@ -130,8 +153,9 @@ class SupabaseAuthBackend implements AuthBackend {
       return const AuthResult.success();
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      return AuthResult.failure('Account deletion failed: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
+      return AuthResult.failure(ErrorHandler.userMessage(e));
     }
   }
 

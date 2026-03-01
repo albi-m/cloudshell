@@ -1,7 +1,8 @@
-// Telnet connection session implementing ConnectionSession.
-//
-// Wraps a dart:io Socket with telnet protocol handling via TelnetParser.
-// Manages IAC negotiation, NAWS terminal sizing, and clean data flow.
+/// Telnet connection session implementing [ConnectionSession].
+///
+/// Wraps a dart:io Socket with telnet protocol handling via [TelnetParser].
+/// Manages IAC negotiation, NAWS terminal sizing, and clean data flow.
+library;
 
 import 'dart:async';
 import 'dart:io';
@@ -19,6 +20,10 @@ import 'telnet_parser.dart';
 /// protocol negotiation transparently. Terminal data is available
 /// via [output] with all IAC sequences stripped.
 class TelnetSession implements ConnectionSession {
+  /// Creates a telnet session on an already-connected [socket].
+  ///
+  /// Immediately begins listening on the socket and feeding data through
+  /// a [TelnetParser] to strip IAC sequences before emitting on [output].
   TelnetSession({
     required this.socket,
     required String hostId,
@@ -51,6 +56,7 @@ class TelnetSession implements ConnectionSession {
     );
   }
 
+  /// The underlying TCP socket connected to the remote telnet server.
   final Socket socket;
   final String _hostId;
   final String _sessionId;
@@ -77,12 +83,18 @@ class TelnetSession implements ConnectionSession {
   @override
   bool get isConnected => _isConnected;
 
+  /// Stream of terminal data bytes with all telnet IAC sequences stripped.
   @override
   Stream<Uint8List> get output => _outputController.stream;
 
+  /// Completes when the TCP connection closes or encounters an error.
   @override
   Future<void> get done => _doneCompleter.future;
 
+  /// Initiates the telnet session by sending initial option negotiations.
+  ///
+  /// Advertises NAWS (window size) support and requests the server
+  /// suppress Go Ahead for character-at-a-time mode.
   @override
   Future<void> startSession({
     int termWidth = 80,
@@ -97,6 +109,7 @@ class TelnetSession implements ConnectionSession {
     _sendCommand(doOpt, optSga);
   }
 
+  /// Writes user data to the telnet server, escaping any IAC (0xFF) bytes.
   @override
   void write(Uint8List data) {
     if (!_isConnected) return;
@@ -105,11 +118,16 @@ class TelnetSession implements ConnectionSession {
     socket.add(escaped);
   }
 
+  /// Writes a string to the telnet server using its code unit bytes.
   @override
   void writeString(String data) {
     write(Uint8List.fromList(data.codeUnits));
   }
 
+  /// Updates the terminal dimensions and sends a NAWS update if negotiated.
+  ///
+  /// Per RFC 1073, the NAWS subnegotiation is only sent if the server
+  /// has agreed to the NAWS option.
   @override
   void resize(int width, int height) {
     _termWidth = width;
@@ -119,6 +137,7 @@ class TelnetSession implements ConnectionSession {
     }
   }
 
+  /// Closes the TCP socket and releases all resources.
   @override
   Future<void> close() async {
     _isConnected = false;

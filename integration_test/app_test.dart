@@ -123,6 +123,54 @@ void main() {
       final themeId = container.read(terminalThemeIdProvider);
       expect(themeId, 'dracula');
     });
+
+    testWidgets('light theme mode persists in settings DB', (tester) async {
+      await testDb.settingsDao.setValue('theme_mode', 'light');
+
+      await pumpApp(tester);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CloudShellApp)),
+      );
+      final mode = container.read(themeModeProvider);
+      expect(mode, ThemeMode.light);
+    });
+
+    testWidgets('default SSH port persists in settings DB', (tester) async {
+      await testDb.settingsDao.setValue('default_ssh_port', '2222');
+
+      await pumpApp(tester);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CloudShellApp)),
+      );
+      final port = container.read(defaultSshPortProvider);
+      expect(port, 2222);
+    });
+
+    testWidgets('cursor style persists in settings DB', (tester) async {
+      await testDb.settingsDao.setValue('terminal_cursor_style', 'underline');
+
+      await pumpApp(tester);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CloudShellApp)),
+      );
+      final style = container.read(terminalCursorStyleProvider);
+      expect(style, 'underline');
+    });
+
+    testWidgets('font family persists in settings DB', (tester) async {
+      await testDb.settingsDao.setValue('terminal_font_family', 'FiraCode');
+
+      await pumpApp(tester);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CloudShellApp)),
+      );
+      final family = container.read(terminalFontFamilyProvider);
+      expect(family, 'FiraCode');
+    });
   });
 }
 

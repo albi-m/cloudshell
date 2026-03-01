@@ -8,7 +8,6 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/xterm.dart' as xterm;
@@ -18,15 +17,14 @@ import 'package:uuid/uuid.dart';
 
 import '../core/constants/app_constants.dart';
 import '../data/database/app_database.dart';
-import '../data/database/tables/hosts_table.dart';
 import '../services/connection/connection_session.dart';
-import '../services/serial/serial_service.dart';
-import '../services/ssh/ssh_service.dart';
+import '../services/connection/protocol_connector.dart';
 import '../services/ssh/ssh_session.dart';
-import '../services/telnet/telnet_service.dart';
 import '../services/terminal/session_logger.dart';
 import 'connection_provider.dart';
 import 'settings_provider.dart';
+
+import '../core/errors/error_handler.dart';
 
 const _uuid = Uuid();
 
@@ -53,6 +51,7 @@ class TerminalPane {
   final xterm.TerminalController controller;
   SSHSession? shell;
   StreamSubscription<dynamic>? outputSubscription;
+  TerminalOutputBuffer? outputBuffer;
   bool isConnected;
   DateTime? connectedAt;
 
@@ -195,6 +194,14 @@ class TerminalTab {
   /// Split ratio between panes (0.25–0.75).
   double splitRatio = 0.5;
 
+  // --- Mobile modifier key state ---
+
+  /// Whether Ctrl modifier is active (set by ExtraKeysBar, consumed on next keypress).
+  bool ctrlActive = false;
+
+  /// Whether Alt modifier is active (set by ExtraKeysBar, consumed on next keypress).
+  bool altActive = false;
+
   /// Whether this tab is currently split.
   bool get isSplit => splitDirection != null && panes.length == 2;
 
@@ -324,68 +331,13 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       controller: controller,
     );
 
-    // Wire terminal output → SSH session input (+ broadcast)
-    terminal.onOutput = (data) {
-      if (tab.isConnected) {
-        session.writeString(data);
-      }
-      // If broadcast mode is enabled, send to other connected tabs
-      if (_broadcastEnabled && tab.id == state.activeTabId) {
-        for (final other in state.tabs) {
-          if (other.id == tab.id || !other.isConnected) continue;
-          // Selective: only send to group members when group is set
-          if (_broadcastGroup.isNotEmpty &&
-              !_broadcastGroup.contains(other.id)) continue;
-          other.session.writeString(data);
-        }
-      }
-    };
-
-    // Wire terminal resize → SSH session resize
-    terminal.onResize = (width, height, pixelWidth, pixelHeight) {
-      if (tab.isConnected) {
-        session.resize(width, height);
-      }
-    };
+    _wireTerminalIO(tab, session);
 
     // Start the shell
     try {
       await session.startSession(termWidth: 80, termHeight: 24);
       tab.connectedAt = DateTime.now();
-
-      // Subscribe to SSH output → buffered terminal writes + logger
-      final outputBuffer = TerminalOutputBuffer(
-        terminal: terminal,
-        onFlush: () => _trackCommandOutput(tab),
-      );
-      tab.outputBuffer = outputBuffer;
-
-      tab.outputSubscription = session.output.listen(
-        (data) {
-          final decoded = utf8.decode(data, allowMalformed: true);
-          outputBuffer.add(decoded);
-          tab.sessionLogger?.write(decoded);
-        },
-        onDone: () {
-          outputBuffer.flush();
-          if (!tab.isReconnecting) {
-            _onDisconnected(tab);
-          }
-        },
-        onError: (_) {
-          outputBuffer.flush();
-          if (!tab.isReconnecting) {
-            _onDisconnected(tab);
-          }
-        },
-      );
-
-      // Monitor connection close
-      session.done.then((_) {
-        if (!tab.isReconnecting) {
-          _onDisconnected(tab);
-        }
-      });
+      _subscribeToOutput(tab, session);
 
       // Execute startup command after shell initializes
       if (startupCommand != null && startupCommand.trim().isNotEmpty) {
@@ -396,7 +348,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
           }
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       terminal.write('\r\n[Failed to start shell]\r\n');
       tab.isConnected = false;
     }
@@ -405,6 +358,85 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       tabs: [...state.tabs, tab],
       activeTabId: () => tab.id,
     );
+  }
+
+  /// Wires terminal output/resize callbacks to the session.
+  ///
+  /// Output includes broadcast to other tabs when broadcast mode is enabled.
+  /// Applies Ctrl/Alt modifiers from the mobile ExtraKeysBar when active.
+  void _wireTerminalIO(TerminalTab tab, ConnectionSession session) {
+    tab.terminal.onOutput = (data) {
+      var output = data;
+
+      // Apply mobile Ctrl/Alt modifiers to system keyboard input
+      if (tab.ctrlActive && output.length == 1) {
+        final code = output.codeUnitAt(0);
+        if (code >= 97 && code <= 122) {
+          // lowercase a-z → Ctrl+A-Z (1-26)
+          output = String.fromCharCode(code - 96);
+        } else if (code >= 65 && code <= 90) {
+          // uppercase A-Z → Ctrl+A-Z (1-26)
+          output = String.fromCharCode(code - 64);
+        }
+        tab.ctrlActive = false;
+      } else if (tab.altActive && output.length == 1) {
+        // Alt+key: ESC prefix followed by the key
+        output = '\x1B$output';
+        tab.altActive = false;
+      }
+
+      if (tab.isConnected) {
+        session.writeString(output);
+      }
+      if (_broadcastEnabled && tab.id == state.activeTabId) {
+        for (final other in state.tabs) {
+          if (other.id == tab.id || !other.isConnected) continue;
+          if (_broadcastGroup.isNotEmpty &&
+              !_broadcastGroup.contains(other.id)) {
+            continue;
+          }
+          other.session.writeString(output);
+        }
+      }
+    };
+
+    tab.terminal.onResize = (width, height, pixelWidth, pixelHeight) {
+      if (tab.isConnected) {
+        session.resize(width, height);
+      }
+    };
+  }
+
+  /// Subscribes to session output and monitors connection close.
+  ///
+  /// Creates a buffered output writer, wires the session logger,
+  /// and sets up disconnect detection via onDone/onError/done.
+  void _subscribeToOutput(TerminalTab tab, ConnectionSession session) {
+    final outputBuffer = TerminalOutputBuffer(
+      terminal: tab.terminal,
+      onFlush: () => _trackCommandOutput(tab),
+    );
+    tab.outputBuffer = outputBuffer;
+
+    tab.outputSubscription = session.output.listen(
+      (data) {
+        final decoded = utf8.decode(data, allowMalformed: true);
+        outputBuffer.add(decoded);
+        tab.sessionLogger?.write(decoded);
+      },
+      onDone: () {
+        outputBuffer.flush();
+        if (!tab.isReconnecting) _onDisconnected(tab);
+      },
+      onError: (_) {
+        outputBuffer.flush();
+        if (!tab.isReconnecting) _onDisconnected(tab);
+      },
+    );
+
+    session.done.then((_) {
+      if (!tab.isReconnecting) _onDisconnected(tab);
+    });
   }
 
   /// Called when a session disconnects.
@@ -464,72 +496,19 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
           break;
         }
 
-        // Create session based on protocol type.
-        final newSession = switch (host.protocol) {
-          ProtocolType.ssh => await ref.read(sshServiceProvider).connect(host: host),
-          ProtocolType.telnet => await ref.read(telnetServiceProvider).connect(host: host),
-          ProtocolType.serial => await ref.read(serialServiceProvider).connect(host: host),
-        };
+        final newSession = await connectByProtocol(ref.read, host);
 
         await newSession.startSession(
           termWidth: tab.terminal.viewWidth,
           termHeight: tab.terminal.viewHeight,
         );
 
-        // Cancel old subscription and dispose old buffer
+        // Clean up old I/O and re-wire with new session
         tab.outputSubscription?.cancel();
         tab.outputBuffer?.dispose();
-
-        // Update session reference
         tab.session = newSession;
-
-        // Re-wire output with fresh buffer (+ logger + command notify)
-        final reconnectBuffer = TerminalOutputBuffer(
-          terminal: tab.terminal,
-          onFlush: () => _trackCommandOutput(tab),
-        );
-        tab.outputBuffer = reconnectBuffer;
-
-        tab.outputSubscription = newSession.output.listen(
-          (data) {
-            final decoded = utf8.decode(data, allowMalformed: true);
-            reconnectBuffer.add(decoded);
-            tab.sessionLogger?.write(decoded);
-          },
-          onDone: () {
-            reconnectBuffer.flush();
-            if (!tab.isReconnecting) _onDisconnected(tab);
-          },
-          onError: (_) {
-            reconnectBuffer.flush();
-            if (!tab.isReconnecting) _onDisconnected(tab);
-          },
-        );
-
-        // Re-wire terminal callbacks (with broadcast support)
-        tab.terminal.onOutput = (data) {
-          if (tab.isConnected) {
-            newSession.writeString(data);
-          }
-          if (_broadcastEnabled && tab.id == state.activeTabId) {
-            for (final other in state.tabs) {
-              if (other.id == tab.id || !other.isConnected) continue;
-              if (_broadcastGroup.isNotEmpty &&
-                  !_broadcastGroup.contains(other.id)) continue;
-              other.session.writeString(data);
-            }
-          }
-        };
-
-        tab.terminal.onResize = (w, h, pw, ph) {
-          if (tab.isConnected) {
-            newSession.resize(w, h);
-          }
-        };
-
-        newSession.done.then((_) {
-          if (!tab.isReconnecting) _onDisconnected(tab);
-        });
+        _wireTerminalIO(tab, newSession);
+        _subscribeToOutput(tab, newSession);
 
         // Update connection tracking
         ref.read(activeConnectionsProvider.notifier).addConnection(
@@ -547,8 +526,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
         tab.terminal.write('[Reconnected]\r\n');
         _notifyStateChange();
         return;
-      } catch (e) {
-        debugPrint('Terminal reconnect failed: $e');
+      } catch (e, stackTrace) {
+        ErrorHandler.handle(e, stackTrace);
         tab.terminal.write('[Reconnect failed]\r\n');
       }
     }
@@ -600,6 +579,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     // Clean up split panes
     for (final pane in tab.panes) {
       pane.outputSubscription?.cancel();
+      pane.outputBuffer?.dispose();
       pane.shell?.close();
       if (pane.controller != tab.controller) {
         pane.controller.dispose();
@@ -607,7 +587,9 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     }
     tab.panes.clear();
 
-    // Cleanup primary
+    // Cleanup primary — set isConnected false BEFORE closing session
+    // to prevent _onDisconnected from re-adding the connection to the map.
+    tab.isConnected = false;
     tab.reconnectCancelled = true;
     tab.commandDoneTimer?.cancel();
     tab.outputSubscription?.cancel();
@@ -615,6 +597,11 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     await tab.sessionLogger?.close();
     tab.controller.dispose();
     await tab.session.close();
+
+    // Clear connection status so host tile reverts to disconnected
+    ref
+        .read(activeConnectionsProvider.notifier)
+        .removeConnection(tab.session.sessionId);
 
     final newTabs = List<TerminalTab>.from(state.tabs)..removeAt(tabIndex);
 
@@ -641,12 +628,14 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       // Clean up split panes
       for (final pane in tab.panes) {
         pane.outputSubscription?.cancel();
+        pane.outputBuffer?.dispose();
         pane.shell?.close();
         if (pane.controller != tab.controller) {
           pane.controller.dispose();
         }
       }
       tab.panes.clear();
+      tab.isConnected = false;
       tab.reconnectCancelled = true;
       tab.commandDoneTimer?.cancel();
       tab.outputSubscription?.cancel();
@@ -654,6 +643,9 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       await tab.sessionLogger?.close();
       tab.controller.dispose();
       await tab.session.close();
+      ref
+          .read(activeConnectionsProvider.notifier)
+          .removeConnection(tab.session.sessionId);
     }
     state = const TerminalTabsState();
   }
@@ -699,11 +691,13 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
         shell.resizeTerminal(w, h);
       };
 
+      final splitBuffer = TerminalOutputBuffer(terminal: newTerminal);
       final subscription = outputStream.listen(
         (data) {
-          newTerminal.write(utf8.decode(data, allowMalformed: true));
+          splitBuffer.add(utf8.decode(data, allowMalformed: true));
         },
         onDone: () {
+          splitBuffer.dispose();
           final pane =
               tab.panes.where((p) => p.id == newPaneId).firstOrNull;
           if (pane != null) {
@@ -732,7 +726,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
         outputSubscription: subscription,
         isConnected: true,
         connectedAt: DateTime.now(),
-      );
+      )..outputBuffer = splitBuffer;
 
       tab.panes
         ..clear()
@@ -742,7 +736,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       tab.splitRatio = 0.5;
 
       _notifyStateChange();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       tab.terminal.write('\r\n[Failed to split pane]\r\n');
       _notifyStateChange();
     }
@@ -760,6 +755,7 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
     for (final pane in tab.panes) {
       if (pane.shell != null) {
         pane.outputSubscription?.cancel();
+        pane.outputBuffer?.dispose();
         pane.shell?.close();
         pane.controller.dispose();
       }
@@ -787,7 +783,8 @@ class TerminalTabsNotifier extends Notifier<TerminalTabsState> {
       );
       tab.terminal.write('\r\n[Session logging started: ${tab.sessionLogger!.filePath}]\r\n');
       _notifyStateChange();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       tab.terminal.write('\r\n[Failed to start logging: $e]\r\n');
     }
   }

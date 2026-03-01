@@ -18,6 +18,7 @@ import '../data/database/app_database.dart';
 import '../services/backend/sync_backend.dart';
 import '../services/crypto/secure_storage.dart';
 import '../services/crypto/vault_crypto_service.dart';
+import 'auth_provider.dart';
 import 'backend_provider.dart';
 import 'settings_provider.dart';
 
@@ -235,10 +236,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       // Authenticate to confirm identity before enabling
       final authenticated = await localAuth.authenticate(
         localizedReason: 'Enable biometric unlock',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
+        persistAcrossBackgrounding: true,
       );
       if (!authenticated) return 'Biometric authentication failed.';
 
@@ -247,8 +245,8 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       await settings.set(VaultSettingsKeys.biometricVaultUnlock, 'true');
 
       return null; // success
-    } on PlatformException catch (e) {
-      return 'Failed to enable biometric unlock: ${e.message}';
+    } on LocalAuthException catch (e) {
+      return 'Failed to enable biometric unlock: ${e.description}';
     }
   }
 
@@ -281,10 +279,7 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
 
       final authenticated = await localAuth.authenticate(
         localizedReason: 'Unlock CloudShell vault',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
+        persistAcrossBackgrounding: true,
       );
       if (!authenticated) return 'Biometric authentication failed.';
 
@@ -359,7 +354,27 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
   }
 
   /// Locks the vault — clears keys from memory.
+  ///
+  /// When authenticated, the vault is auto-managed and should only
+  /// be locked on logout. Use [forceLock] for logout scenarios.
   void lock() {
+    // When authenticated, refuse auto-lock — vault stays unlocked
+    // for the session. Only forceLock() (called by logout) can lock it.
+    final isAuth = ref.read(authProvider).value == AuthState.authenticated;
+    if (isAuth) {
+      _log.i('Vault lock skipped — user is authenticated');
+      return;
+    }
+    _forceLock();
+  }
+
+  /// Force-locks the vault regardless of auth state.
+  /// Used by logout flow to clear keys.
+  void forceLock() {
+    _forceLock();
+  }
+
+  void _forceLock() {
     _keys?.destroy();
     _keys = null;
     _autoLockTimer?.cancel();
@@ -370,7 +385,19 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
   ///
   /// WARNING: This destroys all encrypted data that cannot
   /// be recovered without the master password.
-  Future<void> resetVault() async {
+  ///
+  /// When authenticated, also purges server-side encrypted items
+  /// and vault config so stale data doesn't cause HMAC failures.
+  /// Resets the vault — deletes all vault data.
+  ///
+  /// WARNING: This destroys all encrypted data that cannot
+  /// be recovered without the master password.
+  ///
+  /// Set [purgeServer] to true only when the user explicitly
+  /// requests a vault reset (e.g., "forgot password" flow).
+  /// Auto-login flows should use purgeServer: false to avoid
+  /// wiping data encrypted by other devices.
+  Future<void> resetVault({bool purgeServer = false}) async {
     _keys?.destroy();
     _keys = null;
     _autoLockTimer?.cancel();
@@ -381,6 +408,28 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       await storage.delete(StorageKeys.biometricMasterKey);
     } catch (_) {
       // Best-effort cleanup
+    }
+
+    // Only purge server data when explicitly requested (user-initiated reset)
+    if (purgeServer) {
+      try {
+        final syncBackend = ref.read(syncBackendProvider);
+        if (syncBackend != null) {
+          await syncBackend.purgeAllItems();
+          _log.i('Purged server-side sync items');
+        }
+      } catch (e) {
+        _log.w('Failed to purge server sync items: $e');
+      }
+    }
+
+    // Reset local sync metadata so next sync starts fresh
+    try {
+      final db = ref.read(databaseProvider);
+      await db.syncMetadataDao.resetAll();
+      _log.i('Reset local sync metadata');
+    } catch (e) {
+      _log.w('Failed to reset sync metadata: $e');
     }
 
     final settings = ref.read(settingsNotifierProvider.notifier);
@@ -459,6 +508,110 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
       return null; // success
     } catch (e) {
       return 'Password change failed: $e';
+    }
+  }
+
+  /// Re-uploads this device's vault config to the server.
+  ///
+  /// Called after a successful sync push to ensure the server's
+  /// vault_config salt matches the keys that encrypted the pushed data.
+  /// Without this, another device might fetch a stale salt from a
+  /// previous failed setup attempt and derive wrong keys.
+  Future<void> reuploadVaultConfig() async {
+    try {
+      final saltB64 = await _getSetting(VaultSettingsKeys.vaultSalt);
+      if (saltB64 == null) {
+        _log.w('Cannot re-upload vault config — no local salt');
+        return;
+      }
+      final salt = base64Decode(saltB64);
+      await _uploadVaultConfig(Uint8List.fromList(salt));
+      _log.i('Re-uploaded vault config to server');
+    } catch (e) {
+      _log.w('Failed to re-upload vault config: $e');
+    }
+  }
+
+  /// Re-derives vault keys from the server's vault config.
+  ///
+  /// Called when sync detects a vault key mismatch on a fresh device
+  /// (no local data). Fetches the authoritative salt from the server,
+  /// resets the local vault, and re-derives keys so they match the
+  /// encrypting device.
+  ///
+  /// Returns the new [VaultKeys] on success, or null on failure.
+  Future<VaultKeys?> rederiveFromServer(String password) async {
+    try {
+      _log.i('Re-deriving vault keys from server config');
+
+      // 1. Fetch the authoritative vault config from server
+      final syncBackend = ref.read(syncBackendProvider);
+      final authBackend = ref.read(authBackendProvider);
+      if (syncBackend == null || authBackend == null || !authBackend.isSignedIn) {
+        _log.e('Cannot re-derive: not signed in');
+        return null;
+      }
+
+      final config = await syncBackend.getVaultConfig();
+      if (config == null) {
+        _log.e('Cannot re-derive: no vault config on server');
+        return null;
+      }
+
+      // 2. Reset local vault state (without purging server data)
+      _keys?.destroy();
+      _keys = null;
+      _autoLockTimer?.cancel();
+
+      try {
+        final storage = ref.read(secureStorageProvider);
+        await storage.delete(StorageKeys.biometricMasterKey);
+      } catch (_) {}
+
+      // 3. Store the server's vault config locally
+      final settings = ref.read(settingsNotifierProvider.notifier);
+      await settings.set(VaultSettingsKeys.vaultSalt, config.kdfSalt);
+
+      if (config.verificationToken != null) {
+        final parts = config.verificationToken!.split(':');
+        if (parts.length == 2) {
+          await settings.set(VaultSettingsKeys.vaultVerifyCiphertext, parts[0]);
+          await settings.set(VaultSettingsKeys.vaultVerifyNonce, parts[1]);
+        }
+      }
+
+      await settings.set(VaultSettingsKeys.vaultInitialized, 'true');
+
+      // 4. Derive keys using server salt + password
+      final crypto = ref.read(vaultCryptoServiceProvider);
+      final salt = base64Decode(config.kdfSalt);
+      final keys = await crypto.deriveKeys(password, Uint8List.fromList(salt));
+
+      // 5. Verify the derived keys match
+      final verifCt = await _getSetting(VaultSettingsKeys.vaultVerifyCiphertext);
+      final verifNonce = await _getSetting(VaultSettingsKeys.vaultVerifyNonce);
+
+      if (verifCt != null && verifNonce != null) {
+        final isValid = await crypto.verifyPassword(keys.encKey, verifCt, verifNonce);
+        if (!isValid) {
+          keys.destroy();
+          _log.e('Re-derived keys do not match server verification token');
+          state = const AsyncValue.data(VaultState.locked);
+          return null;
+        }
+      }
+
+      // 6. Store keys in memory and cache
+      _keys = keys;
+      await _cacheKeys();
+      _startAutoLockTimer();
+
+      state = const AsyncValue.data(VaultState.unlocked);
+      _log.i('Vault re-derived from server config — keys now match');
+      return keys;
+    } catch (e, stack) {
+      _log.e('Failed to re-derive vault from server: $e', error: e, stackTrace: stack);
+      return null;
     }
   }
 
@@ -590,7 +743,10 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
     try {
       // Only upload if user is signed in to the backend
       final authBackend = ref.read(authBackendProvider);
-      if (authBackend == null || !authBackend.isSignedIn) return;
+      if (authBackend == null || !authBackend.isSignedIn) {
+        _log.w('Vault config upload skipped — not signed in');
+        return;
+      }
 
       final syncBackend = ref.read(syncBackendProvider);
       if (syncBackend == null) return;
@@ -628,6 +784,12 @@ class VaultNotifier extends AsyncNotifier<VaultState> {
 
   void _startAutoLockTimer() {
     _autoLockTimer?.cancel();
+
+    // When authenticated, vault stays unlocked for the session.
+    // Only biometric app lock provides idle protection.
+    final isAuth = ref.read(authProvider).value == AuthState.authenticated;
+    if (isAuth) return;
+
     // Read timeout asynchronously
     _getSetting(VaultSettingsKeys.autoLockTimeout).then((value) {
       final timeoutSeconds = int.tryParse(value ?? '') ?? 300;
@@ -702,7 +864,7 @@ final vaultProvider = AsyncNotifierProvider<VaultNotifier, VaultState>(
 /// Convenience provider that returns true when vault is unlocked.
 final isVaultUnlockedProvider = Provider<bool>((ref) {
   final vaultState = ref.watch(vaultProvider);
-  return vaultState.valueOrNull == VaultState.unlocked;
+  return vaultState.value == VaultState.unlocked;
 });
 
 /// Provides the auto-lock timeout setting (in seconds).

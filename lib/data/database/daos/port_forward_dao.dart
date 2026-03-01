@@ -106,10 +106,10 @@ class PortForwardDao extends DatabaseAccessor<AppDatabase>
     return into(portForwards).insertOnConflictUpdate(companion);
   }
 
-  /// Bumps the syncVersion for a port forward after a local change.
+  /// Resets syncVersion to 0 so the sync engine re-pushes the item.
   Future<void> _bumpSyncVersion(String id) async {
     await customStatement(
-      'UPDATE port_forwards SET sync_version = sync_version + 1 WHERE id = ?',
+      'UPDATE port_forwards SET sync_version = 0 WHERE id = ?',
       [id],
     );
   }

@@ -102,6 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         elevation: 0,
         leading: Navigator.of(context).canPop()
             ? IconButton(
+                tooltip: 'Back',
                 icon: const Icon(LucideIcons.arrowLeft, size: 20),
                 onPressed: () => Navigator.of(context).pop(),
               )
@@ -165,6 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     labelText: l10n.loginPasswordLabel,
                     prefixIcon: const Icon(LucideIcons.lock, size: 18),
                     suffixIcon: IconButton(
+                      tooltip: 'Toggle password visibility',
                       icon: Icon(
                         _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
                         size: 18,

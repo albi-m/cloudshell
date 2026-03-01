@@ -193,9 +193,11 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
 
   Future<void> _shareLog(File file) async {
     final l10n = AppLocalizations.of(context);
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      subject: l10n.sessionLogsShareSubject,
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        subject: l10n.sessionLogsShareSubject,
+      ),
     );
   }
 
@@ -249,9 +251,11 @@ class _LogViewerScreen extends StatelessWidget {
             icon: const Icon(LucideIcons.share2, size: 20),
             tooltip: l10n.sessionLogsShareTooltip,
             onPressed: () {
-              Share.shareXFiles(
-                [XFile(file.path)],
-                subject: l10n.sessionLogsShareSubject,
+              SharePlus.instance.share(
+                ShareParams(
+                  files: [XFile(file.path)],
+                  subject: l10n.sessionLogsShareSubject,
+                ),
               );
             },
           ),
@@ -270,9 +274,7 @@ class _LogViewerScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: SelectableText(
               snapshot.data ?? '',
-              style: const TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: 12,
+              style: AppTypography.terminal(fontSize: 12).copyWith(
                 height: 1.6,
               ),
             ),

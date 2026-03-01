@@ -5,9 +5,11 @@
 /// to expanded on app restart.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
-/// Whether the desktop sidebar is collapsed (icon-only mode).
+/// Whether the desktop sidebar is collapsed to icon-only mode (60px vs 260px).
 ///
-/// Defaults to `false` (expanded). Resets on app restart.
+/// Manages a single boolean: `false` = expanded, `true` = collapsed.
+/// Ephemeral state that resets to expanded (`false`) on app restart.
+/// Rebuilt by widgets that call `ref.watch` and toggled via `ref.read(.notifier).state`.
 final sidebarCollapsedProvider = StateProvider<bool>((ref) => false);

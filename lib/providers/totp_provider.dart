@@ -1,7 +1,7 @@
-/// Re-exports TOTP providers from the service module.
+/// Re-exports TOTP (Time-based One-Time Password) providers from the service module.
 ///
-/// Keeps the provider import path consistent with the rest
-/// of the app (import providers from providers/).
+/// Barrel file that keeps the provider import path consistent with the rest
+/// of the app so consumers always import from `providers/`.
 library;
 
 export '../services/auth/totp_service.dart'

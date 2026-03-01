@@ -48,6 +48,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get search => '搜索';
 
   @override
+  String get clearSearch => '清除搜索';
+
+  @override
+  String get togglePasswordVisibility => '切换密码可见性';
+
+  @override
+  String get togglePassphraseVisibility => '切换密码短语可见性';
+
+  @override
   String get ok => '确定';
 
   @override
@@ -746,6 +755,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get extraKeyAlt => 'ALT';
+
+  @override
+  String get extraKeyBksp => 'BKSP';
 
   @override
   String get broadcastPanelTitle => '广播输入';
@@ -2291,6 +2303,38 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forgotPasswordTryAgain => '没有收到？请重试';
+
+  @override
+  String get resetPasswordTitle => 'Set New Password';
+
+  @override
+  String get resetPasswordInstructions =>
+      'Enter your new password below. This will also reset your encryption vault.';
+
+  @override
+  String get resetPasswordNewLabel => 'New Password';
+
+  @override
+  String get resetPasswordConfirmLabel => 'Confirm Password';
+
+  @override
+  String get resetPasswordSubmit => 'Set New Password';
+
+  @override
+  String get resetPasswordUpdating => 'Updating...';
+
+  @override
+  String get resetPasswordVaultWarning =>
+      'Setting a new password will reset your encryption vault. Data encrypted with your old password cannot be recovered.';
+
+  @override
+  String get resetPasswordSuccess => 'Password updated successfully';
+
+  @override
+  String get resetPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get resetPasswordTooShort => 'Password must be at least 10 characters';
 
   @override
   String get totpSetupTitle => '设置双因素认证';

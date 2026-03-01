@@ -18,7 +18,10 @@ import '../../../l10n/app_localizations.dart';
 import '../../../providers/snippet_provider.dart';
 
 /// Shows the snippet picker dialog and returns the resolved command string,
-/// or null if the user cancelled.
+/// or `null` if the user cancelled.
+///
+/// If the selected snippet contains `{{variable}}` placeholders, a secondary
+/// dialog prompts the user to fill in values before returning the final command.
 Future<String?> showSnippetPicker(BuildContext context) {
   return showDialog<String>(
     context: context,
@@ -69,6 +72,7 @@ class _SnippetPickerDialogState extends ConsumerState<_SnippetPickerDialog> {
                   suffixIcon: _query.isNotEmpty
                       ? IconButton(
                           icon: const Icon(LucideIcons.x, size: 16),
+                          tooltip: l10n.close,
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _query = '');
@@ -255,7 +259,7 @@ class _PickerItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            Icon(LucideIcons.code2, size: 16, color: AppColors.accentPrimary),
+            const Icon(LucideIcons.code2, size: 16, color: AppColors.accentPrimary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

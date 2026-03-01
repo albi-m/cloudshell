@@ -81,6 +81,32 @@ abstract final class AppConstants {
 
   // --- UI Constants ---
 
+  // --- Spacing Scale (8px base grid) ---
+
+  /// 4 logical pixels — fine adjustments, icon gaps.
+  static const double spacingXxs = 4.0;
+
+  /// 8 logical pixels — compact padding, small gaps.
+  static const double spacingXs = 8.0;
+
+  /// 12 logical pixels — standard element spacing.
+  static const double spacingSm = 12.0;
+
+  /// 16 logical pixels — standard padding, section gaps.
+  static const double spacingMd = 16.0;
+
+  /// 24 logical pixels — large section spacing.
+  static const double spacingLg = 24.0;
+
+  /// 32 logical pixels — top-level content padding.
+  static const double spacingXl = 32.0;
+
+  /// 48 logical pixels — hero spacing, large separators.
+  static const double spacingXxl = 48.0;
+
+  /// Indent per nesting level for hierarchical lists.
+  static const double nestingIndent = 16.0;
+
   // --- Border Radii ---
 
   /// Small radius for buttons, inputs, and compact elements.

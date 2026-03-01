@@ -277,10 +277,11 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
       }
 
       return await db.hostDao.getHostById(hostId);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.hostFormTestConnectionFailed('$e'))),
+          SnackBar(content: Text(l10n.hostFormTestConnectionFailed(ErrorHandler.userMessage(e)))),
         );
       }
       return null;
@@ -345,8 +346,8 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
       if (mounted) {
         Navigator.of(context).pop(true);
       }
-    } catch (e) {
-      ErrorHandler.handle(e);
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -688,6 +689,7 @@ class _HostFormScreenState extends ConsumerState<HostFormScreen> {
                             : LucideIcons.eye,
                         size: 18,
                       ),
+                      tooltip: l10n.togglePasswordVisibility,
                       onPressed: () =>
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
@@ -1002,7 +1004,7 @@ class _TelnetWarningBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(LucideIcons.alertTriangle,
+          const Icon(LucideIcons.alertTriangle,
               size: 16, color: AppColors.accentOrange),
           const SizedBox(width: 8),
           Expanded(

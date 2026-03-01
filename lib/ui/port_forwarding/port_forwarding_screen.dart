@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/database/app_database.dart';
@@ -340,10 +341,11 @@ class _PortForwardTile extends ConsumerWidget {
         case PortForwardTypeEnum.dynamic:
           await service.startDynamicForward(sshSession.client, rule);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to start forward: $e')),
+          SnackBar(content: Text(ErrorHandler.userMessage(e))),
         );
       }
     }

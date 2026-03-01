@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/validators.dart';
 import '../../l10n/app_localizations.dart';
@@ -18,7 +19,8 @@ import '../../providers/group_provider.dart';
 
 /// Shows a dialog to create or edit a host group.
 ///
-/// Returns the group ID if created/edited successfully, null if cancelled.
+/// Pass an existing [group] to edit it; omit it to create a new group.
+/// Returns the group ID if saved successfully, or null if the user cancelled.
 Future<String?> showGroupFormDialog(
   BuildContext context, {
   HostGroup? group,
@@ -107,11 +109,11 @@ class _GroupFormDialogState extends ConsumerState<_GroupFormDialog> {
         ));
         if (mounted) Navigator.of(context).pop(id);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
-        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.error}: $e')),
+          SnackBar(content: Text(ErrorHandler.userMessage(e))),
         );
         setState(() => _isSaving = false);
       }

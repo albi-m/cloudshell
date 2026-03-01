@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/database/app_database.dart';
@@ -129,11 +130,12 @@ class _SnippetFormScreenState extends ConsumerState<SnippetFormScreen> {
       }
 
       if (mounted) Navigator.of(context).pop(true);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.snippetFormSaveError(e.toString()))),
+          SnackBar(content: Text(l10n.snippetFormSaveError(ErrorHandler.userMessage(e)))),
         );
       }
     } finally {
@@ -145,7 +147,7 @@ class _SnippetFormScreenState extends ConsumerState<SnippetFormScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final categoriesAsync = ref.watch(snippetCategoriesProvider);
-    final existingCategories = categoriesAsync.valueOrNull ?? <String>[];
+    final existingCategories = categoriesAsync.value ?? <String>[];
 
     return Scaffold(
       backgroundColor: AppColors.bgDeepest,
@@ -205,7 +207,7 @@ class _SnippetFormScreenState extends ConsumerState<SnippetFormScreen> {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      Icon(LucideIcons.variable, size: 14,
+                      const Icon(LucideIcons.variable, size: 14,
                           color: AppColors.accentOrange),
                       const SizedBox(width: 2),
                       Text(

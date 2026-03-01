@@ -48,6 +48,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get search => '검색';
 
   @override
+  String get clearSearch => '검색 지우기';
+
+  @override
+  String get togglePasswordVisibility => '비밀번호 표시 전환';
+
+  @override
+  String get togglePassphraseVisibility => '암호 구문 표시 전환';
+
+  @override
   String get ok => '확인';
 
   @override
@@ -749,6 +758,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get extraKeyAlt => 'ALT';
+
+  @override
+  String get extraKeyBksp => 'BKSP';
 
   @override
   String get broadcastPanelTitle => '브로드캐스트 입력';
@@ -2302,6 +2314,38 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get forgotPasswordTryAgain => '받지 못하셨나요? 다시 시도';
+
+  @override
+  String get resetPasswordTitle => 'Set New Password';
+
+  @override
+  String get resetPasswordInstructions =>
+      'Enter your new password below. This will also reset your encryption vault.';
+
+  @override
+  String get resetPasswordNewLabel => 'New Password';
+
+  @override
+  String get resetPasswordConfirmLabel => 'Confirm Password';
+
+  @override
+  String get resetPasswordSubmit => 'Set New Password';
+
+  @override
+  String get resetPasswordUpdating => 'Updating...';
+
+  @override
+  String get resetPasswordVaultWarning =>
+      'Setting a new password will reset your encryption vault. Data encrypted with your old password cannot be recovered.';
+
+  @override
+  String get resetPasswordSuccess => 'Password updated successfully';
+
+  @override
+  String get resetPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get resetPasswordTooShort => 'Password must be at least 10 characters';
 
   @override
   String get totpSetupTitle => '2단계 인증 설정';

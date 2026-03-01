@@ -16,6 +16,14 @@ class PpkException implements Exception {
   String toString() => message;
 }
 
+// Why this parser exists: PuTTY is the dominant SSH client on Windows, so many
+// users have keys in PPK format. dartssh2 only accepts OpenSSH PEM, so we must
+// convert between the two incompatible wire formats at import time.
+//
+// PPK stores RSA components in SSH wire format (length-prefixed big-endian
+// integers) while OpenSSH PEM uses PKCS#1 DER (ASN.1 TLV encoding). Ed25519
+// uses yet another format (openssh-key-v1 binary). This parser bridges all three.
+
 /// Parser and converter for PuTTY PPK key files.
 ///
 /// PPK v2 format:
@@ -143,11 +151,10 @@ class PpkParser {
   // RSA PPK → PEM conversion
   // ---------------------------------------------------------------------------
 
-  /// Converts RSA PPK public/private data to PKCS#1 PEM format.
-  ///
-  /// PPK public blob: [type_len][type][e_len][e][n_len][n]
-  /// PPK private blob: [d_len][d][p_len][p][q_len][q][iqmp_len][iqmp]
-  /// PKCS#1 RSAPrivateKey: SEQUENCE { version, n, e, d, p, q, dp, dq, qinv }
+  // Why PKCS#1 DER→PEM for RSA: dartssh2 calls SSHKeyPair.fromPem() which
+  // delegates to pointycastle's PEM parser. It recognizes "RSA PRIVATE KEY"
+  // (PKCS#1) but not raw SSH wire integers. We must re-encode the same
+  // mathematical values (n, e, d, p, q) into ASN.1 DER TLV structure.
   static String _rsaToPem(Uint8List publicBytes, Uint8List privateBytes) {
     // Parse public key blob: skip key type string, then read e, n
     var offset = 0;
@@ -167,7 +174,9 @@ class PpkParser {
     offset = off6;
     final (iqmpBytes, _) = _readSshMpint(privateBytes, offset); // iqmp
 
-    // Compute dp = d mod (p-1) and dq = d mod (q-1)
+    // Why compute dp and dq: PKCS#1 requires CRT (Chinese Remainder Theorem)
+    // exponents for efficient RSA decryption. PPK doesn't store them, so we
+    // derive dp = d mod (p-1) and dq = d mod (q-1) from the private exponent.
     final d = _bytesToBigInt(dBytes);
     final p = _bytesToBigInt(pBytes);
     final q = _bytesToBigInt(qBytes);
@@ -201,12 +210,10 @@ class PpkParser {
   // Ed25519 PPK → OpenSSH PEM conversion
   // ---------------------------------------------------------------------------
 
-  /// Converts Ed25519 PPK public/private data to OpenSSH PEM format.
-  ///
-  /// PPK public blob: [type_len][type][pubkey_len][32-byte pubkey]
-  /// PPK private blob: [64-byte private key (seed + public)]
-  ///
-  /// OpenSSH format wraps this in a specific binary structure.
+  // Why openssh-key-v1 for Ed25519: unlike RSA which has a standard PKCS#1
+  // encoding, Ed25519 has no traditional PEM format. OpenSSH invented its own
+  // binary container ("openssh-key-v1\0" magic header) which dartssh2 expects.
+  // There is no PKCS#1 equivalent for Ed25519, so this is the only path.
   static String _ed25519ToPem(Uint8List publicBytes, Uint8List privateBytes) {
     // Parse public key: skip type string, read 32-byte pubkey
     var offset = 0;
@@ -214,13 +221,15 @@ class PpkParser {
     offset = off1;
     final (pubKey, _) = _readSshBytes(publicBytes, offset); // 32-byte pubkey
 
-    // PPK stores 64-byte ed25519 private key (32-byte seed + 32-byte public)
-    // But dartssh2 expects OpenSSH format which also stores the 64-byte key
+    // Why handle both 32-byte and 64-byte private blobs: PuTTY internally
+    // stores the full 64-byte NaCl keypair (seed || public), but some PPK
+    // exporters only emit the 32-byte seed. If we only get the seed, we
+    // reconstruct the 64-byte form by appending the public key, which is
+    // what OpenSSH format and dartssh2 expect.
     Uint8List privKey;
     if (privateBytes.length == 64) {
       privKey = privateBytes;
     } else {
-      // Some PPK versions store only the 32-byte seed
       privKey = Uint8List(64)
         ..setRange(0, 32, privateBytes)
         ..setRange(32, 64, pubKey);
@@ -269,7 +278,10 @@ class PpkParser {
 
     // Private section
     final privSection = BytesBuilder();
-    // checkint (random, but same twice)
+    // Why duplicate checkint: OpenSSH uses two identical random uint32 values
+    // as a fast integrity check on decryption. If they don't match after
+    // decrypting, the passphrase was wrong. For unencrypted keys, any constant
+    // works — the spec just requires both values to be equal.
     const checkInt = 0x12345678;
     _writeSshU32(privSection, checkInt);
     _writeSshU32(privSection, checkInt);
@@ -283,7 +295,10 @@ class PpkParser {
     // Comment (empty)
     _writeSshString(privSection, '');
 
-    // Padding (1, 2, 3, 4, ... up to block size 8)
+    // Why sequential padding bytes (1,2,3,...): OpenSSH spec requires the
+    // private section to be padded to cipher block size (8 for "none"). The
+    // deterministic 1,2,3... pattern is mandated by the format and also serves
+    // as a second integrity check — parsers can verify padding bytes are correct.
     final privBytes = privSection.takeBytes();
     final padLen = (8 - (privBytes.length % 8)) % 8;
     final paddedPriv = Uint8List(privBytes.length + padLen);
@@ -362,7 +377,9 @@ class PpkParser {
   static Uint8List _encodeDerInteger(BigInt value) {
     final bytes = _bigIntToBytes(value);
 
-    // Ensure leading zero if high bit is set (positive number convention)
+    // Why leading zero byte: DER INTEGER is signed two's complement. Without a
+    // 0x00 prefix, a byte like 0x80 would be interpreted as negative, corrupting
+    // the RSA modulus/exponent values.
     final needsLeadingZero = bytes.isNotEmpty && (bytes[0] & 0x80) != 0;
     Uint8List content;
     if (needsLeadingZero) {

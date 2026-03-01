@@ -98,6 +98,7 @@ class _KeysScreenState extends ConsumerState<KeysScreen> {
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(LucideIcons.x, size: 16),
+                            tooltip: l10n.clearSearch,
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
@@ -238,14 +239,14 @@ class _KeyListItemState extends State<_KeyListItem> {
                 : AppColors.borderSubtle,
           ),
           boxShadow: _isHovered
-              ? [
+              ? const [
                   BoxShadow(
                     color: AppColors.accentGlow,
                     blurRadius: 12,
                     spreadRadius: -2,
                   ),
                 ]
-              : [],
+              : const [],
         ),
         child: Material(
           color: Colors.transparent,
@@ -337,8 +338,8 @@ class _KeyListItemState extends State<_KeyListItem> {
                         value: 'details',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.eye, size: 16),
-                            SizedBox(width: 8),
+                            const Icon(LucideIcons.eye, size: 16),
+                            const SizedBox(width: 8),
                             Text(l10n.keyDetailTitle),
                           ],
                         ),
@@ -347,9 +348,9 @@ class _KeyListItemState extends State<_KeyListItem> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(LucideIcons.trash2,
+                            const Icon(LucideIcons.trash2,
                                 size: 16, color: AppColors.accentRed),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(l10n.keysMenuDelete),
                           ],
                         ),

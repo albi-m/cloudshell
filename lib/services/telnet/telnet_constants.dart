@@ -1,7 +1,8 @@
-// RFC 854 Telnet protocol constants.
-//
-// Defines IAC commands, negotiation verbs, and common option codes
-// used by TelnetParser and TelnetSession.
+/// RFC 854 Telnet protocol constants.
+///
+/// Defines IAC commands, negotiation verbs, and common option codes
+/// used by [TelnetParser] and [TelnetSession].
+library;
 
 /// Interpret As Command — signals the start of a telnet command sequence.
 const int iac = 255;

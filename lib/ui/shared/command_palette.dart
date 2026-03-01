@@ -23,11 +23,14 @@ import '../../providers/snippet_provider.dart';
 import '../../providers/terminal_tab_provider.dart';
 import '../settings/workspace_manager_screen.dart';
 
-/// Shows the command palette overlay.
+/// Shows the command palette overlay as a modal dialog.
+///
+/// Provides fuzzy search across hosts, snippets, and app actions with
+/// keyboard navigation (arrow keys, Enter to select, Escape to dismiss).
 void showCommandPalette(BuildContext context) {
   showDialog(
     context: context,
-    barrierColor: Colors.black38,
+    barrierColor: AppColors.barrierLight,
     builder: (_) => const _CommandPaletteDialog(),
   );
 }
@@ -89,7 +92,7 @@ class _CommandPaletteDialogState
     final snippetsAsync = ref.read(allSnippetsProvider);
 
     // RECENT — recently connected hosts
-    final hosts = hostsAsync.valueOrNull ?? <Host>[];
+    final hosts = hostsAsync.value ?? <Host>[];
     final recentHosts = hosts
         .where((h) => h.lastConnectedAt != null)
         .toList()
@@ -126,7 +129,7 @@ class _CommandPaletteDialogState
     }
 
     // SNIPPETS
-    final snippets = snippetsAsync.valueOrNull ?? <Snippet>[];
+    final snippets = snippetsAsync.value ?? <Snippet>[];
     for (final snippet in snippets) {
       entries.add(_PaletteEntry(
         title: snippet.name,

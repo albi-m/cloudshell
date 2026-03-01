@@ -23,7 +23,9 @@ import '../crypto/secure_storage.dart';
 import 'ssh_key_service.dart';
 import 'ssh_session.dart';
 
-/// Maximum concurrent SSH connections to prevent resource exhaustion.
+// Why connection limit: each SSH session holds an open socket, a shell process
+// on the remote host, and xterm.Terminal state in memory. Without a cap, a user
+// opening many tabs could exhaust file descriptors or remote sshd MaxSessions.
 const _maxConcurrentConnections = 10;
 
 /// Result of host key verification check.
@@ -82,6 +84,34 @@ class SshService {
   /// Tracks active connection count for resource limiting.
   int _activeConnections = 0;
 
+  /// Throws [SshException] if the connection limit is reached.
+  void _guardConnectionLimit() {
+    if (_activeConnections >= _maxConcurrentConnections) {
+      throw const SshException(
+        'Too many active connections. Close an existing session first.',
+      );
+    }
+  }
+
+  // Why exception translation: dartssh2 throws SocketException, SSHAuthFailError,
+  // etc. that leak library internals. Converting to typed AppExceptions lets the
+  // UI layer show user-friendly messages and handle each failure mode distinctly
+  // (e.g., auth failure → re-prompt credentials, timeout → suggest checking host).
+  Never _translateSshException(Object error) {
+    if (error is SocketException) {
+      throw const SshTimeoutException(
+        'Connection timed out. Verify the server address and port.',
+      );
+    }
+    if (error is SSHAuthFailError) {
+      throw const SshAuthException(
+        'Authentication failed. Check your credentials.',
+      );
+    }
+    if (error is AppException) throw error;
+    throw const SshException('SSH connection failed. Please try again.');
+  }
+
   /// Connects to an SSH host and returns a session wrapper.
   ///
   /// [host] — the host record from the database.
@@ -95,12 +125,7 @@ class SshService {
     HostKeyVerifyCallback? onVerifyHostKey,
     Future<String?> Function()? onPasswordRequest,
   }) async {
-    if (_activeConnections >= _maxConcurrentConnections) {
-      throw const SshException(
-        'Too many active connections. Close an existing session first.',
-      );
-    }
-
+    _guardConnectionLimit();
     final sessionId = _uuid.v4();
 
     try {
@@ -126,7 +151,11 @@ class SshService {
       String? capturedKeyType;
       Uint8List? capturedFingerprint;
 
-      // Create SSH client with auth configuration
+      // Why onVerifyHostKey always returns true here: dartssh2's callback fires
+      // during the handshake and blocks the connection if we return false. We
+      // capture the key material and defer verification to our own TOFU logic
+      // after auth completes, so we can show a richer UI dialog with fingerprint
+      // details and known_hosts context.
       final client = SSHClient(
         socketResult.socket,
         username: host.username,
@@ -137,14 +166,15 @@ class SshService {
           return '';
         },
         onVerifyHostKey: (type, fingerprint) {
-          // Capture key material for post-auth TOFU verification
           capturedKeyType = type;
           capturedFingerprint = Uint8List.fromList(fingerprint);
           return true;
         },
       );
 
-      // Wait for authentication to complete
+      // Why await authenticated: the SSH handshake (key exchange, auth) is async.
+      // Awaiting this future ensures we don't start shell/SFTP operations before
+      // the encrypted channel is established and the server accepts our credentials.
       await client.authenticated;
 
       // TOFU host key verification against known_hosts database
@@ -159,7 +189,6 @@ class SshService {
         if (!accepted) {
           client.close();
           await socketResult.jumpSession?.close();
-          _activeConnections--;
           throw SshHostKeyException(
             'Host key verification rejected by user',
             fingerprint: computeFingerprint(capturedFingerprint!),
@@ -177,20 +206,9 @@ class SshService {
         jumpSession: socketResult.jumpSession,
         onClose: () => _activeConnections--,
       );
-    } on SocketException {
-      _activeConnections--;
-      throw const SshTimeoutException(
-        'Connection timed out. Verify the server address and port.',
-      );
-    } on SSHAuthFailError {
-      _activeConnections--;
-      throw const SshAuthException(
-        'Authentication failed. Check your credentials.',
-      );
     } catch (e) {
       _activeConnections--;
-      if (e is AppException) rethrow;
-      throw const SshException('SSH connection failed. Please try again.');
+      _translateSshException(e);
     }
   }
 
@@ -205,7 +223,9 @@ class SshService {
     required Set<String> visitedIds,
   }) async {
     if (host.jumpHostId == null) {
-      // Direct connection — no proxy jump
+      // Why explicit timeout: without it, a misconfigured host or firewall
+      // black-hole causes the TCP SYN to hang for the OS default (often 75s+),
+      // freezing the UI with no feedback. A shorter timeout lets us fail fast.
       final socket = await SSHSocket.connect(
         host.hostname,
         host.port,
@@ -214,7 +234,8 @@ class SshService {
       return _SocketResult(socket: socket);
     }
 
-    // Circular chain detection
+    // Why circular chain detection: users can accidentally configure A→B→A as
+    // jump hosts, which would recurse infinitely and stack-overflow.
     if (visitedIds.contains(host.id)) {
       throw const SshException(
         'Circular jump host chain detected. Check your proxy jump configuration.',
@@ -255,12 +276,7 @@ class SshService {
     List<SSHKeyPair>? identities,
     HostKeyVerifyCallback? onVerifyHostKey,
   }) async {
-    if (_activeConnections >= _maxConcurrentConnections) {
-      throw const SshException(
-        'Too many active connections. Close an existing session first.',
-      );
-    }
-
+    _guardConnectionLimit();
     final sessionId = _uuid.v4();
 
     try {
@@ -301,7 +317,6 @@ class SshService {
         );
         if (!accepted) {
           client.close();
-          _activeConnections--;
           throw SshHostKeyException(
             'Host key verification rejected by user',
             fingerprint: computeFingerprint(capturedFingerprint!),
@@ -315,20 +330,9 @@ class SshService {
         client: client,
         onClose: () => _activeConnections--,
       );
-    } on SocketException {
-      _activeConnections--;
-      throw const SshTimeoutException(
-        'Connection timed out. Verify the server address and port.',
-      );
-    } on SSHAuthFailError {
-      _activeConnections--;
-      throw const SshAuthException(
-        'Authentication failed. Check your credentials.',
-      );
     } catch (e) {
       _activeConnections--;
-      if (e is AppException) rethrow;
-      throw const SshException('SSH connection failed. Please try again.');
+      _translateSshException(e);
     }
   }
 
@@ -393,7 +397,9 @@ class SshService {
       return true;
     }
 
-    // Fingerprint changed — possible MITM
+    // Why reject by default when fingerprint changes: a changed host key is the
+    // primary signal of a man-in-the-middle attack. Defaulting to reject (when
+    // no UI callback is available) follows the principle of secure defaults.
     if (onVerify == null) return false;
 
     final accepted = await onVerify(HostKeyInfo(
@@ -445,7 +451,8 @@ class SshService {
     );
   }
 
-  /// Computes SHA256 fingerprint from raw host key bytes.
+  // Why SHA256 fingerprint: matches OpenSSH's default fingerprint format since
+  // 6.8 (2015), so users can cross-check in their terminal with ssh-keygen -lf.
   static String computeFingerprint(Uint8List hostKeyBytes) {
     final digest = SHA256Digest().process(hostKeyBytes);
     return 'SHA256:${base64Encode(digest).replaceAll('=', '')}';

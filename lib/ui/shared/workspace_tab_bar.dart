@@ -40,57 +40,46 @@ class WorkspaceTabBar extends ConsumerWidget {
           bottom: BorderSide(color: AppColors.borderSubtle),
         ),
       ),
-      child: Row(
-        children: [
-          // Scrollable tabs area
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(left: 4),
-              itemCount: workspace.tabs.length,
-              itemBuilder: (context, index) {
-                final tab = workspace.tabs[index];
-                final isActive = tab.id == workspace.activeTabId;
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 4),
+        itemCount: workspace.tabs.length + 1, // +1 for inline "+" button
+        itemBuilder: (context, index) {
+          // Last item: inline "+" button
+          if (index == workspace.tabs.length) {
+            return _InlineNewTabButton(onTap: onNewConnection);
+          }
 
-                // For terminal tabs, get connection status + broadcast membership
-                bool? isConnected;
-                bool isBroadcastMember = false;
-                if (tab.type == WorkspaceTabType.terminal &&
-                    tab.terminalTabId != null) {
-                  final termTab = terminalTabs.tabs
-                      .where((t) => t.id == tab.terminalTabId)
-                      .firstOrNull;
-                  isConnected = termTab?.isConnected ?? false;
-                  final notifier = ref.read(terminalTabsProvider.notifier);
-                  final group = notifier.broadcastGroup;
-                  // In broadcast-all mode (group empty), all connected are members
-                  isBroadcastMember = notifier.broadcastEnabled &&
-                      (group.isEmpty || group.contains(tab.terminalTabId));
-                }
+          final tab = workspace.tabs[index];
+          final isActive = tab.id == workspace.activeTabId;
 
-                return _WorkspaceTabItem(
-                  tab: tab,
-                  isActive: isActive,
-                  isConnected: isConnected,
-                  isBroadcastMember: isBroadcastMember,
-                  onTap: () => onTabSelected(tab),
-                  onClose: tab.isClosable
-                      ? () => onTabClosed(tab)
-                      : null,
-                );
-              },
-            ),
-          ),
+          // For terminal tabs, get connection status + broadcast membership
+          bool? isConnected;
+          bool isBroadcastMember = false;
+          if (tab.type == WorkspaceTabType.terminal &&
+              tab.terminalTabId != null) {
+            final termTab = terminalTabs.tabs
+                .where((t) => t.id == tab.terminalTabId)
+                .firstOrNull;
+            isConnected = termTab?.isConnected ?? false;
+            final notifier = ref.read(terminalTabsProvider.notifier);
+            final group = notifier.broadcastGroup;
+            // In broadcast-all mode (group empty), all connected are members
+            isBroadcastMember = notifier.broadcastEnabled &&
+                (group.isEmpty || group.contains(tab.terminalTabId));
+          }
 
-          // New connection button
-          const _VerticalDivider(),
-          _TabBarIconButton(
-            icon: LucideIcons.plus,
-            tooltip: 'New connection',
-            onTap: onNewConnection,
-          ),
-          const SizedBox(width: 4),
-        ],
+          return _WorkspaceTabItem(
+            tab: tab,
+            isActive: isActive,
+            isConnected: isConnected,
+            isBroadcastMember: isBroadcastMember,
+            onTap: () => onTabSelected(tab),
+            onClose: tab.isClosable
+                ? () => onTabClosed(tab)
+                : null,
+          );
+        },
       ),
     );
   }
@@ -196,11 +185,11 @@ class _WorkspaceTabItemState extends State<_WorkspaceTabItem>
               ),
             ),
             boxShadow: widget.isActive
-                ? [
+                ? const [
                     BoxShadow(
                       color: AppColors.accentGlow,
                       blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ]
                 : null,
@@ -282,11 +271,12 @@ class _WorkspaceTabItemState extends State<_WorkspaceTabItem>
               if (showClose)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(4),
-                    onTap: widget.onClose,
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: widget.onClose,
                       child: Icon(
                         LucideIcons.x,
                         size: 12,
@@ -307,38 +297,17 @@ class _WorkspaceTabItemState extends State<_WorkspaceTabItem>
   }
 }
 
-/// Thin vertical separator in the tab bar.
-class _VerticalDivider extends StatelessWidget {
-  const _VerticalDivider();
+/// Inline "+" button rendered as the last item in the scrollable tab list.
+class _InlineNewTabButton extends StatefulWidget {
+  const _InlineNewTabButton({required this.onTap});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 20,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      color: AppColors.borderSubtle,
-    );
-  }
-}
-
-/// Compact icon button for the tab bar.
-class _TabBarIconButton extends StatefulWidget {
-  const _TabBarIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
   final VoidCallback onTap;
 
   @override
-  State<_TabBarIconButton> createState() => _TabBarIconButtonState();
+  State<_InlineNewTabButton> createState() => _InlineNewTabButtonState();
 }
 
-class _TabBarIconButtonState extends State<_TabBarIconButton> {
+class _InlineNewTabButtonState extends State<_InlineNewTabButton> {
   bool _isHovered = false;
 
   @override
@@ -347,13 +316,13 @@ class _TabBarIconButtonState extends State<_TabBarIconButton> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: Tooltip(
-        message: widget.tooltip,
-        child: InkWell(
+        message: 'New tab',
+        child: GestureDetector(
           onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(6),
           child: Container(
             width: 32,
             height: 32,
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: _isHovered
@@ -362,9 +331,11 @@ class _TabBarIconButtonState extends State<_TabBarIconButton> {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(
-              widget.icon,
+              LucideIcons.plus,
               size: 15,
-              color: AppColors.textSecondary,
+              color: _isHovered
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary,
             ),
           ),
         ),
@@ -372,3 +343,4 @@ class _TabBarIconButtonState extends State<_TabBarIconButton> {
     );
   }
 }
+

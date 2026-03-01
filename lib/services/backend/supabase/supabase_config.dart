@@ -24,6 +24,9 @@ class SupabaseConfig {
   /// Anonymous key from --dart-define.
   static const _anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
+  /// Deep link redirect URL for auth emails (confirmation, password reset).
+  static const redirectUrl = 'cloudshell://auth-callback';
+
   /// Whether Supabase credentials are configured.
   static bool get isConfigured => _url.isNotEmpty && _anonKey.isNotEmpty;
 

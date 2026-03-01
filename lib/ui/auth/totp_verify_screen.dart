@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../core/constants/route_names.dart';
+import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../l10n/app_localizations.dart';
@@ -86,7 +87,8 @@ class _TotpVerifyScreenState extends ConsumerState<TotpVerifyScreen> {
           _focusNode.requestFocus();
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorHandler.handle(e, stackTrace);
       if (mounted) {
         setState(() {
           _isVerifying = false;
@@ -116,6 +118,7 @@ class _TotpVerifyScreenState extends ConsumerState<TotpVerifyScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
+            tooltip: 'Back',
             icon: const Icon(LucideIcons.arrowLeft, size: 20),
             onPressed: _isVerifying
                 ? null

@@ -65,6 +65,31 @@ class TerminalTheme {
   final Color brightWhite;
 }
 
+/// Derives a slightly lighter/darker background for terminal chrome elements
+/// (status bar, extra keys bar) so they complement the terminal theme.
+Color terminalChromeBg(Color themeBg) {
+  final hsl = HSLColor.fromColor(themeBg);
+  return hsl.lightness < 0.5
+      ? hsl.withLightness((hsl.lightness + 0.05).clamp(0.0, 1.0)).toColor()
+      : hsl.withLightness((hsl.lightness - 0.05).clamp(0.0, 1.0)).toColor();
+}
+
+/// Derives a border color from the terminal theme background.
+Color terminalChromeBorder(Color themeBg) {
+  final hsl = HSLColor.fromColor(themeBg);
+  return hsl.lightness < 0.5
+      ? hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 1.0)).toColor()
+      : hsl.withLightness((hsl.lightness - 0.08).clamp(0.0, 1.0)).toColor();
+}
+
+/// Derives a surface color for buttons/keys from the terminal theme background.
+Color terminalChromeSurface(Color themeBg) {
+  final hsl = HSLColor.fromColor(themeBg);
+  return hsl.lightness < 0.5
+      ? hsl.withLightness((hsl.lightness + 0.10).clamp(0.0, 1.0)).toColor()
+      : hsl.withLightness((hsl.lightness - 0.10).clamp(0.0, 1.0)).toColor();
+}
+
 /// All built-in terminal color themes.
 ///
 /// The default theme ('cloudshell_default') matches the app's
@@ -81,6 +106,12 @@ abstract final class TerminalThemes {
     'tokyo_night': tokyoNight,
     'gruvbox_dark': gruvboxDark,
     'monokai_pro': monokaiPro,
+    'rose_pine': rosePine,
+    'everforest_dark': everforestDark,
+    'ayu_dark': ayuDark,
+    'kanagawa': kanagawa,
+    'solarized_light': solarizedLight,
+    'github_light': githubLight,
   };
 
   /// Returns the theme for the given ID, falling back to default.
@@ -327,5 +358,167 @@ abstract final class TerminalThemes {
     brightMagenta: Color(0xFFAB9DF2),
     brightCyan: Color(0xFF78DCE8),
     brightWhite: Color(0xFFFCFCFA),
+  );
+
+  // ---------------------------------------------------------------------------
+  // Theme 10: Rosé Pine
+  // ---------------------------------------------------------------------------
+  static const rosePine = TerminalTheme(
+    name: 'Rosé Pine',
+    background: Color(0xFF191724),
+    foreground: Color(0xFFE0DEF4),
+    cursor: Color(0xFF524F67),
+    selection: Color(0xFF2A283E),
+    black: Color(0xFF26233A),
+    red: Color(0xFFEB6F92),
+    green: Color(0xFF9CCFD8),
+    yellow: Color(0xFFF6C177),
+    blue: Color(0xFF31748F),
+    magenta: Color(0xFFC4A7E7),
+    cyan: Color(0xFFEBBCBA),
+    white: Color(0xFFE0DEF4),
+    brightBlack: Color(0xFF6E6A86),
+    brightRed: Color(0xFFEB6F92),
+    brightGreen: Color(0xFF9CCFD8),
+    brightYellow: Color(0xFFF6C177),
+    brightBlue: Color(0xFF31748F),
+    brightMagenta: Color(0xFFC4A7E7),
+    brightCyan: Color(0xFFEBBCBA),
+    brightWhite: Color(0xFFE0DEF4),
+  );
+
+  // ---------------------------------------------------------------------------
+  // Theme 11: Everforest Dark
+  // ---------------------------------------------------------------------------
+  static const everforestDark = TerminalTheme(
+    name: 'Everforest Dark',
+    background: Color(0xFF2D353B),
+    foreground: Color(0xFFD3C6AA),
+    cursor: Color(0xFFD3C6AA),
+    selection: Color(0xFF543A48),
+    black: Color(0xFF475258),
+    red: Color(0xFFE67E80),
+    green: Color(0xFFA7C080),
+    yellow: Color(0xFFDBBC7F),
+    blue: Color(0xFF7FBBB3),
+    magenta: Color(0xFFD699B6),
+    cyan: Color(0xFF83C092),
+    white: Color(0xFFD3C6AA),
+    brightBlack: Color(0xFF475258),
+    brightRed: Color(0xFFE67E80),
+    brightGreen: Color(0xFFA7C080),
+    brightYellow: Color(0xFFDBBC7F),
+    brightBlue: Color(0xFF7FBBB3),
+    brightMagenta: Color(0xFFD699B6),
+    brightCyan: Color(0xFF83C092),
+    brightWhite: Color(0xFFD3C6AA),
+  );
+
+  // ---------------------------------------------------------------------------
+  // Theme 12: Ayu Dark
+  // ---------------------------------------------------------------------------
+  static const ayuDark = TerminalTheme(
+    name: 'Ayu Dark',
+    background: Color(0xFF0A0E14),
+    foreground: Color(0xFFB3B1AD),
+    cursor: Color(0xFFE6B450),
+    selection: Color(0xFF253340),
+    black: Color(0xFF01060E),
+    red: Color(0xFFEA6C73),
+    green: Color(0xFF91B362),
+    yellow: Color(0xFFF9AF4F),
+    blue: Color(0xFF53BDFA),
+    magenta: Color(0xFFFAE994),
+    cyan: Color(0xFF90E1C6),
+    white: Color(0xFFC7C7C7),
+    brightBlack: Color(0xFF686868),
+    brightRed: Color(0xFFF07178),
+    brightGreen: Color(0xFFC2D94C),
+    brightYellow: Color(0xFFFFB454),
+    brightBlue: Color(0xFF59C2FF),
+    brightMagenta: Color(0xFFFFEE99),
+    brightCyan: Color(0xFF95E6CB),
+    brightWhite: Color(0xFFFFFFFF),
+  );
+
+  // ---------------------------------------------------------------------------
+  // Theme 13: Kanagawa
+  // ---------------------------------------------------------------------------
+  static const kanagawa = TerminalTheme(
+    name: 'Kanagawa',
+    background: Color(0xFF1F1F28),
+    foreground: Color(0xFFDCD7BA),
+    cursor: Color(0xFFC8C093),
+    selection: Color(0xFF2D4F67),
+    black: Color(0xFF090618),
+    red: Color(0xFFC34043),
+    green: Color(0xFF76946A),
+    yellow: Color(0xFFC0A36E),
+    blue: Color(0xFF7E9CD8),
+    magenta: Color(0xFF957FB8),
+    cyan: Color(0xFF6A9589),
+    white: Color(0xFFC8C093),
+    brightBlack: Color(0xFF727169),
+    brightRed: Color(0xFFE82424),
+    brightGreen: Color(0xFF98BB6C),
+    brightYellow: Color(0xFFE6C384),
+    brightBlue: Color(0xFF7FB4CA),
+    brightMagenta: Color(0xFF938AA9),
+    brightCyan: Color(0xFF7AA89F),
+    brightWhite: Color(0xFFDCD7BA),
+  );
+
+  // ---------------------------------------------------------------------------
+  // Theme 14: Solarized Light
+  // ---------------------------------------------------------------------------
+  static const solarizedLight = TerminalTheme(
+    name: 'Solarized Light',
+    background: Color(0xFFFDF6E3),
+    foreground: Color(0xFF657B83),
+    cursor: Color(0xFF657B83),
+    selection: Color(0xFFEEE8D5),
+    black: Color(0xFF073642),
+    red: Color(0xFFDC322F),
+    green: Color(0xFF859900),
+    yellow: Color(0xFFB58900),
+    blue: Color(0xFF268BD2),
+    magenta: Color(0xFFD33682),
+    cyan: Color(0xFF2AA198),
+    white: Color(0xFFEEE8D5),
+    brightBlack: Color(0xFF002B36),
+    brightRed: Color(0xFFCB4B16),
+    brightGreen: Color(0xFF586E75),
+    brightYellow: Color(0xFF657B83),
+    brightBlue: Color(0xFF839496),
+    brightMagenta: Color(0xFF6C71C4),
+    brightCyan: Color(0xFF93A1A1),
+    brightWhite: Color(0xFFFDF6E3),
+  );
+
+  // ---------------------------------------------------------------------------
+  // Theme 15: GitHub Light
+  // ---------------------------------------------------------------------------
+  static const githubLight = TerminalTheme(
+    name: 'GitHub Light',
+    background: Color(0xFFFFFFFF),
+    foreground: Color(0xFF24292E),
+    cursor: Color(0xFF044289),
+    selection: Color(0xFFC8C8FA),
+    black: Color(0xFF24292E),
+    red: Color(0xFFD73A49),
+    green: Color(0xFF28A745),
+    yellow: Color(0xFFDBAB09),
+    blue: Color(0xFF0366D6),
+    magenta: Color(0xFF5A32A3),
+    cyan: Color(0xFF0598BC),
+    white: Color(0xFF6A737D),
+    brightBlack: Color(0xFF959DA5),
+    brightRed: Color(0xFFCB2431),
+    brightGreen: Color(0xFF22863A),
+    brightYellow: Color(0xFFB08800),
+    brightBlue: Color(0xFF005CC5),
+    brightMagenta: Color(0xFF5A32A3),
+    brightCyan: Color(0xFF3192AA),
+    brightWhite: Color(0xFFD1D5DA),
   );
 }
